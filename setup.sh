@@ -13,6 +13,7 @@ mkdir ~/.config/nvim
 ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
 
 # Tmux
+sudo apt-get install xclip
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
 
