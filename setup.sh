@@ -17,7 +17,7 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
 
 # Bash
-if grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
+if ! grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
 then
-"source ~/git/dotfiles/bashrc_custom.sh" >> ~/.bashrc
+echo "source ~/git/dotfiles/bashrc_custom.sh" >> ~/.bashrc
 fi
