@@ -34,3 +34,5 @@ data.location=~/.task
 uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=0
 urgency.uda.priority..coefficient=1.8
+context.ingroups=+ingroups or +ing
+context=ingroups
