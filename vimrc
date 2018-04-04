@@ -98,7 +98,7 @@ let g:auto_save_silent = 1  " do not display the auto-save notification
 " Use Alt + l/h to move between tabs
 
 nnoremap l gt
-nnoremap h gt
+nnoremap h gT
 
 
 " Add shortcut to open file and close NERDTree
