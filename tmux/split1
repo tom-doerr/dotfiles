@@ -1,0 +1,4 @@
+# https://lukaszwrobel.pl/blog/tmux-tutorial-split-terminal-windows-easily/
+
+selectp -t 0 # select the first (0) pane
+split-window -h -p 70 -c "#{pane_current_path}" # split it into two halves
