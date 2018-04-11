@@ -84,11 +84,6 @@ map <F8>  :setlocal spell spelllang=de <return>
 nmap <F3> i<C-R>=strftime("%Y-%m-%d %a %I:%M %p ")<CR><Esc>
 imap <F3> <C-R>=strftime("%Y-%m-%d %a %I:%M %p ")<CR>
 
-"" Insert Template
-"imap <F4> <C-R>=strftime("%Y-%m-%d %a %I:%M %p ")<CR>
-"nmap <F4> <F4>
-
-
 " Increase history size
 set history=10000
 
@@ -99,6 +94,11 @@ set history=10000
 let g:auto_save = 1  " enable AutoSave on Vim startup
 let g:auto_save_silent = 1  " do not display the auto-save notification
 
+
+" Use Alt + l/h to move between tabs
+
+nnoremap l gt
+nnoremap h gT
 
 " Add shortcut to open file and close NERDTree
 " https://vi.stackexchange.com/questions/3489/nerdtree-how-to-open-a-file-and-automatically-close-the-explorer-buffer
