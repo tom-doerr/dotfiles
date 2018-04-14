@@ -16,6 +16,7 @@ ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
 sudo apt-get install xclip
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
+sudo apt-get install fonts-powerline
 
 # Bash
 if ! grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
