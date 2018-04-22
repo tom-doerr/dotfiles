@@ -65,6 +65,11 @@ else
     nnoremap j :set paste<CR>m`o<Esc>``:set nopaste<CR>
 endif
 
+" Alt-j/k for eight bit terminal like xterm
+nnoremap <m-k> :set paste<CR>m`O<Esc>``:set nopaste<CR>
+nnoremap <m-j> :set paste<CR>m`o<Esc>``:set nopaste<CR>
+
+
 map <C-n> :NERDTreeToggle<CR>
 
 set noswapfile
@@ -99,6 +104,9 @@ let g:auto_save_silent = 1  " do not display the auto-save notification
 
 nnoremap l gt
 nnoremap h gT
+
+nnoremap <m-l> gt
+nnoremap <m-h> gT
 
 " Add shortcut to open file and close NERDTree
 " https://vi.stackexchange.com/questions/3489/nerdtree-how-to-open-a-file-and-automatically-close-the-explorer-buffer
