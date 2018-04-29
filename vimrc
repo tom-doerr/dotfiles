@@ -114,4 +114,5 @@ nnoremap <m-h> gT
 " autocmd BufLeave NERD_tree_* unmap d<CR>
 
 " Tab-bar design
-hi TabLineSel ctermfg=Black ctermbg=White
+hi TabLine ctermfg=Black ctermbg=White
+hi TabLineSel ctermfg=White ctermbg=Black
