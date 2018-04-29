@@ -112,3 +112,6 @@ nnoremap <m-h> gT
 " https://vi.stackexchange.com/questions/3489/nerdtree-how-to-open-a-file-and-automatically-close-the-explorer-buffer
 " autocmd BufEnter NERD_tree_* nmap  d<CR> <CR> :NERDTreeToggle <CR>
 " autocmd BufLeave NERD_tree_* unmap d<CR>
+
+" Tab-bar design
+hi TabLineSel ctermfg=Black ctermbg=White
