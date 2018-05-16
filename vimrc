@@ -106,7 +106,9 @@ nnoremap l gt
 nnoremap h gT
 
 nnoremap <m-l> gt
+" inoremap è <C-o> gt
 nnoremap <m-h> gT
+" inoremap ì <C-o> gT
 
 " Add shortcut to open file and close NERDTree
 " https://vi.stackexchange.com/questions/3489/nerdtree-how-to-open-a-file-and-automatically-close-the-explorer-buffer
@@ -116,3 +118,5 @@ nnoremap <m-h> gT
 " Tab-bar design
 hi TabLine ctermfg=Black ctermbg=White
 hi TabLineSel ctermfg=White ctermbg=Black
+
+"nnoremap == mtgg=G't

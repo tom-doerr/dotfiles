@@ -5,7 +5,9 @@ HISTFILESIZE=2000000
 # ALIAS
 # Show battery stats
 alias bat="watch 'upower -i /org/freedesktop/UPower/devices/battery_BAT0| grep -E \"time to empty|percentage\"'"
+
 alias tw=timew
+alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
 alias ll='ls -alF'
 alias la='ls -A'
