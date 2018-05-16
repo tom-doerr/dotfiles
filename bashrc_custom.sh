@@ -82,3 +82,10 @@ ex ()
     echo "'$1' is not a valid file"
   fi
 }
+
+# Function for adding batch tasks to taskwarrior
+
+function tb() {
+    task add "$@" wait:friday scheduled:friday
+}
+
