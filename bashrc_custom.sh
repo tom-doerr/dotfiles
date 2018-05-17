@@ -87,3 +87,11 @@ function tb() {
     task add "$@" wait:friday scheduled:friday
 }
 
+function ts() {
+    if [[ $1 == "" ]] 
+    then
+        timew stop
+    else
+        timew start "$@"
+    fi
+}
