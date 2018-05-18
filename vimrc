@@ -16,11 +16,11 @@ Plugin 'lumiliet/vim-twig'
 Plugin 'vim-scripts/Txtfmt-The-Vim-Highlighter'
 Plugin 'vimwiki/vimwiki'
 Plugin 'https://github.com/907th/vim-auto-save'
+Plugin 'scrooloose/nerdcommenter'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin indent on    " required
-
 
 nnoremap <C-h> <C-w>h
 nnoremap <C-j> <C-w>j
@@ -74,9 +74,6 @@ map <C-n> :NERDTreeToggle<CR>
 
 set noswapfile
 
-" Reduce delay 
-set timeoutlen=100 
-
 " Highlight search matches
 set hls
 
@@ -120,3 +117,10 @@ hi TabLine ctermfg=Black ctermbg=White
 hi TabLineSel ctermfg=White ctermbg=Black
 
 "nnoremap == mtgg=G't
+
+
+" Automatically relaod vimrc
+augroup myvimrc
+    au!
+    au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
+augroup END
