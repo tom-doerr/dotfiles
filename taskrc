@@ -43,5 +43,5 @@ uda.estimate.type=duration
 uda.estimate.label=Est
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
 report.timeboxing.columns=id,project,description,estimate
-report.timeboxing.filter=scheduled:today
+report.timeboxing.filter=scheduled:today and status:Pending
 report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg,Est,Scheduled
