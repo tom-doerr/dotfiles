@@ -93,6 +93,9 @@ function ts() {
     if [[ $1 == "" ]] 
     then
         timew stop
+    elif [[ $1 =~ ^-?[0-9]+$ ]]
+    then
+        task start $1
     else
         timew start "$@"
     fi
