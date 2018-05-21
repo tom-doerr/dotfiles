@@ -15,8 +15,9 @@ Plugin 'djoshea/vim-autoread'
 Plugin 'lumiliet/vim-twig'
 Plugin 'vim-scripts/Txtfmt-The-Vim-Highlighter'
 Plugin 'vimwiki/vimwiki'
-Plugin 'https://github.com/907th/vim-auto-save'
+Plugin '907th/vim-auto-save'
 Plugin 'scrooloose/nerdcommenter'
+Plugin 'vim-syntastic/syntastic'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -124,3 +125,16 @@ augroup myvimrc
     au!
     au BufWritePost .vimrc,_vimrc,vimrc,.gvimrc,_gvimrc,gvimrc so $MYVIMRC | if has('gui_running') | so $MYGVIMRC | endif
 augroup END
+
+" Syntastic settings
+set statusline+=%#warningmsg#
+set statusline+=%{SyntasticStatuslineFlag()}
+set statusline+=%*
+
+let g:syntastic_always_populate_loc_list = 1
+let g:syntastic_auto_loc_list = 1
+let g:syntastic_check_on_open = 0
+let g:syntastic_check_on_wq = 0
+
+let g:syntastic_mode_map = { 'mode': 'passive', 'active_filetypes': [],'passive_filetypes': [] }
+nnoremap <Leader>e :SyntasticCheck<CR>
