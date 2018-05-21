@@ -142,3 +142,6 @@ nnoremap <Leader>e :SyntasticCheck<CR>
 
 " Searching
 nnoremap <Leader>s :Ag 
+nmap <Leader>8 :Ag <c-r>=expand("<cword>")<cr><cr>
+
+
