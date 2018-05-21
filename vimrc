@@ -20,6 +20,7 @@ Plugin 'scrooloose/nerdcommenter'
 Plugin 'vim-syntastic/syntastic'
 Plugin 'rking/ag.vim'
 Plugin 'tpope/vim-fugitive'
+Plugin 'junegunn/vim-easy-align'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -145,4 +146,5 @@ nnoremap <Leader>e :SyntasticCheck<CR>
 nnoremap <Leader>s :Ag 
 nmap <Leader>8 :Ag <c-r>=expand("<cword>")<cr><cr>
 
-
+" Aligning
+vnoremap <silent> <Enter> :EasyAlign<cr>
