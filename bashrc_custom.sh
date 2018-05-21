@@ -89,14 +89,26 @@ function tb() {
     task add "$@" wait:friday scheduled:friday
 }
 
+function stop_taskwarrior_timewarrior() {
+        if [[ "$(task +ACTIVE 2>&1)" == "No matches." ]]
+        then
+            timew stop
+        else
+            task +ACTIVE done
+        fi
+}
+
+
 function ts() {
     if [[ $1 == "" ]] 
     then
-        timew stop
+        stop_taskwarrior_timewarrior
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
+        stop_taskwarrior_timewarrior
         task start $1
     else
+        stop_taskwarrior_timewarrior
         timew start "$@"
     fi
 }
