@@ -18,6 +18,7 @@ Plugin 'vimwiki/vimwiki'
 Plugin '907th/vim-auto-save'
 Plugin 'scrooloose/nerdcommenter'
 Plugin 'vim-syntastic/syntastic'
+Plugin 'rking/ag.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -138,3 +139,6 @@ let g:syntastic_check_on_wq = 0
 
 let g:syntastic_mode_map = { 'mode': 'passive', 'active_filetypes': [],'passive_filetypes': [] }
 nnoremap <Leader>e :SyntasticCheck<CR>
+
+" Searching
+nnoremap <Leader>s :Ag 
