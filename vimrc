@@ -148,7 +148,7 @@ let g:syntastic_check_on_wq = 0
 let g:syntastic_mode_map = { 'mode': 'passive', 'active_filetypes': [],'passive_filetypes': [] }
 nnoremap <Leader>e :SyntasticCheck<CR>
 nnoremap <m-e> :SyntasticCheck<CR>
-nnoremap <å> :SyntasticCheck<CR>
+nnoremap å :SyntasticCheck<CR>
 
 " Searching
 nnoremap <Leader>s :Ag 
@@ -157,7 +157,7 @@ nnoremap s :Ag
 
 nmap <Leader>8 :Ag <c-r>=expand("<cword>")<cr><cr>
 nmap <m-8> :Ag <c-r>=expand("<cword>")<cr><cr>
-nmap <¸> :Ag <c-r>=expand("<cword>")<cr><cr>
+nmap ¸ :Ag <c-r>=expand("<cword>")<cr><cr>
 
 " Searching for files
 let g:unite_source_history_yank_enable = 1
@@ -169,10 +169,11 @@ endtry
 " search a file in the filetree
 nnoremap <Leader>f :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 nnoremap <m-f> :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
-nnoremap <æ> :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
+nnoremap æ :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 
 " Aligning
 vnoremap <silent> <Enter> :EasyAlign<cr>
 
-
-
+" Save and close
+nnoremap <m-c> ZZ
+nnoremap ã ZZ
