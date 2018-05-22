@@ -21,6 +21,8 @@ Plugin 'vim-syntastic/syntastic'
 Plugin 'rking/ag.vim'
 Plugin 'tpope/vim-fugitive'
 Plugin 'junegunn/vim-easy-align'
+Plugin 'Shougo/vimproc.vim'
+Plugin 'Shougo/unite.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -103,13 +105,17 @@ let g:auto_save_silent = 1  " do not display the auto-save notification
 
 " Use Alt + l/h to move between tabs
 
+nnoremap <m-l> gt
 nnoremap l gt
+
+nnoremap <m-h> gT
 nnoremap h gT
 
-nnoremap <m-l> gt
-" inoremap è <C-o> gt
-nnoremap <m-h> gT
-" inoremap ì <C-o> gT
+inoremap <m-l> <C-O>gt
+inoremap <è> <C-O>gt
+
+inoremap <m-h> <C-O>gT
+inoremap <ì> <C-O>gT
 
 " Add shortcut to open file and close NERDTree
 " https://vi.stackexchange.com/questions/3489/nerdtree-how-to-open-a-file-and-automatically-close-the-explorer-buffer
@@ -141,10 +147,32 @@ let g:syntastic_check_on_wq = 0
 
 let g:syntastic_mode_map = { 'mode': 'passive', 'active_filetypes': [],'passive_filetypes': [] }
 nnoremap <Leader>e :SyntasticCheck<CR>
+nnoremap <m-e> :SyntasticCheck<CR>
+nnoremap <å> :SyntasticCheck<CR>
 
 " Searching
 nnoremap <Leader>s :Ag 
+nnoremap <m-s> :Ag 
+nnoremap s :Ag 
+
 nmap <Leader>8 :Ag <c-r>=expand("<cword>")<cr><cr>
+nmap <m-8> :Ag <c-r>=expand("<cword>")<cr><cr>
+nmap <¸> :Ag <c-r>=expand("<cword>")<cr><cr>
+
+" Searching for files
+let g:unite_source_history_yank_enable = 1
+try
+ "let g:unite_source_rec_async_command='ag --nocolor --nogroup -g ""'
+ "call unite#filters#matcher_default#use(['matcher_fuzzy'])
+catch
+endtry
+" search a file in the filetree
+nnoremap <Leader>f :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
+nnoremap <m-f> :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
+nnoremap <æ> :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 
 " Aligning
 vnoremap <silent> <Enter> :EasyAlign<cr>
+
+
+
