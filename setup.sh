@@ -11,6 +11,7 @@ git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 ln -s ~/git/dotfiles/vimrc ~/.vimrc
 mkdir ~/.config/nvim
 ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
+cd ~/.vim/bundle/vimproc.vim && make
 
 # Tmux
 sudo apt-get install xclip
