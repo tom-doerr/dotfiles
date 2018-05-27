@@ -34,10 +34,7 @@ then
 fi
 
 # Immediately append commands to history
-shopt -s histappend
-
-# Immediately append commands to history
-PROMPT_COMMAND="history -a;$PROMPT_COMMAND"
+PROMPT_COMMAND="history -a; history -n" 
 
 # Better navigation
 alias ..="cd .."
