@@ -46,6 +46,11 @@ report.timeboxing.columns=id,project,description,due.remaining,estimate
 report.timeboxing.filter=(scheduled:today or +scheduled_today_custom) and status:Pending
 report.timeboxing.sort=due+\/,urgency-
 
+report.timeboxing_tomorrow.description=Report that shows tasks scheduled for tomorrow with the time estimate
+report.timeboxing_tomorrow.columns=id,project,description,due.remaining,estimate
+report.timeboxing_tomorrow.filter=(scheduled:tomorrow or +scheduled_today_custom) and status:Pending
+report.timeboxing_tomorrow.sort=due+\/,urgency-
+
 
 report.report1.description=My standard report for viewing tasks
 report.report1.columns=id,description,project,until,urgency,estimate
