@@ -100,6 +100,9 @@ function ts() {
     if [[ $1 == "" ]] 
     then
         stop_taskwarrior_timewarrior
+    elif [[ $1 = "tom" ]]
+    then
+        task timeboxing_tomorrow
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         stop_taskwarrior_timewarrior
