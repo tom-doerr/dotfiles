@@ -23,6 +23,8 @@ Plugin 'tpope/vim-fugitive'
 Plugin 'junegunn/vim-easy-align'
 Plugin 'Shougo/vimproc.vim'
 Plugin 'Shougo/unite.vim'
+Plugin 'godlygeek/tabular'
+Plugin 'plasticboy/vim-markdown'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -177,3 +179,6 @@ vnoremap <silent> <Enter> :EasyAlign<cr>
 " Save and close
 nnoremap <m-c> ZZ
 nnoremap ã ZZ
+
+" Disable automatic folding in markdown files
+let g:vim_markdown_folding_disabled = 1
