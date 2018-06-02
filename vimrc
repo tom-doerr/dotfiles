@@ -182,3 +182,9 @@ nnoremap ã ZZ
 
 " Disable automatic folding in markdown files
 let g:vim_markdown_folding_disabled = 1
+
+" Stop autoindenting bullet points
+" https://stackoverflow.com/questions/46876387/vim-with-markdown-how-to-remove-blankspace-after-bullet-point
+let g:vim_markdown_new_list_item_indent = 0
+setlocal formatoptions=tqlnrc
+set comments=b:>
