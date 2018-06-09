@@ -91,3 +91,5 @@ function ts() {
         timew start "$@"
     fi
 }
+
+bindkey '^R' history-incremental-search-backward
