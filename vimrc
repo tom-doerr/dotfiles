@@ -25,6 +25,7 @@ Plugin 'Shougo/vimproc.vim'
 Plugin 'Shougo/unite.vim'
 Plugin 'godlygeek/tabular'
 Plugin 'plasticboy/vim-markdown'
+Plugin 'rhysd/vim-grammarous'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -188,3 +189,6 @@ let g:vim_markdown_folding_disabled = 1
 let g:vim_markdown_new_list_item_indent = 0
 setlocal formatoptions=tqlnrc
 set comments=b:>
+
+
+let g:grammarous#use_location_list = 1
