@@ -87,6 +87,10 @@ function ts() {
         uuid=$(task $1 _uuid)
         stop_taskwarrior_timewarrior
         task start $uuid
+    elif [[ $1 = "stop" ]]
+    then
+        uuids=$(task +ACTIVE _uuid)
+        task $uuids stop
     else
         stop_taskwarrior_timewarrior
         timew start "$@"
