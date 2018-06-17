@@ -84,12 +84,16 @@ function ts() {
         task timeboxing_tomorrow
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
+        uuid=$(task $1 _uuid)
         stop_taskwarrior_timewarrior
-        task start $1
+        task start $uuid
     else
         stop_taskwarrior_timewarrior
         timew start "$@"
     fi
 }
 
+
 bindkey '^R' history-incremental-search-backward
+
+
