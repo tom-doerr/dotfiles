@@ -24,3 +24,12 @@ if ! grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
 then
 echo "source ~/git/dotfiles/bashrc_custom.sh" >> ~/.bashrc
 fi
+
+
+# ZSH
+if ! grep -Fxq "source ~/git/dotfiles/zshrc_custom.sh" ~/.zshrc
+then
+echo "source ~/git/dotfiles/zshrc_custom.sh" >> ~/.zshrc
+fi
+
+
