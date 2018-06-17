@@ -25,11 +25,11 @@ then
 echo "source ~/git/dotfiles/bashrc_custom.sh" >> ~/.bashrc
 fi
 
-
-# ZSH
+#Zsh
+sudo apt install zsh
+wget https://github.com/robbyrussell/oh-my-zsh/raw/master/tools/install.sh -O - | zsh
+cp ~/.oh-my-zsh/templates/zshrc.zsh-template ~/.zshrc
 if ! grep -Fxq "source ~/git/dotfiles/zshrc_custom.sh" ~/.zshrc
 then
 echo "source ~/git/dotfiles/zshrc_custom.sh" >> ~/.zshrc
 fi
-
-
