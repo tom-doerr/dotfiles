@@ -100,4 +100,21 @@ function ts() {
 
 bindkey '^R' history-incremental-search-backward
 
-
+function t7() {
+    task sch:today+7d
+    echo "--------- IN 7 DAYS -----------"
+    task sch:today+6d
+    echo "--------- IN 6 DAYS -----------"
+    task sch:today+5d
+    echo "--------- IN 5 DAYS -----------"
+    task sch:today+4d
+    echo "--------- IN 4 DAYS -----------"
+    task sch:today+3d
+    echo "--------- IN 3 DAYS -----------"
+    task sch:today+2d
+    echo "---- THE DAY AFTER TOMORROW ---"
+    task sch:today+1d
+    echo "--------- TOMORROW ------------"
+    task sch:today
+    echo "--------- TODAY ---------------"
+}
