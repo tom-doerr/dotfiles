@@ -66,7 +66,7 @@ function tb() {
 }
 
 function stop_taskwarrior_timewarrior() {
-        if [[ "$(task +ACTIVE 2>&1)" == "No matches." ]]
+        if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
         then
             timew stop
         else
