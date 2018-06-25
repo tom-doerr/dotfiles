@@ -192,3 +192,6 @@ set comments=b:>
 
 
 let g:grammarous#use_location_list = 1
+
+set ignorecase
+set smartcase
