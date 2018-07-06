@@ -21,11 +21,16 @@ HISTFILESIZE=2000000
 alias bat="watch 'upower -i /org/freedesktop/UPower/devices/battery_BAT0| grep -E \"time to empty|percentage\"'"
 
 alias tw=timew
+alias ta='task add'
+alias tat='task add scheduled:today'
+alias tatm='task add scheduled:tomorrow'
+
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+
 
 
 # Start tmux by default
