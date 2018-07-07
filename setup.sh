@@ -5,6 +5,12 @@ ln -s ~/git/dotfiles/ipython_config.py ~/.ipython/profile_default/ipython_config
 
 # Taskwarrior
 ln -s ~/git/dotfiles/taskrc ~/.taskrc
+ln -s ~/Nextcloud/sonstiges/task ~/.task
+
+# Timewarrior
+ln -s ~/Nextcloud/sonstiges/timewarrior ~/.timewarrior
+cp ext/on-modify.timewarrior ~/.task/hooks/
+chmod +x ~/.task/hooks/on-modify.timewarrior
 
 # VIM
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
