@@ -7,5 +7,8 @@ keycode 105 = Alt_R
 keycode 108 = Control_R
 add Control = Control_R
 add Mod1 = Alt_R
+clear Lock
+keycode 9 = Caps_Lock NoSymbol Caps_Lock
+keycode 66 = Escape NoSymbol Escape
 
 !$ xmodmap ~/.Xmodmap
