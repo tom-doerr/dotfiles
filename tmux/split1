@@ -2,7 +2,7 @@
 
 selectp -t 0 # select the first (0) pane
 split-window -hb -p 30 -c "#{pane_current_path}" # split it into two halves
-selectp -t 1
+selectp -t 0
 split-window -v -p 50 -c "#{pane_current_path}" # split it into two halves
-selectp -t 1
+selectp -t 2
 selectp -t 0
