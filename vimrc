@@ -179,6 +179,7 @@ vnoremap <silent> <Enter> :EasyAlign<cr>
 
 " Save and close
 nnoremap <m-c> ZZ
+nnoremap <m-d> ZZ
 nnoremap ã ZZ
 
 " Disable automatic folding in markdown files
