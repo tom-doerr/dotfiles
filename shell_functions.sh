@@ -54,6 +54,11 @@ function ts() {
     then
         uuids=$(task +ACTIVE _uuid)
         task $uuids stop
+    elif [[ $1 = "+"* ]]
+    then
+        tag_array=()
+
+
     else
         stop_taskwarrior_timewarrior
         timew start "$@"
