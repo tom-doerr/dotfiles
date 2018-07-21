@@ -110,10 +110,7 @@ let g:auto_save_silent = 1  " do not display the auto-save notification
 " Use Alt + l/h to move between tabs
 
 nnoremap <m-l> gt
-nnoremap l gt
-
 nnoremap <m-h> gT
-nnoremap h gT
 
 inoremap <m-l> <C-O>gt
 inoremap <è> <C-O>gt
