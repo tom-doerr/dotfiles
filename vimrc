@@ -57,7 +57,7 @@ map <Space> H<Plug>(easymotion-w)
 " autosave (post by Sameer https://stackoverflow.com/questions/6991638/how-to-auto-save-a-file-every-1-second-in-vim)
 " autocmd TextChanged,TextChangedI <buffer> silent write
 
-colorscheme ron
+colorscheme murphy
 
 " post by ying17zi https://stackoverflow.com/questions/6778961/alt-key-shortcuts-not-working-on-gnome-terminal-with-vim
 " Alt-j/k to add a blank line
@@ -187,6 +187,7 @@ let g:vim_markdown_folding_disabled = 1
 " Stop autoindenting bullet points
 " https://stackoverflow.com/questions/46876387/vim-with-markdown-how-to-remove-blankspace-after-bullet-point
 let g:vim_markdown_new_list_item_indent = 0
+
 setlocal formatoptions=tqlnrc
 set comments=b:>
 
