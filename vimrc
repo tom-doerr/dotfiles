@@ -26,6 +26,7 @@ Plugin 'Shougo/unite.vim'
 Plugin 'godlygeek/tabular'
 Plugin 'plasticboy/vim-markdown'
 Plugin 'rhysd/vim-grammarous'
+Plugin 'w0rp/ale'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -197,3 +198,9 @@ let g:grammarous#use_location_list = 1
 
 set ignorecase
 set smartcase
+
+" ALE linting 
+nmap <silent> [W <Plug>(ale_first)
+nmap <silent> [w <Plug>(ale_previous)
+nmap <silent> ]w <Plug>(ale_next)
+nmap <silent> ]W <Plug>(ale_last)
