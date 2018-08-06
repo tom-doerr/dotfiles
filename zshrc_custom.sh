@@ -22,10 +22,13 @@ alias bat="watch 'upower -i /org/freedesktop/UPower/devices/battery_BAT0| grep -
 
 alias vi='nvim'
 
+alias print-mail='/home/tom/git/private/print_email.py'
+
 alias tw=timew
 alias ta='task add'
 alias tat='task add scheduled:today'
 alias tatm='task add scheduled:tomorrow'
+alias tb='task add wait:friday scheduled:friday +batch '
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
