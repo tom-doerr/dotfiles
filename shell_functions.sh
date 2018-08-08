@@ -1,5 +1,5 @@
 # Extract files with ex command
- ex ()
+ex ()
 {
   if [ -f $1 ] ; then
     case $1 in
@@ -61,18 +61,6 @@ function at() {
 function rt() {
     timew stop && timew cont && timew @1 untag $@
 }
-
-function tag_active() {
-for i in {1..$(timew get dom.active.tag.count)}
-do
-    if [[ echo $(timew get dom.active.tag.$i) == $1 ]]
-    then
-        return 0
-    fi
-done
-return 1
-}
-
 
 function tn() {
     if [[timew get dom.active.tag.1 == $
