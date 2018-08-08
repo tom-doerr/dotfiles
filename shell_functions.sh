@@ -22,12 +22,6 @@ ex ()
 }
 
 
-# Function for adding batch tasks to taskwarrior
-
-function tb() {
-    task add "$@" wait:friday scheduled:friday
-}
-
 function stop_taskwarrior_timewarrior() {
         if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
         then
