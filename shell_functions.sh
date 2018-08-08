@@ -60,6 +60,15 @@ function ts() {
     fi
 }
 
+function at() {
+    timew stop && timew cont && timew @1 tag $@
+}
+
+function rt() {
+    timew stop && timew cont && timew @1 untag $@
+}
+
+
 function t7() {
     echo "--------- IN 7 DAYS -----------"
     task sch:today+7d
