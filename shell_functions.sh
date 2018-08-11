@@ -93,3 +93,23 @@ function timew_week() {
     timew week
 }
 
+function swatch() {
+    while true
+    do
+        swatch_output=$($@)
+        padding_output=''
+        number_of_lines_output=$(echo $swatch_output | wc -l)
+        let "number_of_lines_padding = $(tput lines) - $number_of_lines_output"
+        for i in {2..$number_of_lines_padding}
+        do
+            padding_output+='\n'
+        done
+        $@
+        echo $padding_output
+        sleep 1
+    done
+}
+
+
+
+
