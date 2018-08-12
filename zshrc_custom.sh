@@ -31,6 +31,7 @@ alias ta='task add'
 alias tat='task add scheduled:today'
 alias tatm='task add scheduled:tomorrow'
 alias tb='task add wait:friday scheduled:friday +batch '
+alias bu='task add +bu '
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
