@@ -53,7 +53,7 @@ report.timeboxing_tomorrow.sort=due+\/,urgency-
 
 report.report1.description=My standard report for viewing tasks
 report.report1.columns=id,description,project,until,urgency,estimate
-report.report1.filter=status:Pending -BLOCKED and -ing and -ingroups and -bu
+report.report1.filter=status:Pending -BLOCKED and (-ing or +self) and -bu
 report.report1.sort=urgency-
 
 report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg,Est,Scheduled
