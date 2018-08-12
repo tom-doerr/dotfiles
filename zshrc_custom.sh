@@ -28,8 +28,8 @@ alias print-mail='/home/tom/git/private/print_email.py'
 
 alias tw=timew
 alias ta='task add'
-alias tat='task add scheduled:today'
-alias tatm='task add scheduled:tomorrow'
+alias tat='task add due:tomorrow'
+alias tatm='task add due:tomorrow+1d'
 alias tb='task add wait:friday scheduled:friday +batch '
 alias bu='task add +bu '
 
