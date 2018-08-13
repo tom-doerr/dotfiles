@@ -16,30 +16,6 @@ set -o vi
 HISTSIZE=1000000
 HISTFILESIZE=2000000
 
-# ALIAS
-# Show battery stats
-alias bat="watch 'upower -i /org/freedesktop/UPower/devices/battery_BAT0| grep -E \"time to empty|percentage\"'"
-
-alias op='xdg-open'
-
-alias vi='nvim'
-
-alias print-mail='/home/tom/git/private/print_email.py'
-
-alias tw=timew
-alias ta='task add'
-alias tat='task add due:tomorrow'
-alias tatm='task add due:tomorrow+1d'
-alias tb='task add wait:friday scheduled:friday +batch '
-alias bu='task add +bu '
-
-alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
-
-alias ll='ls -alF'
-alias la='ls -A'
-alias l='ls -CF'
-
-
 
 # Start tmux by default
 #[[ $TERM != "screen" ]] && exec tmux
@@ -52,3 +28,4 @@ fi
 bindkey '^R' history-incremental-search-backward
 
 source ~/git/dotfiles/shell_functions.sh
+source ~/git/dotfiles/alias.sh
