@@ -6,6 +6,9 @@ ln -s ~/git/dotfiles/ipython_config.py ~/.ipython/profile_default/ipython_config
 # Taskwarrior
 ln -s ~/git/dotfiles/taskrc ~/.taskrc
 ln -s ~/Nextcloud/sonstiges/task ~/.task
+ln -s ~/Nextcloud/sonstiges/someday-maybe
+ln -s ~/Nextcloud/sonstiges/general-reference
+
 
 # Timewarrior
 ln -s ~/Nextcloud/sonstiges/timewarrior ~/.timewarrior
