@@ -8,9 +8,10 @@ ln -s ~/git/dotfiles/taskrc ~/.taskrc
 ln -s ~/Nextcloud/sonstiges/task ~/.task
 
 # GTD
-ln -s ~/Nextcloud/sonstiges/gtd/incubation/someday-maybe
-ln -s ~/Nextcloud/sonstiges/gtd/incubation/tickler
-ln -s ~/Nextcloud/sonstiges/gtd/general-reference
+ln -s Nextcloud/documents/gtd/general-references
+ln -s Nextcloud/documents/gtd/incubation/someday-maybe
+ln -s Nextcloud/documents/gtd/incubation/tickler
+
 
 
 # Timewarrior
