@@ -16,6 +16,8 @@ fi
 ln -s Nextcloud/documents/gtd/general-references
 ln -s Nextcloud/documents/gtd/incubation/someday-maybe
 ln -s Nextcloud/documents/gtd/incubation/tickler
+ln -s Nextcloud/documents/gtd/projects
+ln -s Nextcloud/documents/gtd/project-support-material
 
 
 
