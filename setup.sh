@@ -4,8 +4,13 @@
 ln -s ~/git/dotfiles/ipython_config.py ~/.ipython/profile_default/ipython_config.py
 
 # Taskwarrior
-ln -s ~/git/dotfiles/taskrc ~/.taskrc
 ln -s ~/Nextcloud/sonstiges/task ~/.task
+
+if ! grep -Fxq "include ~/git/dotfiles/taskrc_custom" ~/.taskrc
+then
+echo "include ~/git/dotfiles/taskrc_custom" >> ~/.taskrc
+fi
+
 
 # GTD
 ln -s Nextcloud/documents/gtd/general-references
