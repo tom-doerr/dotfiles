@@ -11,6 +11,7 @@ ATHAME_TEST_RC=~/.athamerc
 export ATHAME_TEST_RC
 
 set -o vi
+setopt EXTENDED_GLOB
 
 # Set history file size
 HISTSIZE=1000000
