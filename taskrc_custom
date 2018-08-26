@@ -26,3 +26,5 @@ report.report1.sort=urgency-
 
 report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg,Est,Scheduled
 _forcecolor=off
+
+search.case.sensitive=yes
