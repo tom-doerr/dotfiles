@@ -88,9 +88,20 @@ function t7() {
 }
 
 function timew_week() {
-    clear
-    echo "           0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23"
-    timew week
+    if [[ $1 = '' ]]
+    then
+        freq=30
+    else
+        freq=$1
+    fi
+
+    while true
+    do
+        clear
+        echo "           0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23"
+        timew week
+        sleep $freq
+    done
 }
 
 function swatch() {
