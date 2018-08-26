@@ -11,13 +11,9 @@ then
 echo "include ~/git/dotfiles/taskrc_custom" >> ~/.taskrc
 fi
 
-
 # GTD
 ln -s Nextcloud/documents/gtd/general-references
 ln -s Nextcloud/documents/gtd/incubation/someday-maybe
-ln -s Nextcloud/documents/gtd/incubation/tickler
-
-
 
 # Timewarrior
 ln -s ~/Nextcloud/sonstiges/timewarrior ~/.timewarrior
