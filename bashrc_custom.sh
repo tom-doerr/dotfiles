@@ -29,10 +29,18 @@ fi
 
 
 # Start tmux by default
-#[[ $TERM != "screen" ]] && exec tmux
-if [[ $TERM != "screen" ]] && ! tmux attach -t base;
+if [[ $(tput cols) != 60 ]]
 then
-    [[ $TERM != "screen" ]] && exec tmux new -s base
+    if [[ $TERM != "screen" ]] && ! tmux attach -t base;
+    then
+        [[ $TERM != "screen" ]] && exec tmux new -s base
+    fi
+else
+    if [[ $TERM != "screen" ]] && ! tmux attach -t smartphone;
+    then
+        [[ $TERM != "screen" ]] && exec tmux new -s smartphone
+    fi
+
 fi
 
 # Immediately append commands to history
