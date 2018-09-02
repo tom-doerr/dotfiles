@@ -7,6 +7,7 @@ alias vi='nvim'
 
 alias print-mail='/home/tom/git/private/print_email.py'
 
+alias t=task
 alias tw=timew
 alias ta='task add'
 alias tat='task add due:tomorrow'
