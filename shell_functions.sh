@@ -27,6 +27,7 @@ function stop_taskwarrior_timewarrior() {
         then
             timew stop
         else
+            timew stop
             task +ACTIVE done
         fi
 }
