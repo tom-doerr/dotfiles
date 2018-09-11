@@ -1,5 +1,5 @@
 {
-  "settingsVersion": "1.63.3",
+  "settingsVersion": "1.64",
   "exclusionRules": [
     {
       "pattern": "https?://mail.google.com/*",
@@ -8,12 +8,16 @@
     {
       "pattern": "https?://duckduckgo.com/*",
       "passKeys": "'jk"
+    },
+    {
+      "pattern": "https?://calendar.google.com/*",
+      "passKeys": "jdkwmd"
     }
   ],
   "filterLinkHints": false,
   "waitForEnterForFilteredHints": true,
   "hideHud": false,
-  "keyMappings": "# Insert your preferred key mappings here.\nmap h previousTab\nmap n goForward\nmap l nextTab\nmap p goBack\nmap a LinkHints.activateModeToOpenInNewForegroundTab\nmap d removeTab\nmap H scrollLeft\nmap L scrollRight",
+  "keyMappings": "# Insert your preferred key mappings here.\nmap h previousTab\nmap l nextTab\nmap p goBack\nmap a LinkHints.activateModeToOpenInNewForegroundTab\nmap d removeTab\nmap H scrollLeft\nmap L scrollRight\nmap s LinkHints.activateModeToOpenInNewTab",
   "linkHintCharacters": "sadfjklewcmpgh",
   "linkHintNumbers": "0123456789",
   "newTabUrl": "about:newtab",
