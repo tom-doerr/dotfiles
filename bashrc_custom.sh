@@ -31,12 +31,12 @@ fi
 # Start tmux by default
 if [[ $(tput cols) != 60 ]]
 then
-    if [[ $TERM != "screen" ]] && ! tmux attach -t base;
+    if [[ $TERM != "screen" ]] && ! tmux attach -dt base;
     then
         [[ $TERM != "screen" ]] && exec tmux new -s base
     fi
 else
-    if [[ $TERM != "screen" ]] && ! tmux attach -t smartphone;
+    if [[ $TERM != "screen" ]] && ! tmux attach -dt smartphone;
     then
         [[ $TERM != "screen" ]] && exec tmux new -s smartphone
     fi

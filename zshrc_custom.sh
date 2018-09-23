@@ -18,14 +18,6 @@ HISTSIZE=1000000
 HISTFILESIZE=2000000
 
 
-# Start tmux by default
-#[[ $TERM != "screen" ]] && exec tmux
-if [[ $TERM != "screen" ]] && ! tmux attach -t base;
-then
-    [[ $TERM != "screen" ]] && exec tmux new -s base
-fi
-
-
 bindkey '^R' history-incremental-search-backward
 
 source ~/git/dotfiles/shell_functions.sh
