@@ -122,6 +122,11 @@ function swatch() {
     done
 }
 
-
-
-
+function td() {
+    if [[ $1 == "" ]]
+    then
+        rt $(t _get $(t +ACTIVE _uuid).description)
+    else
+        task done $@
+    fi
+}

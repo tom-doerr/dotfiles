@@ -13,7 +13,6 @@ alias ta='task add'
 alias tat='task add due:tomorrow'
 alias tatm='task add due:tomorrow+1d'
 alias tb='task add wait:friday scheduled:friday +batch '
-alias td='task done '
 alias bu='task add +bu +clarify +stuff '
 alias b='task add +bu +clarify +stuff '
 
