@@ -130,3 +130,7 @@ function td() {
         task done $@
     fi
 }
+
+function ap() {
+    task $(t +ACTIVE _uuid) duplicate description:$@
+}
