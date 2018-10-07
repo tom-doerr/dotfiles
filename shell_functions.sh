@@ -137,7 +137,5 @@ function ap() {
 }
 
 function rb() {
-    current_pane="$pane"
     tmux split-window -v -t "$pane" "watch -n 0,1 task +bu"
-    tmux selectp -t "$current_pane"
 }
