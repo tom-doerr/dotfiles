@@ -139,3 +139,8 @@ function ap() {
 function rb() {
     tmux split-window -v -t "$pane" "watch -n 0,1 task +bu"
 }
+
+function sm() {
+    task $@ ls >> someday-maybe 
+    task $@ delete
+}
