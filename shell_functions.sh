@@ -126,7 +126,7 @@ function td() {
     fi
 }
 
-function ap() {
+function pa() {
     description_string="$@"
     task $(t +ACTIVE _uuid) duplicate description:$description_string
 }
