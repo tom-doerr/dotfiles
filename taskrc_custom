@@ -20,6 +20,6 @@ report.report1.filter=status:Pending -BLOCKED and (-ing or +self) and -bu
 report.report1.sort=urgency-
 
 report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg,Est,Scheduled
-_forcecolor=off
+_forcecolor=on
 
 search.case.sensitive=no
