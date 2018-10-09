@@ -1,6 +1,6 @@
 # Change priority values 
 uda.priority.values = H,M,,L
-urgency.uda.priority.L.coefficient=0
+urgency.uda.priority.L.coefficient=-8
 urgency.uda.priority..coefficient=1.8
 context.ingroups=+ingroups or +ing
 context.standard=-ingroups and -ing
