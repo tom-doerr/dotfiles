@@ -96,13 +96,9 @@ function timew_week() {
         freq=$1
     fi
 
-    while true
-    do
-        clear
-        echo "           0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23"
-        timew week
-        sleep $freq
-    done
+        ~/git/scripts/neowatch timew :color week && sleep $freq
+
+ echo "           0    1    2    3    4    5    6    7    8    9    10   11   12   13   14   15   16   17   18   19   20   21   22   23" 
 }
 
 function swatch() {
