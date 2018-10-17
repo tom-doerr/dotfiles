@@ -5,6 +5,9 @@ urgency.uda.priority..coefficient=1.8
 context.ingroups=+ingroups or +ing
 context.standard=-ingroups and -ing
 context.not_home=-h and -home
+context.itsec=+itsec
+context.netsec=+netsec
+context.era=+era
 
 
 uda.estimate.type=duration
