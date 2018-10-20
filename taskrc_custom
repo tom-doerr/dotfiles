@@ -8,7 +8,7 @@ context.not_home=-h and -home
 context.itsec=+itsec
 context.netsec=+netsec
 context.era=+era
-context.b=+b
+context.b=+b or pro:b
 
 
 uda.estimate.type=duration
