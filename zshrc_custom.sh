@@ -20,5 +20,7 @@ HISTFILESIZE=2000000
 
 bindkey '^R' history-incremental-search-backward
 
+DISABLE_AUTO_UPDATE=true
+
 source ~/git/dotfiles/shell_functions.sh
 source ~/git/dotfiles/alias.sh
