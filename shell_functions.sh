@@ -139,3 +139,19 @@ function sm() {
     task $@ ls >> someday-maybe 
     task $@ delete
 }
+
+function np() {
+    current_page=$(cat $neowatch_page_number_file_path)
+    let "current_page += 1"
+    echo $current_page > $neowatch_page_number_file_path
+}
+
+function pp() {
+    current_page=$(cat $neowatch_page_number_file_path)
+    if [[ $current_page > 0 ]]
+    then
+        let "current_page -= 1"
+    fi
+    echo $current_page > $neowatch_page_number_file_path
+
+}
