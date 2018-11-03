@@ -17,6 +17,7 @@ alias bu='task add +bu +clarify +stuff '
 alias b='task add +bu +clarify +stuff '
 alias n='task add +netsec inf '
 alias e='task add +era inf '
+alias bi='task add +b inf '
 
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
