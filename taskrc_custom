@@ -13,10 +13,15 @@ context.b=+b or pro:b
 
 uda.estimate.type=duration
 uda.estimate.label=Est
+
+uda.time_of_day.type=string
+uda.time_of_day.label=Ti
+
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
-report.timeboxing.columns=id,description,project,due.remaining,estimate
+report.timeboxing.columns=id,description,project,due.remaining,estimate,time_of_day
 report.timeboxing.filter=((+scheduled_today_custom and due.before:now+24h) or (due.before:tomorrow+1min and -CHILD)) and status:Pending
-report.timeboxing.sort=due+\/,urgency-
+# report.timeboxing.sort=due+\/,urgency-
+report.timeboxing.sort=time_of_day+
 
 report.report1.description=My standard report for viewing tasks
 report.report1.columns=id,description,project,until,estimate
