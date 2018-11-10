@@ -25,3 +25,6 @@ alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 alias ll='ls -alF'
 alias la='ls -A'
 alias l='ls -CF'
+
+alias python='python3'
+alias ipython='ipython3'
