@@ -19,6 +19,8 @@ alias n='task add +netsec inf '
 alias e='task add +era inf '
 alias bi='task add +b inf '
 
+alias twa='tw month 2018-01-01 - today'
+
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
