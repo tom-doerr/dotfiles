@@ -7,12 +7,14 @@ urgency.uda.priority..coefficient=1.8
 context.ingroups=+ingroups or +ing
 context.hobby=+hobby or +_hobby
 context.arzt=+arzt
+context.bu=+bu
+
 
 # Home
-context.h=-b -netsec -era -hobby
+context.h=-b -netsec -era -hobby -bu
 
 ## Default not home
-context.dnh=-h -home -b -netsec -era -hobby
+context.dnh=-h -home -b -netsec -era -hobby -bu
 
 context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
