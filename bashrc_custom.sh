@@ -126,3 +126,4 @@ function ts() {
 
 
 
+source ~/git/dotfiles/alias.sh
