@@ -26,6 +26,7 @@ uda.estimate.label=Est
 
 uda.time_of_day.type=string
 uda.time_of_day.label=Ti
+uda.time_of_day.default=-
 
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
 report.timeboxing.columns=id,description,project,due.remaining,estimate,time_of_day
