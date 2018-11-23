@@ -153,5 +153,9 @@ function pp() {
         let "current_page -= 1"
     fi
     echo $current_page > $neowatch_page_number_file_path
+}
 
+function ggp() {
+    current_page=1
+    echo $current_page > $neowatch_page_number_file_path
 }
