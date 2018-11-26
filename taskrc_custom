@@ -21,13 +21,18 @@ context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
 context.b=+b or pro:b or +_b
 
-
+# UDAs
 uda.estimate.type=duration
 uda.estimate.label=Est
 
 uda.time_of_day.type=string
 uda.time_of_day.label=Ti
 uda.time_of_day.default=-
+
+uda.soft_deadline.type=date
+uda.soft_deadline.label=SD
+uda.soft_deadline.coefficient=6.0
+
 
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
 report.timeboxing.columns=id,description,project,due.remaining,estimate,time_of_day
