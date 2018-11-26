@@ -2,6 +2,7 @@
 uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=-8
 urgency.uda.priority..coefficient=1.8
+#urgency.uda.soft_deadline.coefficient=6.0
 
 # Contexts
 context.ingroups=+ingroups or +ing
@@ -15,7 +16,7 @@ context.shallow=+shallow or +sh
 context.h=-b -netsec -era -hobby
 
 ## Default not home
-context.dnh=-h -home -b -netsec -era -hobby
+context.nh=-h -home -b -netsec -era -hobby
 
 context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
@@ -31,7 +32,6 @@ uda.time_of_day.default=-
 
 uda.soft_deadline.type=date
 uda.soft_deadline.label=SD
-uda.soft_deadline.coefficient=6.0
 
 
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
