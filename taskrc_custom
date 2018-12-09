@@ -20,7 +20,7 @@ context.nh=-h -home -b -netsec -era -hobby
 
 context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
-context.b=+b or pro:b or +_b
+context.b=+b or +_b
 
 # UDAs
 uda.estimate.type=duration
