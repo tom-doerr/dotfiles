@@ -22,7 +22,7 @@ alias twa='tw month 2018-01-01 - tomorrow'
 alias tr1='task report1'
 alias r1='task report1'
 alias tc='task context '
-
+alias id='task done $(t +bu +PENDING _ids | awk '"'"'NR==1{print $1}'"'"')'
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
