@@ -132,7 +132,7 @@ function pa() {
 }
 
 function rb() {
-    tmux split-window -v -t "$pane" "watch --color -n 0,1 task +bu"
+    tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
 }
 
 function sm() {
