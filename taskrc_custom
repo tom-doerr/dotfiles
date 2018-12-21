@@ -1,3 +1,5 @@
+include ~/.task/dark-green-256.theme
+
 # Change priority values 
 uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=-8
