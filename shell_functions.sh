@@ -32,6 +32,19 @@ function stop_taskwarrior_timewarrior() {
         fi
 }
 
+function ts_start_task() {
+    while true; do
+        task start "$@"
+        echo "$@"
+        if [[ "$(task "$@" +ACTIVE 2>&1)" != "No matches." ]] 
+        then
+            break
+            echo "Task not started, retrying..."  
+        fi
+        sleep 1
+    done
+
+}
 
 function ts() {
     if [[ $1 == "" ]] 
@@ -44,7 +57,7 @@ function ts() {
     then
         uuid=$(task $1 _uuid)
         stop_taskwarrior_timewarrior
-        task start $uuid
+        ts_start_task $uuid
     elif [[ $1 = "stop" ]]
     then
         uuids=$(task +ACTIVE _uuid)
