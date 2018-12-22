@@ -172,3 +172,11 @@ function ggp() {
     current_page=1
     echo $current_page > $neowatch_page_number_file_path
 }
+
+function rs() {
+    number_top_task_r1=$(bash -c 'task report1 | awk '"'"'NR==3{print $1}'"'"'')    
+    number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
+    ts $number_top_task_r1_nocolor
+}
+
+
