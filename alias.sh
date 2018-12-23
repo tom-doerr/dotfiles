@@ -23,7 +23,7 @@ alias tr1='task report1'
 alias r1='task report1'
 alias tc='task context '
 alias id='task done $(t +bu +PENDING _ids | awk '"'"'NR==1{print $1}'"'"')'
-alias t1m='timew @1 move '
+alias twm='timew @1 move '
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
