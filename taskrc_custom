@@ -4,6 +4,7 @@ include ~/.task/dark-green-256.theme
 uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=-8
 urgency.uda.priority..coefficient=1.8
+urgency.active.coefficient=50
 #urgency.uda.soft_deadline.coefficient=6.0
 
 # Contexts
