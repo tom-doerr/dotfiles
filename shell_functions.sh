@@ -35,7 +35,6 @@ function stop_taskwarrior_timewarrior() {
 function ts_start_task() {
     while true; do
         task start "$@"
-        echo "$@"
         if [[ "$(task "$@" +ACTIVE 2>&1)" != "No matches." ]] 
         then
             break
@@ -184,3 +183,30 @@ function rs() {
     fi
     ts $number_top_task_r1_nocolor
 }
+
+function logp() {
+
+
+    header=$(head -n 1 log_data_personal.csv)
+    #parameters_csv=(${header//,/})
+    #IFS=', ' read -ra parameters_csv <<< "$header"; echo parameters_csv
+    for c in $header
+    do
+        if [[ "$c" == "," ]]
+        then
+            echo comma
+            break
+        fi
+        printf $c
+    done
+    val_string_all=''
+
+    for par in $parameters_csv 
+    do
+        echo $par
+        read input_val
+        val_string_all="$val_string_all,$input_val"
+    done
+    echo $val_string_all >> log_data_personal.csv
+}
+
