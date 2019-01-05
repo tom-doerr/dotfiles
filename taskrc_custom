@@ -39,7 +39,7 @@ uda.soft_deadline.label=SD
 
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
 report.timeboxing.columns=id,description,project,due.remaining,estimate,time_of_day
-report.timeboxing.filter=((+scheduled_today_custom and due.before:now+24h) or (due.before:tomorrow+1min and -CHILD)) and status:Pending
+report.timeboxing.filter=((+scheduled_today_custom or -CHILD) and due.before:now+24h) and status:Pending
 # report.timeboxing.sort=due+\/,urgency-
 report.timeboxing.sort=time_of_day+
 
