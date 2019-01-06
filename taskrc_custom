@@ -18,13 +18,14 @@ context.era=+era or pro:era or +_era
 context.b=+b or +_b
 context.task=+task
 context.wg=+wg
+context.admin=+admin
 
 
 ## Home
-context.h=-b -netsec -era -hobby -task -wg
+context.h=-b -netsec -era -hobby -task -wg -admin
 
 ## Default not home
-context.nh=-h -home -b -netsec -era -hobby -task -wg
+context.nh=-h -home -b -netsec -era -hobby -task -wg -admin
 
 
 
