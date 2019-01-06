@@ -222,3 +222,7 @@ function logp() {
     echo $val_string_all >> log_data_personal.csv
 }
 
+function next() {
+    task add starte $1 \"$(task _get $1.description)\" +next
+    task mod $1 +next
+}
