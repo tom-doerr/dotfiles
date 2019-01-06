@@ -13,17 +13,21 @@ context.hobby=+hobby or +_hobby
 context.arzt=+arzt
 context.bu=+bu or +_bu
 context.shallow=+shallow or +sh
-
-
-# Home
-context.h=-b -netsec -era -hobby
-
-## Default not home
-context.nh=-h -home -b -netsec -era -hobby
-
 context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
 context.b=+b or +_b
+context.task=+task
+context.wg=+wg
+
+
+## Home
+context.h=-b -netsec -era -hobby -task -wg
+
+## Default not home
+context.nh=-h -home -b -netsec -era -hobby -task -wg
+
+
+
 
 # UDAs
 uda.estimate.type=duration
