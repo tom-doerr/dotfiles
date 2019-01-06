@@ -223,6 +223,6 @@ function logp() {
 }
 
 function next() {
-    task add starte $1 \"$(task _get $1.description)\" +next
+    task add starte \"$(task _get $1.description)\" +next
     task mod $1 +next
 }
