@@ -24,11 +24,10 @@ context.leute=+leute
 
 
 ## Home
-context.h=-b -netsec -era -hobby -task -wg -admin -inf
+context.h=-b -netsec -era -hobby
 
 ## Default not home
-context.nh=-h -home -b -netsec -era -hobby -task -wg -admin -inf
-
+context.nh=-h -home -b -netsec -era -hobby
 
 
 
