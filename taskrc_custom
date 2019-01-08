@@ -20,6 +20,7 @@ context.task=+task
 context.wg=+wg
 context.admin=+admin
 context.inf=+inf
+context.leute=+leute
 
 
 ## Home
