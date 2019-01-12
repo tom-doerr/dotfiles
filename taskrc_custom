@@ -22,12 +22,11 @@ context.admin=+admin
 context.inf=+inf
 context.leute=+leute
 
-
 ## Home
-context.h=-b -netsec -era -hobby
+context.h=-b -netsec -era -hobby -inf
 
 ## Default not home
-context.nh=-h -home -b -netsec -era -hobby
+context.nh=-h -home -b -netsec -era -hobby -inf
 
 
 
