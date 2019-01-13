@@ -172,29 +172,29 @@ function ggp() {
     echo $current_page > $neowatch_page_number_file_path
 }
 
-function rs() {
+
+
+function start_first_task() {
+    echo 'task '$@
     stop_taskwarrior_timewarrior
-    number_top_task_r1=$(bash -c 'task report1 | awk '"'"'NR==3{print $1}'"'"'')    
+    number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $1}'"'"'')    
     number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
     if [[ $number_top_task_r1_nocolor == '' ]]
     then 
-        number_top_task_r1=$(bash -c 'task report1 | awk '"'"'NR==3{print $2}'"'"'')    
+        number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $2}'"'"'')    
         number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
     fi
     ts $number_top_task_r1_nocolor
 }
 
-function ds() {
-    stop_taskwarrior_timewarrior
-    number_top_task_r1=$(bash -c 'task timeboxing | awk '"'"'NR==3{print $1}'"'"'')    
-    number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
-    if [[ $number_top_task_r1_nocolor == '' ]]
-    then 
-        number_top_task_r1=$(bash -c 'task timeboxing | awk '"'"'NR==3{print $2}'"'"'')    
-        number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
-    fi
-    ts $number_top_task_r1_nocolor
+function rs() {
+    start_first_task report1
 }
+
+function ds() {
+    start_first_task timeboxing
+}
+
 
 function logp() {
 
