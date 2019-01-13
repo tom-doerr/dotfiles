@@ -226,3 +226,24 @@ function next() {
     task add starte \"$(task _get $1.description)\" +next
     task mod $1 +next
 }
+
+review_projects() {
+    NUM_LINES=$(cat ~/projects.md | wc -l)
+    for i in {1..$NUM_LINES}
+    do
+        line_first_word=$(awk "NR==$i{print $1}" ~/projects.md)
+        if [[ $line_first_word == "###"* ]]
+        then
+            break
+
+        fi
+        if [[ $line_first_word != "" ]]
+        then
+            echo "PROJECT: "$line_first_word
+            task rc.context=none pro:$line_first_word
+            echo ""
+        fi
+
+    done
+
+}
