@@ -24,6 +24,8 @@ alias r1='task report1'
 alias tc='task context '
 alias id='task done $(t +bu +PENDING _ids | awk '"'"'NR==1{print $1}'"'"')'
 alias twm='timew @1 move '
+alias tri='task rc.context=inf'
+alias tis='task context inf && rs'
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
