@@ -23,10 +23,10 @@ context.inf=+inf
 context.leute=+leute
 
 ## Home
-context.h=-b -netsec -era -hobby -inf -task -ing
+context.h=(-b -netsec -era -hobby -inf -task -ing) or +next
 
 ## Default not home
-context.nh=-h -home -b -netsec -era -hobby -inf -task -ing
+context.nh=(-h -home -b -netsec -era -hobby -inf -task -ing) or +next
 
 
 
