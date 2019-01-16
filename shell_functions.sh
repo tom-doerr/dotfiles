@@ -184,7 +184,7 @@ function start_first_task() {
         number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $2}'"'"'')    
         number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
     fi
-    ts $number_top_task_r1_nocolor
+    task start $number_top_task_r1_nocolor
 }
 
 function rs() {
@@ -220,11 +220,6 @@ function logp() {
         val_string_all="$val_string_all,$input_val"
     done
     echo $val_string_all >> log_data_personal.csv
-}
-
-function next() {
-    task add starte \"$(task _get $1.description)\" +next
-    task mod $1 +next
 }
 
 review_projects() {
