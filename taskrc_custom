@@ -21,6 +21,7 @@ context.wg=+wg
 context.admin=+admin
 context.inf=+inf
 context.leute=+leute
+context.mering=+mering
 
 ## Home
 context.h=(-b -netsec -era -hobby -inf -task -ing) or +next
