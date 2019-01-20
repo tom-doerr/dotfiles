@@ -223,10 +223,10 @@ function logp() {
 }
 
 review_projects() {
-    NUM_LINES=$(cat ~/projects.md | wc -l)
+    NUM_LINES=$(cat ~/projects | wc -l)
     for i in {1..$NUM_LINES}
     do
-        line_first_word=$(awk "NR==$i{print $1}" ~/projects.md)
+        line_first_word=$(awk "NR==$i{print $1}" ~/projects)
         if [[ $line_first_word == "###"* ]]
         then
             break
