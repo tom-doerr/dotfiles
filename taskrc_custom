@@ -27,7 +27,7 @@ context.mering=+mering
 context.h=(-b -netsec -era -hobby -inf -task -ing -ba) or +next
 
 ## Default not home
-context.nh=(-h -home -b -netsec -era -hobby -inf -task -ing -ba) or +next
+context.nh=(-h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
 
 
 
