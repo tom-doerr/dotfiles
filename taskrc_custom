@@ -22,12 +22,13 @@ context.admin=+admin
 context.inf=+inf
 context.leute=+leute
 context.mering=+mering
+context.lrz=+lrz
 
 ## Home
-context.h=(-b -netsec -era -hobby -inf -task -ing -ba) or +next
+context.h=(-lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
 
 ## Default not home
-context.nh=(-h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
+context.nh=(-lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
 
 
 
