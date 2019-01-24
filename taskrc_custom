@@ -1,7 +1,11 @@
+include ~/.task/dark-green-256.theme
+
 # Change priority values 
 uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=-8
 urgency.uda.priority..coefficient=1.8
+urgency.active.coefficient=50
+#urgency.uda.soft_deadline.coefficient=6.0
 
 # Contexts
 context.ingroups=+ingroups or +ing
@@ -9,17 +13,24 @@ context.hobby=+hobby or +_hobby
 context.arzt=+arzt
 context.bu=+bu or +_bu
 context.shallow=+shallow or +sh
-
-
-# Home
-context.h=-b -netsec -era -hobby
-
-## Default not home
-context.dnh=-h -home -b -netsec -era -hobby
-
 context.netsec=+netsec or pro:netsec or +_netsec
 context.era=+era or pro:era or +_era
-context.b=+b or pro:b or +_b
+context.ba=+b or +_b or +ba or +_ba
+context.task=+task
+context.wg=+wg
+context.admin=+admin
+context.inf=+inf
+context.leute=+leute
+context.mering=+mering
+context.lrz=+lrz
+
+## Home
+context.h=(-lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
+
+## Default not home
+context.nh=(-lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
+
+
 
 # UDAs
 uda.estimate.type=duration
@@ -31,20 +42,25 @@ uda.time_of_day.default=-
 
 uda.soft_deadline.type=date
 uda.soft_deadline.label=SD
-uda.soft_deadline.coefficient=6.0
 
 
 report.timeboxing.description=Report that shows tasks scheduled for today with the time estimate
 report.timeboxing.columns=id,description,project,due.remaining,estimate,time_of_day
-report.timeboxing.filter=((+scheduled_today_custom and due.before:now+24h) or (due.before:tomorrow+1min and -CHILD)) and status:Pending
+report.timeboxing.filter=((+scheduled_today_custom or -CHILD) and due.before:now+24h) and status:Pending
 # report.timeboxing.sort=due+\/,urgency-
 report.timeboxing.sort=time_of_day+
 
 report.report1.description=My standard report for viewing tasks
 report.report1.columns=id,description,project,until,estimate
-
 report.report1.filter=status:Pending -BLOCKED and (-ing or +self) and -bu
 report.report1.sort=urgency-
+
+
+report.review_bucket_items.description=Report for reviewing bucket items
+report.review_bucket_items.columns=id,start.age,tags,description
+report.review_bucket_items.filter=+bu +PENDING
+report.review_bucket_items.sort=id+
+
 
 report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,Urg,Est,Scheduled
 _forcecolor=on

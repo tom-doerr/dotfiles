@@ -32,6 +32,18 @@ function stop_taskwarrior_timewarrior() {
         fi
 }
 
+function ts_start_task() {
+    while true; do
+        task start "$@"
+        if [[ "$(task "$@" +ACTIVE 2>&1)" != "No matches." ]] 
+        then
+            break
+            echo "Task not started, retrying..."  
+        fi
+        sleep 1
+    done
+
+}
 
 function ts() {
     if [[ $1 == "" ]] 
@@ -44,7 +56,7 @@ function ts() {
     then
         uuid=$(task $1 _uuid)
         stop_taskwarrior_timewarrior
-        task start $uuid
+        ts_start_task $uuid
     elif [[ $1 = "stop" ]]
     then
         uuids=$(task +ACTIVE _uuid)
@@ -132,7 +144,7 @@ function pa() {
 }
 
 function rb() {
-    tmux split-window -v -t "$pane" "watch --color -n 0,1 task +bu"
+    tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
 }
 
 function sm() {
@@ -158,4 +170,75 @@ function pp() {
 function ggp() {
     current_page=1
     echo $current_page > $neowatch_page_number_file_path
+}
+
+
+
+function start_first_task() {
+    echo 'task '$@
+    stop_taskwarrior_timewarrior
+    number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $1}'"'"'')    
+    number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
+    if [[ $number_top_task_r1_nocolor == '' ]]
+    then 
+        number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $2}'"'"'')    
+        number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
+    fi
+    task start $number_top_task_r1_nocolor
+}
+
+function rs() {
+    start_first_task report1
+}
+
+function ds() {
+    start_first_task timeboxing
+}
+
+
+function logp() {
+
+
+    header=$(head -n 1 log_data_personal.csv)
+    #parameters_csv=(${header//,/})
+    #IFS=', ' read -ra parameters_csv <<< "$header"; echo parameters_csv
+    for c in $header
+    do
+        if [[ "$c" == "," ]]
+        then
+            echo comma
+            break
+        fi
+        printf $c
+    done
+    val_string_all=''
+
+    for par in $parameters_csv 
+    do
+        echo $par
+        read input_val
+        val_string_all="$val_string_all,$input_val"
+    done
+    echo $val_string_all >> log_data_personal.csv
+}
+
+review_projects() {
+    NUM_LINES=$(cat ~/projects | wc -l)
+    for i in {1..$NUM_LINES}
+    do
+        line_first_word=$(awk "NR==$i{print $1}" ~/projects)
+        if [[ $line_first_word == "###"* ]]
+        then
+            break
+
+        fi
+        if [[ $line_first_word != "" ]]
+        then
+            echo "PROJECT: "$line_first_word
+            task rc.context=none pro:$line_first_word
+            echo ""
+        fi
+
+    done
+
 }

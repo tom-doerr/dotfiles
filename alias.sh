@@ -18,9 +18,19 @@ alias b='task add +bu +clarify +stuff '
 alias n='task add +netsec inf '
 alias e='task add +era inf '
 alias bi='task add +b inf '
+alias i='task add +inf inf '
 alias twa='tw month 2018-01-01 - tomorrow'
 alias tr1='task report1'
-
+alias r1='task report1'
+alias tc='task context '
+alias tch='task context h'
+alias tcnh='task context nh'
+alias id='task done $(t +bu +PENDING _ids | awk '"'"'NR==1{print $1}'"'"')'
+alias twm='timew @1 move '
+alias tri='task rc.context=inf'
+alias tis='task context inf && rs'
+alias tra='~/git/private/tracking.py'
+alias B='b'
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
