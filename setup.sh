@@ -49,3 +49,6 @@ if ! grep -Fxq "source ~/git/dotfiles/zshrc_custom.sh" ~/.zshrc
 then
 echo "source ~/git/dotfiles/zshrc_custom.sh" >> ~/.zshrc
 fi
+
+# SSH
+ln -s ~/git/private/ssh_config ~/.ssh/config
