@@ -28,20 +28,20 @@ if [ -x /usr/bin/dircolors ]; then
 fi
 
 
-# Start tmux by default
-if [[ $(tput cols) != 60 ]]
-then
-    if [[ $TERM != "screen" ]] && ! tmux attach -dt base;
-    then
-        [[ $TERM != "screen" ]] && exec tmux new -s base
-    fi
-else
-    if [[ $TERM != "screen" ]] && ! tmux attach -dt smartphone;
-    then
-        [[ $TERM != "screen" ]] && exec tmux new -s smartphone
-    fi
-
-fi
+## Start tmux by default
+#if [[ $(tput cols) != 60 ]]
+#then
+#    if [[ $TERM != "screen" ]] && ! tmux attach -dt base;
+#    then
+#        [[ $TERM != "screen" ]] && exec tmux new -s base
+#    fi
+#else
+#    if [[ $TERM != "screen" ]] && ! tmux attach -dt smartphone;
+#    then
+#        [[ $TERM != "screen" ]] && exec tmux new -s smartphone
+#    fi
+#
+#fi
 
 # Immediately append commands to history
 PROMPT_COMMAND="history -a; history -n" 
