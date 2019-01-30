@@ -75,11 +75,6 @@ function rt() {
     timew stop && timew cont && timew @1 untag $@
 }
 
-function tn() {
-    if [[timew get dom.active.tag.1 == $
-}
-
-
 
 function t7() {
     echo "--------- IN 7 DAYS -----------"
