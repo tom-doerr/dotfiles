@@ -49,9 +49,6 @@ function ts() {
     if [[ $1 == "" ]] 
     then
         stop_taskwarrior_timewarrior
-    elif [[ $1 = "tom" ]]
-    then
-        task timeboxing_tomorrow
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
@@ -62,10 +59,21 @@ function ts() {
         uuids=$(task +ACTIVE _uuid)
         task $uuids stop
     else
+        tags_to_add=''
+        for e in $@
+        do
+            tags_to_add_tmp=$(cat ~/git/private/tags.config | jq -r "."$e )
+            if [[ tags_to_add_tmp != 'null' ]]
+            then
+                tags_to_add=$tags_to_add" "$tags_to_add_tmp
+            fi
+            echo "tags_to_add: "$tags_to_add
+        done    
         stop_taskwarrior_timewarrior
-        timew start "$@"
+        timew start "$@"$tags_to_add
     fi
 }
+
 
 function at() {
     timew stop && timew cont && timew @1 tag $@
