@@ -1,4 +1,7 @@
+# Theme
 include ~/.task/dark-green-256.theme
+color.tagged=
+
 
 # Change priority values 
 uda.priority.values = H,M,,L
