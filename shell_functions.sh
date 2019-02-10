@@ -237,10 +237,13 @@ review_projects() {
         fi
         if [[ $line_first_word != "" ]]
         then
+            echo '==========================================================================='
+            echo '==========================================================================='
             echo "PROJECT: "$line_first_word
             task rc.context=none pro:$line_first_word
             echo ""
-            echo '----------------------------------------------'
+            echo ""
+            echo ""
         fi
     done
 
