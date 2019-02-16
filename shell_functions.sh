@@ -65,8 +65,8 @@ function ts() {
             tags_to_add_tmp=$(cat ~/git/private/tags.config | jq -r "."$e )
             if [[ $tags_to_add_tmp != "null" ]]
             then
-                echo "tags_to_add: "$tags_to_add
                 tags_to_add=$tags_to_add" "$tags_to_add_tmp
+                echo "tags_to_add: "$tags_to_add
             fi
         done    
         stop_taskwarrior_timewarrior
