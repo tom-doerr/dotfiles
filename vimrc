@@ -243,3 +243,4 @@ let pyindent_nested_paren="&sw*2"
 let pyindent_open_paren="&sw*2"
 
 nnoremap <Leader>gc :Gcommit -a -v -q<CR>
+nnoremap <Leader>gp :Dispatch! git push<CR>
