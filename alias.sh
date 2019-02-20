@@ -33,6 +33,7 @@ alias tra='~/git/private/tracking.py'
 alias B='b'
 alias sm='task mod +sm'
 alias del='task del'
+alias day='timew day'
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 
