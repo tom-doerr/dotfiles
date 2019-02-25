@@ -28,6 +28,7 @@ Plugin 'plasticboy/vim-markdown'
 Plugin 'rhysd/vim-grammarous'
 Plugin 'w0rp/ale'
 Plugin 'dhruvasagar/vim-table-mode'
+Plugin 'vim-scripts/DrawIt'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
