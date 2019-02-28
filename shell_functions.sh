@@ -22,7 +22,7 @@ ex ()
 }
 
 
-function stop_taskwarrior_timewarrior() {
+stop_taskwarrior_timewarrior() {
         if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
         then
             timew stop
@@ -32,7 +32,7 @@ function stop_taskwarrior_timewarrior() {
         fi
 }
 
-function ts_start_task() {
+ts_start_task() {
     while true; do
         task start "$@"
         if [[ "$(task "$@" +ACTIVE 2>&1)" != "No matches." ]] 
@@ -45,7 +45,7 @@ function ts_start_task() {
 
 }
 
-function ts() {
+ts() {
     if [[ $1 == "" ]] 
     then
         stop_taskwarrior_timewarrior
@@ -75,16 +75,16 @@ function ts() {
 }
 
 
-function at() {
+at() {
     timew stop && timew cont && timew @1 tag $@
 }
 
-function rt() {
+rt() {
     timew stop && timew cont && timew @1 untag $@
 }
 
 
-function t7() {
+t7() {
     echo "--------- IN 7 DAYS -----------"
     task sch:today+7d
     echo "--------- IN 6 DAYS -----------"
@@ -103,7 +103,7 @@ function t7() {
     task sch:today
 }
 
-function timew_week() {
+timew_week() {
     if [[ $1 = '' ]]
     then
         freq=30
@@ -115,7 +115,7 @@ function timew_week() {
 
 }
 
-function swatch() {
+swatch() {
     while true
     do
         swatch_output=$($@)
@@ -132,7 +132,7 @@ function swatch() {
     done
 }
 
-function td() {
+td() {
     if [[ $1 == "" ]]
     then
         rt "$(t _get $(t +ACTIVE _uuid).description)"
@@ -141,27 +141,27 @@ function td() {
     fi
 }
 
-function pa() {
+pa() {
     description_string="$@"
     task $(t +ACTIVE _uuid) duplicate description:$description_string
 }
 
-function rb() {
+rb() {
     tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
 }
 
-function sm() {
+sm() {
     task $@ ls >> someday-maybe 
     task $@ delete
 }
 
-function np() {
+np() {
     current_page=$(cat $neowatch_page_number_file_path)
     let "current_page += 1"
     echo $current_page > $neowatch_page_number_file_path
 }
 
-function pp() {
+pp() {
     current_page=$(cat $neowatch_page_number_file_path)
     if [[ $current_page > 0 ]]
     then
@@ -170,14 +170,14 @@ function pp() {
     echo $current_page > $neowatch_page_number_file_path
 }
 
-function ggp() {
+ggp() {
     current_page=1
     echo $current_page > $neowatch_page_number_file_path
 }
 
 
 
-function start_first_task() {
+start_first_task() {
     echo 'task '$@
     stop_taskwarrior_timewarrior
     number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $1}'"'"'')    
@@ -190,16 +190,16 @@ function start_first_task() {
     task start $number_top_task_r1_nocolor
 }
 
-function rs() {
+rs() {
     start_first_task report1
 }
 
-function ds() {
+ds() {
     start_first_task timeboxing
 }
 
 
-function logp() {
+logp() {
 
 
     header=$(head -n 1 log_data_personal.csv)
