@@ -180,10 +180,7 @@ ggp() {
 }
 
 
-
-start_first_task() {
-    echo 'task '$@
-    stop_taskwarrior_timewarrior
+get_first_task() {
     number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $1}'"'"'')    
     number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
     if [[ $number_top_task_r1_nocolor == '' ]]
@@ -191,6 +188,13 @@ start_first_task() {
         number_top_task_r1=$(bash -c 'task '$@' | awk '"'"'NR==3{print $2}'"'"'')    
         number_top_task_r1_nocolor=$(echo $number_top_task_r1 | sed "s,\x1B\[[0-9;]*[a-zA-Z],,g")
     fi
+    echo $number_top_task_r1_nocolor
+}
+
+start_first_task() {
+    echo 'task '$@
+    stop_taskwarrior_timewarrior
+    number_top_task_r1_nocolor=$(get_first_task $@)
     task start $number_top_task_r1_nocolor
 }
 
