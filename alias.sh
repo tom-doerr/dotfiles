@@ -31,7 +31,6 @@ alias tri='task rc.context=inf'
 alias tis='task context inf && rs'
 alias tra='~/git/private/tracking.py'
 alias B='b'
-alias sm='task mod +sm'
 alias del='task del'
 alias day='timew day'
 
