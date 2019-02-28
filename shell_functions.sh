@@ -151,8 +151,12 @@ rb() {
 }
 
 sm() {
-    task $@ ls >> someday-maybe 
-    task $@ delete
+    if [[ $1 =~ ^-?[0-9]+$ ]]
+    then
+        task $@ mod +sm
+    else
+        task add $@ +sm
+    fi
 }
 
 np() {
