@@ -261,3 +261,7 @@ review_someday_maybe() {
     task context sm
     tmux split-window -v -t "$pane" "watch --color -n 0,1 task"
 }
+
+iw() {
+    task $(get_first_task) mod wait:1h
+}
