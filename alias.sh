@@ -45,3 +45,4 @@ alias ipython='ipython3'
 alias pip='pip3'
 
 alias nm='neomutt '
+alias r='ranger'
