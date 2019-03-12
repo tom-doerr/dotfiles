@@ -27,6 +27,7 @@ context.leute=+leute
 context.mering=+mering
 context.lrz=+lrz
 context.sm=+sm
+context.englisch=+englisch
 
 ## Home
 context.h=(-sm -lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
