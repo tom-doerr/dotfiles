@@ -23,6 +23,7 @@ ex ()
 
 
 stop_taskwarrior_timewarrior() {
+    ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
         if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
         then
             timew stop
