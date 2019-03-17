@@ -23,10 +23,6 @@ ex ()
 
 
 stop_taskwarrior_timewarrior() {
-        if [[ $(tw get dom.active) == "1" ]]
-        then
-            ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
-        fi
         if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
         then
             timew stop
@@ -34,6 +30,7 @@ stop_taskwarrior_timewarrior() {
             timew stop
             task +ACTIVE done
         fi
+        # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
 
 ts_start_task() {
