@@ -30,10 +30,10 @@ context.sm=+sm
 context.englisch=+englisch
 
 ## Home
-context.h=(-sm -lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
+context.h=(-admin -sm -lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
 
 ## Default not home
-context.nh=(-sm -lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
+context.nh=(-admin -sm -lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
 
 
 
