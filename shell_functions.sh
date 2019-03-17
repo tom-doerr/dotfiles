@@ -270,3 +270,7 @@ iw() {
 next() {
     task add +next $@
 }
+
+n() {
+    n $@
+}
