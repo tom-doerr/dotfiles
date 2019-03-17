@@ -266,3 +266,7 @@ review_someday_maybe() {
 iw() {
     task $(get_first_task) mod wait:1h
 }
+
+next() {
+    task add +next $@
+}
