@@ -31,6 +31,7 @@ alias tra='~/git/private/tracking.py'
 alias B='b'
 alias del='task del'
 alias day='timew day'
+alias twsua='timew summary 2018-01-01 - tomorrow'
 
 alias ng="/usr/local/lib/node_modules/@angular/cli/bin/ng"
 

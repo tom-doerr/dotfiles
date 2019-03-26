@@ -200,6 +200,7 @@ set ignorecase
 set smartcase
 
 " ALE linting 
+let g:ale_enabled = 0
 nmap <silent> [W <Plug>(ale_first)
 nmap <silent> [w <Plug>(ale_previous)
 nmap <silent> ]w <Plug>(ale_next)
