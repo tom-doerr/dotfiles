@@ -21,6 +21,14 @@ ex ()
   fi
 }
 
+wait_if_process_running() {
+    if [[  $(ps -auxr | ag ".*$3.*$1.*") != "" ]]
+    then
+        sleep ${2-"0.001"}
+        wait_if_process_running $@
+    fi
+
+}
 
 stop_taskwarrior_timewarrior() {
         if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
@@ -29,6 +37,7 @@ stop_taskwarrior_timewarrior() {
         else
             timew stop
             task +ACTIVE done
+            wait_if_process_running task 0.0001 $!
         fi
         # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
