@@ -283,3 +283,7 @@ next() {
 n() {
     next $@
 }
+
+tws() {
+    timew @1 shorten $@
+}
