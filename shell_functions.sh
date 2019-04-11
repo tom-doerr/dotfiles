@@ -68,6 +68,14 @@ ts() {
     then
         uuids=$(task +ACTIVE _uuid)
         task $uuids stop
+    elif [[ $1 = "ss" ]]
+    then
+        uuids=$(task +ACTIVE _uuid)
+        task $uuids stop
+        if [[ $2 != "" ]]
+        then
+            ts "${@:2}"
+        fi
     else
         tags_to_add=''
         for e in $@
