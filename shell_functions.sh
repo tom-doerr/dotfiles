@@ -22,9 +22,9 @@ ex ()
 }
 
 wait_if_process_running() {
-    if [[  $(ps -auxr | ag ".*$3.*$1.*") != "" ]]
+    if [[  $(ps -aux | ag ".*$2.*task +ACTIVE done.*") != "" ]]
     then
-        sleep ${2-"0.001"}
+        sleep ${1-"0.001"}
         wait_if_process_running $@
     fi
 
@@ -37,7 +37,7 @@ stop_taskwarrior_timewarrior() {
         else
             timew stop
             task +ACTIVE done
-            wait_if_process_running task 0.0001 $!
+            wait_if_process_running 0.0001 $!
         fi
         # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
