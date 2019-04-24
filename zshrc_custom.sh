@@ -14,8 +14,8 @@ set -o vi
 setopt EXTENDED_GLOB
 
 # Set history file size
-HISTSIZE=1000000
-HISTFILESIZE=2000000
+HISTSIZE=1000000000
+HISTFILESIZE=2000000000
 
 
 bindkey '^R' history-incremental-search-backward
