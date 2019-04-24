@@ -45,3 +45,5 @@ alias pip='pip3'
 
 alias nm='neomutt '
 alias r='ranger'
+
+alias pycharm='/opt/pycharm-2019.1.1/bin/pycharm.sh'
