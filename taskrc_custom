@@ -16,8 +16,6 @@ context.hobby=+hobby or +_hobby
 context.arzt=+arzt
 context.bu=+bu or +_bu
 context.shallow=+shallow or +sh
-context.netsec=+netsec or pro:netsec or +_netsec
-context.era=+era or pro:era or +_era
 context.ba=+b or +_b or +ba or +_ba
 context.task=+task
 context.wg=+wg
@@ -27,7 +25,8 @@ context.leute=+leute
 context.mering=+mering
 context.lrz=+lrz
 context.sm=+sm
-context.englisch=+englisch
+context.stat=+stat
+context.theo=+theo
 
 ## Home
 context.h=(-admin -sm -lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
