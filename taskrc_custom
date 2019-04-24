@@ -29,10 +29,10 @@ context.stat=+stat
 context.theo=+theo
 
 ## Home
-context.h=(-admin -sm -lrz -b -netsec -era -hobby -inf -task -ing -ba) or +next
+context.h=(-admin -sm -lrz -b -netsec -era -hobby -inf -task -ing -ba -stat -theo) or +next
 
 ## Default not home
-context.nh=(-admin -sm -lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba) or (+next and -h and -home)
+context.nh=(-admin -sm -lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba -stat -theo) or (+next and -h and -home)
 
 
 
