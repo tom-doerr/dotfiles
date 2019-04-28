@@ -295,3 +295,7 @@ n() {
 tws() {
     timew @1 shorten $@
 }
+
+m() {
+    task add pro:$(awk 'NR==1{print $1}' ~/main_project) +next $@
+}
