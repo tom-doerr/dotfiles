@@ -20,7 +20,7 @@ context.ba=+b or +_b or +ba or +_ba
 context.task=+task
 context.wg=+wg
 context.admin=+admin
-context.inf=+inf -ba -era -netsec
+context.inf=+inf -prof
 context.leute=+leute
 context.mering=+mering
 context.lrz=+lrz
@@ -29,10 +29,10 @@ context.stat=+stat
 context.theo=+theo
 
 ## Home
-context.h=(-admin -sm -lrz -b -netsec -era -hobby -inf -task -ing -ba -stat -theo) or +next
+context.h=(-admin -sm -lrz -hobby -inf -task -ing -ba -stat -theo) or +next
 
 ## Default not home
-context.nh=(-admin -sm -lrz -h -home -b -netsec -era -hobby -inf -task -ing -ba -stat -theo) or (+next and -h and -home)
+context.nh=(-admin -sm -lrz -h -home -hobby -inf -task -ing -ba -stat -theo) or (+next and -h and -home)
 
 
 
