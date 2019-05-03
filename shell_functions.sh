@@ -297,5 +297,5 @@ tws() {
 }
 
 main() {
-    task add pro:$(awk 'NR==1{print $1}' ~/main_project) +next $@
+    task add pro:$(awk 'NR==1' ~/main_project) +next $@
 }
