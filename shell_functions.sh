@@ -299,3 +299,8 @@ tws() {
 main() {
     task add pro:$(awk 'NR==1' ~/main_project) +next $@
 }
+
+pas() {
+    pa $@ +next
+    rs
+}
