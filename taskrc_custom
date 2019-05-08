@@ -27,12 +27,13 @@ context.lrz=+lrz
 context.sm=+sm
 context.stat=+stat
 context.theo=+theo
+context.master=+master
 
 ## Home
-context.h=(-admin -sm -lrz -hobby -inf -task -ing -ba -stat -theo) or +next
+context.h=(-admin -sm -lrz -hobby -inf -task -ing -ba -stat -theo -master) or +next
 
 ## Default not home
-context.nh=(-admin -sm -lrz -h -home -hobby -inf -task -ing -ba -stat -theo) or (+next and -h and -home)
+context.nh=(-admin -sm -lrz -h -home -hobby -inf -task -ing -ba -stat -theo -master) or (+next and -h and -home)
 
 
 
