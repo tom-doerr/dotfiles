@@ -285,7 +285,12 @@ iw() {
 }
 
 next() {
-    task add +next $@
+    if [[ $1 =~ ^-?[0-9]+$ ]]
+    then
+        task $@ mod +next
+    else
+        task add $@ +next
+    fi
 }
 
 n() {
