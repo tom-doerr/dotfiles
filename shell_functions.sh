@@ -309,3 +309,7 @@ pas() {
     pa $@ +next
     rs
 }
+
+tss() {
+    ts ss $@
+}
