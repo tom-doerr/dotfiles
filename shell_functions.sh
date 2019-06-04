@@ -317,3 +317,7 @@ tss() {
 kb() {
     ~/git/dotfiles/keyboard_config/start.sh
 }
+
+schlafen() {
+    ts schlafen && clear
+}
