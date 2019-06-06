@@ -30,6 +30,7 @@ Plugin 'w0rp/ale'
 Plugin 'dhruvasagar/vim-table-mode'
 Plugin 'vim-scripts/DrawIt'
 Plugin 'lervag/vimtex'
+Plugin 'szw/vim-tags'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -250,3 +251,5 @@ nnoremap <Leader>gc :Gcommit -a -v -q<CR>i
 set conceallevel=2
 
 nnoremap <Leader>b I**<Esc>A**<Esc>
+
+set modelines=0
