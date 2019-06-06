@@ -319,5 +319,6 @@ kb() {
 }
 
 schlafen() {
-    ts schlafen && clear
+    ts schlafen
+    clear
 }
