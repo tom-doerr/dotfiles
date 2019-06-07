@@ -323,7 +323,7 @@ schlafen() {
     clear
 }
 
-# Source: https://github.com/junegunn/fzf/wiki/Examples
+# Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
 function f() {
     if [[ "$#" != 0 ]]; then
         builtin cd "$@";
@@ -341,6 +341,8 @@ function f() {
         ')"
         [[ ${#dir} != 0 ]] || return 0
         builtin cd "$dir" &> /dev/null
+        echo '$ ls'
+        ls
     done
 }
 
