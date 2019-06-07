@@ -35,6 +35,10 @@ git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
 sudo apt-get install fonts-powerline
 
+# FZF
+git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+~/.fzf/install
+
 # Bash
 if ! grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
 then
