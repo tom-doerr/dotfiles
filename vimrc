@@ -31,6 +31,7 @@ Plugin 'dhruvasagar/vim-table-mode'
 Plugin 'vim-scripts/DrawIt'
 Plugin 'lervag/vimtex'
 Plugin 'szw/vim-tags'
+Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
 
 " All of your Plugins must be added before the following line
@@ -173,7 +174,6 @@ try
 catch
 endtry
 " search a file in the filetree
-nnoremap <Leader>f :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 nnoremap <m-f> :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 nnoremap æ :split<cr> :<C-u>Unite -start-insert file_rec/async<cr>
 
@@ -254,3 +254,7 @@ set conceallevel=2
 nnoremap <Leader>b I**<Esc>A**<Esc>
 
 set modelines=0
+
+" FZF mappings
+imap <c-x><c-p> <plug>(fzf-complete-path)
+map <Leader>f :Rg<CR>
