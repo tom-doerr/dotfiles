@@ -25,6 +25,7 @@ DISABLE_AUTO_UPDATE=true
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
 export PATH="/home/tom/anaconda3/bin:$PATH"
 
+source /usr/share/autojump/autojump.sh
 source ~/git/dotfiles/shell_functions.sh
 source ~/git/dotfiles/alias.sh
 
