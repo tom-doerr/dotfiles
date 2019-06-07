@@ -31,6 +31,7 @@ Plugin 'dhruvasagar/vim-table-mode'
 Plugin 'vim-scripts/DrawIt'
 Plugin 'lervag/vimtex'
 Plugin 'szw/vim-tags'
+Plugin 'junegunn/fzf.vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
