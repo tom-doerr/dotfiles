@@ -39,6 +39,9 @@ sudo apt-get install fonts-powerline
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
 
+# Autojump
+sudo apt install autojump
+
 # Bash
 if ! grep -Fxq "source ~/git/dotfiles/bashrc_custom.sh" ~/.bashrc
 then
