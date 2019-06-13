@@ -28,6 +28,7 @@ enter_j(){
 enter_f(){
     f
     echo
+    echo
     echo $ ls $(pwd)
     ls
     zle reset-prompt
