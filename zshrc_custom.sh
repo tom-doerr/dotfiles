@@ -17,8 +17,38 @@ setopt EXTENDED_GLOB
 HISTSIZE=1000000000
 HISTFILESIZE=2000000000
 
+enter_j(){
+    j
+    echo
+    echo $ ls $(pwd)
+    ls
+    zle reset-prompt
+}
+
+enter_f(){
+    f
+    echo
+    echo $ ls $(pwd)
+    ls
+    zle reset-prompt
+}
+
+clear2(){
+    clear
+    zle reset-prompt
+}
+
 
 bindkey '^R' history-incremental-search-backward
+
+zle -N enter_j
+bindkey '^[j' enter_j
+
+zle -N enter_f
+bindkey '^[f' enter_f
+
+zle -N clear2
+bindkey '^[l' clear2
 
 DISABLE_AUTO_UPDATE=true
 
@@ -30,3 +60,5 @@ source ~/git/dotfiles/shell_functions.sh
 source ~/git/dotfiles/alias.sh
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+
