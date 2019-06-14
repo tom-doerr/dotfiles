@@ -254,6 +254,7 @@ set conceallevel=2
 nnoremap <Leader>b I**<Esc>A**<Esc>
 
 set modelines=0
+set nomodeline
 
 " FZF mappings
 imap <c-x><c-p> <plug>(fzf-complete-path)
