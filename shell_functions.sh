@@ -352,3 +352,15 @@ j() {
     fi
     cd "$(autojump -s | sed '/_____/Q; s/^[0-9,.:]*\s*//' |  fzf --height 40% --reverse --inline-info)" 
 }
+
+b() {
+    task add +bu +clarify +stuff $@
+}
+
+B() {
+    b $@
+}
+
+ta() {
+    task add $@
+}
