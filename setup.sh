@@ -59,3 +59,6 @@ fi
 
 # SSH
 ln -s ~/git/private/ssh_config ~/.ssh/config
+
+# Inputrc
+ln -s ~/git/dotfiles/inputrc ~/.inputrc
