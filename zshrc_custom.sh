@@ -49,7 +49,7 @@ zle -N enter_f
 bindkey '^[f' enter_f
 
 zle -N clear2
-bindkey '^[l' clear2
+#bindkey '^[l' clear2
 
 bindkey '^P' history-search-backward
 
