@@ -56,6 +56,10 @@ if ! grep -Fxq "source ~/git/dotfiles/zshrc_custom.sh" ~/.zshrc
 then
 echo "source ~/git/dotfiles/zshrc_custom.sh" >> ~/.zshrc
 fi
+cd ~/.oh-my-zsh/custom/plugins
+git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
+cd
+git clone https://github.com/bhilburn/powerlevel9k.git ~/.oh-my-zsh/custom/themes/powerlevel9k
 
 # SSH
 ln -s ~/git/private/ssh_config ~/.ssh/config
