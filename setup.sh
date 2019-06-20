@@ -63,3 +63,6 @@ git clone https://github.com/bhilburn/powerlevel9k.git ~/.oh-my-zsh/custom/theme
 
 # SSH
 ln -s ~/git/private/ssh_config ~/.ssh/config
+
+# Inputrc
+ln -s ~/git/dotfiles/inputrc ~/.inputrc
