@@ -149,6 +149,7 @@ zle -N clear2
 #bindkey '^[l' clear2
 
 bindkey '^P' history-search-backward
+bindkey '^[a' fzf-file-widget
 
 DISABLE_AUTO_UPDATE=true
 
