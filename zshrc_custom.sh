@@ -160,6 +160,8 @@ source /usr/share/autojump/autojump.sh
 source ~/git/dotfiles/shell_functions.sh
 source ~/git/dotfiles/alias.sh
 
+zplug "supercrabtree/k"
+
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
