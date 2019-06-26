@@ -364,3 +364,7 @@ B() {
 ta() {
     task add $@
 }
+
+we() {
+    curl wttr.in/munich
+}
