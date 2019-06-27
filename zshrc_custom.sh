@@ -139,6 +139,10 @@ clear2(){
     zle reset-prompt
 }
 
+vim_history(){
+    nvim -c ':History<CR>'
+}
+
 
 bindkey '^R' history-incremental-search-backward
 
@@ -153,6 +157,9 @@ bindkey '^[l' clear2
 
 bindkey '^P' history-search-backward
 bindkey '^[a' fzf-file-widget
+
+zle -N vim_history
+bindkey '^[o' vim_history
 
 DISABLE_AUTO_UPDATE=true
 
