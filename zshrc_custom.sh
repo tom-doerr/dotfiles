@@ -107,6 +107,9 @@ export ATHAME_VIM_PERSIST
 ATHAME_TEST_RC=~/.athamerc
 export ATHAME_TEST_RC
 
+KEYTIMEOUT=1
+export KEYTIMEOUT
+
 set -o vi
 setopt EXTENDED_GLOB
 
@@ -153,7 +156,6 @@ bindkey '^[a' fzf-file-widget
 
 DISABLE_AUTO_UPDATE=true
 
-KEYTIMEOUT=1
 
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
 export PATH="/home/tom/anaconda3/bin:$PATH"
