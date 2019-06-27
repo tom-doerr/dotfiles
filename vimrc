@@ -260,3 +260,7 @@ set nomodeline
 imap <c-x><c-p> <plug>(fzf-complete-path)
 map <Leader>f :Rg<CR>
 map <M-;> :Lines<CR>
+map <M-h> :History<CR>
+
+" Statusline
+set statusline+=%f
