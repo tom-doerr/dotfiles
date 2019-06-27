@@ -153,6 +153,8 @@ bindkey '^[a' fzf-file-widget
 
 DISABLE_AUTO_UPDATE=true
 
+KEYTIMEOUT=1
+
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
 export PATH="/home/tom/anaconda3/bin:$PATH"
 
