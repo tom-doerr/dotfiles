@@ -259,3 +259,4 @@ set nomodeline
 " FZF mappings
 imap <c-x><c-p> <plug>(fzf-complete-path)
 map <Leader>f :Rg<CR>
+map <M-;> :Lines<CR>
