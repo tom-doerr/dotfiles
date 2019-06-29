@@ -33,6 +33,8 @@ Plugin 'lervag/vimtex'
 Plugin 'szw/vim-tags'
 Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
+Plugin 'ludovicchabant/vim-gutentags'
+
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -159,8 +161,7 @@ nnoremap å :SyntasticCheck<CR>
 
 " Searching
 nnoremap <Leader>s :Ag 
-nnoremap <m-s> :Ag 
-nnoremap s :Ag 
+nnoremap <m-a> :Ag 
 
 nmap <Leader>8 :Ag <c-r>=expand("<cword>")<cr><cr>
 nmap <m-8> :Ag <c-r>=expand("<cword>")<cr><cr>
@@ -260,7 +261,7 @@ set nomodeline
 imap <c-x><c-p> <plug>(fzf-complete-path)
 map <Leader>f :Rg<CR>
 map <M-;> :Lines<CR>
-map <C-o> :History<CR>
+map <M-s> :History<CR>
 
 " Statusline
 set statusline+=%f
