@@ -112,6 +112,7 @@ export KEYTIMEOUT
 
 set -o vi
 setopt EXTENDED_GLOB
+setopt menu_complete
 
 # Set history file size
 HISTSIZE=1000000000
@@ -155,7 +156,7 @@ bindkey '^[f' enter_f
 zle -N clear2
 bindkey '^[l' clear2
 
-bindkey '^P' history-search-backward
+bindkey '^P' expand-or-complete-prefix
 bindkey '^[a' fzf-file-widget
 
 zle -N vim_history
