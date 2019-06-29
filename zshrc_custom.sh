@@ -159,7 +159,7 @@ bindkey '^P' history-search-backward
 bindkey '^[a' fzf-file-widget
 
 zle -N vim_history
-bindkey '^[S' vim_history
+bindkey '^[s' vim_history
 
 DISABLE_AUTO_UPDATE=true
 
