@@ -112,7 +112,6 @@ export KEYTIMEOUT
 
 set -o vi
 setopt EXTENDED_GLOB
-setopt menu_complete
 
 # Set history file size
 HISTSIZE=1000000000
