@@ -36,6 +36,7 @@ Plugin 'junegunn/fzf.vim'
 "Plugin 'ludovicchabant/vim-gutentags'
 "Plugin 'davidhalter/jedi-vim'
 "Plugin 'deoplete-plugins/deoplete-jedi'
+Plugin 'Shougo/deoplete.nvim'
 
 
 " All of your Plugins must be added before the following line
@@ -268,6 +269,9 @@ map <M-s> :History<CR>
 " Jedi
 let g:jedi#completions_enabled = 0
 autocmd FileType python setlocal completeopt-=preview
+
+ " Use deoplete.
+let g:deoplete#enable_at_startup = 1
 
 " Statusline
 set statusline+=%f
