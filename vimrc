@@ -266,7 +266,8 @@ map <M-;> :Lines<CR>
 map <M-s> :History<CR>
 
 " Jedi
- let g:jedi#completions_enabled = 0
+let g:jedi#completions_enabled = 0
+autocmd FileType python setlocal completeopt-=preview
 
 " Statusline
 set statusline+=%f
