@@ -34,6 +34,8 @@ Plugin 'szw/vim-tags'
 Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
 Plugin 'ludovicchabant/vim-gutentags'
+Plugin 'davidhalter/jedi-vim'
+Plugin 'deoplete-plugins/deoplete-jedi'
 
 
 " All of your Plugins must be added before the following line
@@ -262,6 +264,9 @@ imap <c-x><c-p> <plug>(fzf-complete-path)
 map <Leader>f :Rg<CR>
 map <M-;> :Lines<CR>
 map <M-s> :History<CR>
+
+" Jedi
+ let g:jedi#completions_enabled = 0
 
 " Statusline
 set statusline+=%f
