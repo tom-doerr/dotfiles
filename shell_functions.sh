@@ -284,17 +284,21 @@ iw() {
     task $(get_first_task) mod wait:1h
 }
 
-next() {
-    if [[ $1 =~ ^-?[0-9]+$ ]]
+task_tag() {
+    if [[ $2 =~ ^-?[0-9]+$ ]]
     then
-        task $@ mod +next
+        task "${@:2}" mod $1
     else
-        task add $@ +next
+        task add "${@:2}" $1
     fi
 }
 
 n() {
-    next $@
+    task_tag +next $@
+}
+
+nl() {
+    task_tag +next_local $@
 }
 
 tws() {

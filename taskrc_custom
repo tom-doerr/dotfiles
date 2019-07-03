@@ -1,6 +1,7 @@
 # Theme
 include ~/.task/dark-green-256.theme
 color.tagged=
+color.tag.next_local=rgb055
 
 
 # Change priority values 
@@ -8,6 +9,7 @@ uda.priority.values = H,M,,L
 urgency.uda.priority.L.coefficient=-8
 urgency.uda.priority..coefficient=1.8
 urgency.active.coefficient=50
+urgency.user.tag.next_local.coefficient=10
 
 # Contexts
 context.ingroups=+ingroups or +ing or pro:ing. or pro:ingroups.
