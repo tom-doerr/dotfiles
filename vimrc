@@ -270,8 +270,5 @@ map <M-s> :History<CR>
 let g:jedi#completions_enabled = 0
 autocmd FileType python setlocal completeopt-=preview
 
- " Use deoplete.
-let g:deoplete#enable_at_startup = 1
-
 " Statusline
 set statusline+=%f
