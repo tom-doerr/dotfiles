@@ -372,3 +372,5 @@ ta() {
 we() {
     curl wttr.in/munich
 }
+
+source ~/git/bachelorarbeit/shell_functions_ba.sh
