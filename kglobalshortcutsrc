@@ -18,7 +18,7 @@ _k_friendly_name=KDE Daemon
 display=Display\tMeta+P,Display\tMeta+P,Switch Display
 
 [khotkeys]
-_k_friendly_name=KDE Daemon
+_k_friendly_name=System Settings Module
 {0639982a-c76c-4b36-9df2-52dd30cd6cec}=Meta+Shift+Print,none,Take Rectangular Region Screenshot
 {48e692b2-0744-44a6-afc7-11fce3e102a2}=Meta+W,none,chromium
 {647b737e-b42f-4ec3-bd4f-3b8702534fd8}=Print,none,Start Screenshot Tool
@@ -143,10 +143,10 @@ Window One Desktop Up=none,none,Window One Desktop Up
 Window One Desktop to the Left=none,none,Window One Desktop to the Left
 Window One Desktop to the Right=none,none,Window One Desktop to the Right
 Window Operations Menu=Alt+F3,Alt+F3,Window Operations Menu
-Window Pack Down=none,none,Pack Window Down
-Window Pack Left=none,none,Pack Window to the Left
-Window Pack Right=none,none,Pack Window to the Right
-Window Pack Up=none,none,Pack Window Up
+Window Pack Down=\tMeta+Shift+J,none,Pack Window Down
+Window Pack Left=\tMeta+Shift+H,none,Pack Window to the Left
+Window Pack Right=\tMeta+Shift+L,none,Pack Window to the Right
+Window Pack Up=\tMeta+Shift+K,none,Pack Window Up
 Window Quick Tile Bottom=Meta+Down\tMeta+Alt+J,Meta+Down,Quick Tile Window to the Bottom
 Window Quick Tile Bottom Left=none,none,Quick Tile Window to the Bottom Left
 Window Quick Tile Bottom Right=none,none,Quick Tile Window to the Bottom Right
