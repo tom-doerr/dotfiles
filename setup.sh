@@ -67,3 +67,6 @@ ln -s ~/git/private/ssh_config ~/.ssh/config
 
 # Inputrc
 ln -s ~/git/dotfiles/inputrc ~/.inputrc
+
+# KDE
+ln -s ~/git/dotfiles/kglobalshortcutsrc ~/.config/klglobalshortcutsrc
