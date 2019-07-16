@@ -20,21 +20,15 @@ display=Display\tMeta+P,Display\tMeta+P,Switch Display
 [khotkeys]
 _k_friendly_name=KDE Daemon
 {029f5b18-cd00-443b-8378-0d4590de19e7}=Meta+G,none,New Action
-{0639982a-c76c-4b36-9df2-52dd30cd6cec}=Meta+Shift+Print,none,Take Rectangular Region Screenshot
-{153b7941-c681-4ea3-8d86-c95e36fecfca}=Meta+G,none,guake
 {26ba0a36-0793-4766-aebe-576bac84d72b}=none,none,test
-{48e692b2-0744-44a6-afc7-11fce3e102a2}=Meta+W,none,chromium
-{647b737e-b42f-4ec3-bd4f-3b8702534fd8}=Print,none,Start Screenshot Tool
+{51d426ef-de7b-4e8d-a8c2-68af333e71b2}=Meta+B,none,gt base
 {812e152c-58ef-4f60-a81e-c5f9ccb28cc9}=Meta+T,none,gnome-terminal
-{a2bd9c9c-6402-4cd5-895c-5abb1bd15ac2}=Meta+Print,none,Take Active Window Screenshot
-{aeb54be1-a95f-44e3-9126-8c1d9db72b0c}=Meta+T,none,gnome-terminal
-{cc1d0cad-622a-4b80-ab60-ec2894921840}=Print,none,Start Screenshot Tool
+{cc1d0cad-622a-4b80-ab60-ec2894921840}=none,none,Start Screenshot Tool
 {d03619b6-9b3c-48cc-9d9c-a2aadb485550}=,none,Search
 {eaf695d6-164f-4173-8a69-d88962fb17a3}=Shift+Print,none,Take Full Screen Screenshot
-{f08b6b83-2c8c-4e1b-9598-ebefe2fefde7}=Meta+Shift+Print,none,Take Rectangular Region Screenshot
+{f08b6b83-2c8c-4e1b-9598-ebefe2fefde7}=none,none,Take Rectangular Region Screenshot
 {f17e30a7-e0c3-47e4-b2b1-9f8d864c2a7e}=Meta+W,none,chromium
-{f27e1e72-a33c-4d88-90e3-631a5b3a2471}=Meta+Print,none,Take Active Window Screenshot
-{fca68048-1d15-4b5e-8e7d-d6754fc592d1}=Shift+Print,none,Take Full Screen Screenshot
+{f27e1e72-a33c-4d88-90e3-631a5b3a2471}=none,none,Take Active Window Screenshot
 
 [kmix]
 _k_friendly_name=Audio Volume
@@ -201,7 +195,7 @@ Window to Screen 4=none,none,Window to Screen 4
 Window to Screen 5=none,none,Window to Screen 5
 Window to Screen 6=none,none,Window to Screen 6
 Window to Screen 7=none,none,Window to Screen 7
-_k_friendly_name=KWin
+_k_friendly_name=System Settings
 view_actual_size=,Meta+0,Actual Size
 view_zoom_in=Meta+=,Meta+=,Zoom In
 view_zoom_out=Meta+-,Meta+-,Zoom Out
