@@ -325,6 +325,8 @@ kb() {
 schlafen() {
     ts schlafen
     clear
+    qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
+    xset dpms force off
 }
 
 # Source: https://github.com/junegunn/fzf/wiki/Examples  (cd())
