@@ -115,7 +115,10 @@ setopt EXTENDED_GLOB
 
 # Set history file size
 HISTSIZE=1000000000
+export HISTSIZE
+
 HISTFILESIZE=2000000000
+export HISTFILESIZE
 
 enter_j(){
     j
