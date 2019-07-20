@@ -1,6 +1,6 @@
 #!/bin/bash
 
-/usr/bin/keychain $HOME/.ssh/id_rsa
+/usr/bin/keychain --quiet --quick $HOME/.ssh/id_rsa
 
 if [[ $HOST == "" ]]
 then
