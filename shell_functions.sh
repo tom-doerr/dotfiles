@@ -375,4 +375,11 @@ we() {
     curl wttr.in/munich
 }
 
+gu() {
+    git commit $@
+    git push --quiet > /dev/null &
+}
+
+
+
 source ~/git/bachelorarbeit/shell_functions_ba.sh
