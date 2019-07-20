@@ -64,6 +64,7 @@ curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/instal
 
 # SSH
 ln -s ~/git/private/ssh_config ~/.ssh/config
+sudo apt-get install keychain
 
 # Inputrc
 ln -s ~/git/dotfiles/inputrc ~/.inputrc
