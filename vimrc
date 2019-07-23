@@ -274,6 +274,6 @@ autocmd FileType python setlocal completeopt-=preview
 set statusline+=%f
 
 " Latex insert todo
-map <Leader>t o%todo: 
-map <Leader>r o%todo: add reference  
+map <M-t><C-o> o%todo: 
+map <M-r><C-o> o%todo: add reference<CR>
 
