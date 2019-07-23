@@ -275,4 +275,5 @@ set statusline+=%f
 
 " Latex insert todo
 map <Leader>t o%todo: 
+map <Leader>r o%todo: add reference  
 
