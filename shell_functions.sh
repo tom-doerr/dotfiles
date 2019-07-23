@@ -329,14 +329,21 @@ schlafen() {
     xset dpms force off
 }
 
-# Source: https://github.com/junegunn/fzf/wiki/Examples  (cd())
+# Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
 function f() {
     if [[ "$#" != 0 ]]; then
         builtin cd "$@";
         return
     fi
     while true; do
-        local lsd=$(echo ".." && ls -p | grep '/$' | sed 's;/$;;')
+        local dir_and_links=$(for e in $(echo ".." && ls -p )
+                                do
+                                    if [[ -d $e ]]
+                                    then
+                                        echo $e
+                                    fi
+                                done)
+        local lsd=$(echo $dir_and_links | sed 's;/$;;')
         local dir="$(printf '%s\n' "${lsd[@]}" |
             fzf --reverse --preview '
                 __cd_nxt="$(echo {})";
