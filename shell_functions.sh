@@ -387,6 +387,9 @@ gu() {
     git push --quiet > /dev/null &
 }
 
+time() {
+    /usr/bin/time $@
+}
 
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
