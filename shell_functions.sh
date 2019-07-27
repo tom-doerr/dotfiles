@@ -387,5 +387,16 @@ gu() {
     git push --quiet > /dev/null &
 }
 
+sd() {
+    if [[ $DISPLAY == ":0" ]]
+    then
+        DISPLAY='localhost:10.0'
+    elif [[ $DISPLAY =~ localhost:1.*\.0 ]]
+    then
+        DISPLAY=':0'
+    fi
+    echo $DISPLAY
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
