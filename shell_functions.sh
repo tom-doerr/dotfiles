@@ -379,7 +379,7 @@ ta() {
 }
 
 we() {
-    curl wttr.in/munich
+    curl wttr.in/garching_bei_muenchen
 }
 
 gu() {
