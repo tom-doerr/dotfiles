@@ -37,6 +37,7 @@ Plugin 'junegunn/fzf.vim'
 Plugin 'davidhalter/jedi-vim'
 "Plugin 'deoplete-plugins/deoplete-jedi'
 Plugin 'Shougo/deoplete.nvim'
+Plugin 'morhetz/gruvbox'
 
 
 " All of your Plugins must be added before the following line
@@ -69,7 +70,7 @@ map <Space> H<Plug>(easymotion-w)
 " autosave (post by Sameer https://stackoverflow.com/questions/6991638/how-to-auto-save-a-file-every-1-second-in-vim)
 " autocmd TextChanged,TextChangedI <buffer> silent write
 
-colorscheme murphy
+colorscheme gruvbox
 
 " post by ying17zi https://stackoverflow.com/questions/6778961/alt-key-shortcuts-not-working-on-gnome-terminal-with-vim
 " Alt-j/k to add a blank line
@@ -275,5 +276,7 @@ set statusline+=%f
 
 " Latex insert todo
 map <M-t><C-o> o%todo: 
+map <Leader>t <C-o> o%todo: 
 map <M-r><C-o> o%todo: add reference<CR>
+map <Leader>r <C-o> o%todo: add reference<CR>
 
