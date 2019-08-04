@@ -398,5 +398,9 @@ sd() {
     echo $DISPLAY
 }
 
+h() {
+    task report1
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
