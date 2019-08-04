@@ -42,6 +42,15 @@ stop_taskwarrior_timewarrior() {
         # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
 
+end_taskwarrior_timewarrior() {
+    if [[ "$(task +ACTIVE done 2>&1)" = *"No tasks specified."* ]] 
+    then
+        timew stop
+    fi
+}
+
+
+
 ts_start_task() {
     while true; do
         task start "$@"
@@ -58,12 +67,12 @@ ts_start_task() {
 ts() {
     if [[ $1 == "" ]] 
     then
-        stop_taskwarrior_timewarrior
+        end_taskwarrior_timewarrior
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
-        stop_taskwarrior_timewarrior
-        ts_start_task $uuid
+        end_taskwarrior_timewarrior
+        task start $uuid
     elif [[ $1 = "stop" ]]
     then
         uuids=$(task +ACTIVE _uuid)
