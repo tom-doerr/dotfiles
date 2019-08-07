@@ -64,6 +64,11 @@ ts_start_task() {
 
 }
 
+get_active_task_data() {
+    grep ' start:"[0-9]*" ' ~/.task/pending.data
+}
+
+
 ts() {
     if [[ $1 == "" ]] 
     then
