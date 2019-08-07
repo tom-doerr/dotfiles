@@ -180,6 +180,16 @@ pa() {
 
 rb() {
     tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
+    while true
+    do
+        read command
+    if [[ $command == "" ]]
+    then
+        id
+    else
+        eval $command
+    fi
+    done
 }
 
 sm() {
