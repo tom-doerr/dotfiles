@@ -40,6 +40,7 @@ Plugin 'Shougo/deoplete.nvim'
 Plugin 'morhetz/gruvbox'
 Plugin 'tbabej/taskwiki'
 Plugin 'farseer90718/vim-taskwarrior'
+Plugin 'powerman/vim-plugin-AnsiEsc'
 
 
 " All of your Plugins must be added before the following line
@@ -282,4 +283,9 @@ map <M-t><C-o> o%todo:
 map <Leader>t <C-o> o%todo: 
 map <M-r><C-o> o%todo: add reference<CR>
 map <Leader>r <C-o> o%todo: add reference<CR>
+
+" Taskwiki
+map <Leader>s :TaskWikiStart<CR>
+map <Leader>d :TaskWikiDone<CR>
+map <Leader>D :TaskWikiDelete<CR>
 
