@@ -146,6 +146,10 @@ vim_history(){
     nvim -c ':History<CR>'
 }
 
+update_display_variable(){
+    $(tmux show-environment | grep '^DISPLAY=')
+}
+
 
 bindkey '^R' history-incremental-search-backward
 
@@ -165,6 +169,11 @@ zle -N vim_history
 bindkey '^[s' vim_history
 
 DISABLE_AUTO_UPDATE=true
+
+#if [[ -n $TMUX ]]
+#then
+#    add-zsh-hook precmd update_display_variable
+#fi
 
 
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
