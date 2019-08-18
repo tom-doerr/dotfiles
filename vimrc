@@ -38,6 +38,8 @@ Plugin 'davidhalter/jedi-vim'
 "Plugin 'deoplete-plugins/deoplete-jedi'
 Plugin 'Shougo/deoplete.nvim'
 Plugin 'morhetz/gruvbox'
+Plugin 'tbabej/taskwiki'
+Plugin 'farseer90718/vim-taskwarrior'
 
 
 " All of your Plugins must be added before the following line
@@ -70,6 +72,7 @@ map <Space> H<Plug>(easymotion-w)
 " autosave (post by Sameer https://stackoverflow.com/questions/6991638/how-to-auto-save-a-file-every-1-second-in-vim)
 " autocmd TextChanged,TextChangedI <buffer> silent write
 
+"let g:gruvbox_italic=1
 colorscheme gruvbox
 
 " post by ying17zi https://stackoverflow.com/questions/6778961/alt-key-shortcuts-not-working-on-gnome-terminal-with-vim
