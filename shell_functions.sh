@@ -426,5 +426,9 @@ h() {
     task report1
 }
 
+ww(){
+    nvim -c 'VimwikiIndex'
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
