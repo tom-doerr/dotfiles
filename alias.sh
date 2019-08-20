@@ -43,3 +43,5 @@ alias pip='pip3'
 alias nm='neomutt '
 
 alias pycharm='/opt/pycharm-2019.1.1/bin/pycharm.sh'
+
+alias wb='vi ~/vimwiki/Bachelorarbeit.wiki'
