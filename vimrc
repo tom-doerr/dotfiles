@@ -41,6 +41,7 @@ Plugin 'morhetz/gruvbox'
 Plugin 'tbabej/taskwiki'
 Plugin 'farseer90718/vim-taskwarrior'
 Plugin 'powerman/vim-plugin-AnsiEsc'
+Plugin 'dpelle/vim-LanguageTool'
 
 
 " All of your Plugins must be added before the following line
@@ -291,3 +292,5 @@ map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>
 
 autocmd BufRead *.wiki let g:auto_save = 0
+
+let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandline.jar'
