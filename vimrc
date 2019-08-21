@@ -288,4 +288,6 @@ map <Leader>r <C-o> o%todo: add reference<CR>
 map <Leader>s :TaskWikiStart<CR>
 map <Leader>d :TaskWikiDone<CR>
 map <Leader>D :TaskWikiDelete<CR>
+map <Leader>S :TaskWikiStop<CR>
 
+autocmd BufRead *.wiki let g:auto_save = 0
