@@ -433,5 +433,12 @@ ww(){
     nvim -c 'VimwikiIndex'
 }
 
+add_pro() {
+    projects_filename=~/projects.wiki
+    echo "" >> $projects_filename
+    echo "== $1 | pro:$1 ==" >> $projects_filename
+    echo "" >> $projects_filename
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
