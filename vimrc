@@ -294,3 +294,6 @@ map <Leader>S :TaskWikiStop<CR>
 autocmd BufRead *.wiki let g:auto_save = 0
 
 let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandline.jar'
+
+map <M-w> :w<CR>
+map <M-e> :e<CR>
