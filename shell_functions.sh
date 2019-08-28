@@ -440,5 +440,9 @@ add_pro() {
     echo "" >> $projects_filename
 }
 
+ai(){
+    b ai $@
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
