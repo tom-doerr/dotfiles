@@ -33,10 +33,10 @@ context.ai=+ai or pro:ai.
 context.mt=+mt
 
 ## Home
-context.h=(-admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt) or +next
+context.h=(-ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt) or +next
 
 ## Default not home
-context.nh=(-admin -sm -lrz -h -home -hobby -ing -ba -stat -theo -master -mt) or (+next and -h and -home)
+context.nh=(-ai -admin -sm -lrz -h -home -hobby -ing -ba -stat -theo -master -mt) or (+next and -h and -home)
 
 
 
