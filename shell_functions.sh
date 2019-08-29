@@ -357,13 +357,13 @@ schlafen() {
 }
 
 # Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
-function f() {
+f() {
     if [[ "$#" != 0 ]]; then
         builtin cd "$@";
         return
     fi
     while true; do
-        local dir_and_links=$(for e in $(echo ".." && ls -p )
+        local dir_and_links=$(for e in $(echo ".." && ls -pA )
                                 do
                                     if [[ -d $e ]]
                                     then
