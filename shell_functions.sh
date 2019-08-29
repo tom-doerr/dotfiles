@@ -429,7 +429,7 @@ h() {
     task report1
 }
 
-ww(){
+ww() {
     nvim -c 'VimwikiIndex'
 }
 
@@ -440,8 +440,12 @@ add_pro() {
     echo "" >> $projects_filename
 }
 
-ai(){
+ai() {
     b ai $@
+}
+
+tai() {
+    ta +ai $@
 }
 
 
