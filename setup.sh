@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Basic
+apt install wget
+
 # IPython
 ln -s ~/git/dotfiles/ipython_config.py ~/.ipython/profile_default/ipython_config.py
 
