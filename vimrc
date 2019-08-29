@@ -291,6 +291,7 @@ map <Leader>d :TaskWikiDone<CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>
 
+autocmd BufRead * let g:auto_save = 1
 autocmd BufRead *.wiki let g:auto_save = 0
 
 let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandline.jar'
