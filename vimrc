@@ -280,7 +280,7 @@ autocmd FileType python setlocal completeopt-=preview
 set statusline+=%f
 
 " Latex insert todo
-map <M-t><C-o> o%todo: 
+"map <M-t><C-o> o%todo: 
 map <Leader>t <C-o> o%todo: 
 map <M-r><C-o> o%todo: add reference<CR>
 map <Leader>r <C-o> o%todo: add reference<CR>
@@ -290,6 +290,7 @@ map <Leader>s :TaskWikiStart<CR>
 map <Leader>d :TaskWikiDone<CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>
+map <M-t> o* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
 autocmd BufRead *.wiki let g:auto_save = 0
