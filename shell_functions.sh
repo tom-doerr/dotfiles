@@ -406,7 +406,7 @@ ta() {
 }
 
 we() {
-    curl wttr.in/garching_bei_muenchen
+    curl v2.wttr.in/garching_bei_muenchen | head -31
 }
 
 gu() {
