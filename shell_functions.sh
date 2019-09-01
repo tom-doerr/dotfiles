@@ -441,7 +441,7 @@ add_pro() {
 }
 
 ai() {
-    b ai $@
+    b ai $@ +ai
 }
 
 tai() {
