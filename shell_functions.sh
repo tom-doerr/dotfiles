@@ -448,5 +448,9 @@ tai() {
     ta +ai $@
 }
 
+com() {
+    task end.after:today+5h completed
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
