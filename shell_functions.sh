@@ -460,5 +460,14 @@ hcoff() {
     hueadm light 6 off
 }
 
+hc() {
+    if [[ $(hueadm light 6) == *"on: true"* ]] 
+    then
+        hueadm light 6 off
+    else
+        hueadm light 6 on
+    fi
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
