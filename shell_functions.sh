@@ -452,5 +452,13 @@ com() {
     task end.after:today+5h completed
 }
 
+hcon() {
+    hueadm light 6 on
+}
+
+hcoff() {
+    hueadm light 6 off
+}
+
 
 source ~/git/bachelorarbeit/shell_functions_ba.sh
