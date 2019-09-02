@@ -74,3 +74,6 @@ ln -s ~/git/dotfiles/inputrc ~/.inputrc
 
 # KDE
 ln -s ~/git/dotfiles/kglobalshortcutsrc ~/.config/klglobalshortcutsrc
+
+# Hueadm
+ln -s ~/git/private/hueadm.json ~/.hueadm.json
