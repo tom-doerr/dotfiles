@@ -284,7 +284,8 @@ set statusline+=%f
 map <Leader>t <C-o> o%todo: 
 map <M-r><C-o> o%todo: add reference<CR>
 map <Leader>r <C-o> o%todo: add reference<CR>
-map <Leader>to o. -- Tom}<C-o>I\todo[inline]{@Tom: 
+map <Leader>to o. -- Tom}<C-o>I\todo[inline]{
+map <Leader>ts o. -- Tom}<C-o>I\todo[inline]{@Tom: 
 
 " Taskwiki
 map <Leader>s :TaskWikiStart<CR>
