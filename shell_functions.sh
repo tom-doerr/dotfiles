@@ -188,7 +188,7 @@ rb() {
         read command
     if [[ $command == "" ]]
     then
-        id
+        bucket_item_done
     else
         eval $command
     fi
@@ -467,6 +467,10 @@ hc() {
     else
         hueadm light 6 on
     fi
+}
+
+bucket_item_done() {
+    task done $(get_first_task '+bu +PENDING')
 }
 
 
