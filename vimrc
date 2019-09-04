@@ -301,3 +301,6 @@ let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandl
 
 map <M-w> :w<CR>
 map <M-e> :e<CR>
+
+" vim-taskwarrior
+let g:task_rc_override = 'rc._forcecolor=off'
