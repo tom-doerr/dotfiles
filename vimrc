@@ -288,9 +288,9 @@ map <Leader>to o. -- Tom}<C-o>I\todo[inline]{TODO:
 map <Leader>ts o. -- Tom}<C-o>I\todo[inline]{@Tom: TODO:  
 
 " Taskwiki
-map <Leader>s :!task +ACTIVE done &<CR>:TaskWikiStart<CR>
+map <Leader>s :e<CR>:TaskWikiMod +next_twt<CR>:!task +ACTIVE done; task +next_twt +PENDING start<CR><CR>:e<CR>
 map <Leader>c :TaskWikiDone<CR>
-map <Leader>d :!source ~/.zshrc && td<CR><CR>
+map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>
 map <M-t> j<M-j>Vs* [ ] 
