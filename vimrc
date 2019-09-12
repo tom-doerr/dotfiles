@@ -288,11 +288,12 @@ map <Leader>to o. -- Tom}<C-o>I\todo[inline]{TODO:
 map <Leader>ts o. -- Tom}<C-o>I\todo[inline]{@Tom: TODO:  
 
 " Taskwiki
-map <Leader>s :TaskWikiStart<CR>
-map <Leader>d :TaskWikiDone<CR>
+map <Leader>s :!task +ACTIVE done &<CR>:TaskWikiStart<CR>
+map <Leader>c :TaskWikiDone<CR>
+map <Leader>d :!source ~/.zshrc && td<CR><CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>
-map <M-t> o* [ ] 
+map <M-t> j<M-j>Vs* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
 autocmd BufRead *.wiki let g:auto_save = 0
