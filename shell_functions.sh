@@ -171,6 +171,9 @@ td() {
     if [[ $1 == "" ]]
     then
         rt "$(t _get $(t +ACTIVE _uuid).description)"
+        current_task_tags=$(task _get $(task +ACTIVE _uuid).tags)
+        task +ACTIVE done
+        eval "tw start ${current_task_tags/,/ }"
     else
         task done $@
     fi
