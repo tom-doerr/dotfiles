@@ -473,5 +473,3 @@ bucket_item_done() {
     task done $(get_first_task '+bu +PENDING')
 }
 
-
-source ~/git/bachelorarbeit/shell_functions_ba.sh
