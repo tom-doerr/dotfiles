@@ -476,3 +476,25 @@ bucket_item_done() {
     task done $(get_first_task '+bu +PENDING')
 }
 
+splay() {
+    spotifycli --play
+}
+
+spause() {
+    spotifycli --pause
+}
+
+sstop() {
+    spause
+}
+
+snext() {
+    spotifycli --next
+}
+
+sprev() {
+    spotifycli --prev
+}
+
+
+
