@@ -292,7 +292,7 @@ map <Leader>s :e<CR>:TaskWikiMod +next_twt<CR>:!task +ACTIVE done; task +next_tw
 map <Leader>c :TaskWikiDone<CR>
 map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
 map <Leader>D :TaskWikiDelete<CR>
-map <Leader>S :TaskWikiStop<CR>
+map <Leader>S :TaskWikiStop<CR><CR>
 map <M-t> j<M-j>Vs* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
