@@ -172,8 +172,8 @@ td() {
     then
         current_task_tags=$(task _get $(task +ACTIVE _uuid).tags)
         task +ACTIVE done
-        eval "tw start ${current_task_tags//,/ }"
-        rt next_twt
+        tags_without_next_twt=${current_task_tags//next_twt/}
+        eval "tw start ${tags_without_next_twt//,/ }"
     else
         task done $@
     fi
