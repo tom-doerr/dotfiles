@@ -293,7 +293,7 @@ map <Leader>c :TaskWikiDone<CR>
 map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR><CR>
-map <M-t> j<M-j>Vs* [ ] 
+map <M-t> <M-j>jVs* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
 autocmd BufRead *.wiki let g:auto_save = 0
