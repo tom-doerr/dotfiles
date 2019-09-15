@@ -504,7 +504,7 @@ ntest() {
     new_test_name=$(expr $last_test + 1)
     if [[ $1 == "" ]]
     then
-        cp $last_test $new_test_name
+        cp template $new_test_name
     else
         cp $1 $new_test_name
     fi
