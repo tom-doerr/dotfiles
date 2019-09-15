@@ -496,5 +496,20 @@ sprev() {
     spotifycli --prev
 }
 
+ntest() {
+    tests_path=~/git/bachelorarbeit/tests 
+    cd $tests_path
+    f=$(find)
+    last_test=$(echo ${f//\.\//} | sort -n | tail -n 1)
+    new_test_name=$(expr $last_test + 1)
+    if [[ $1 == "" ]]
+    then
+        cp $last_test $new_test_name
+    else
+        cp $1 $new_test_name
+    fi
+    cd -
+    nvim $tests_path/$new_test_name
+}
 
 
