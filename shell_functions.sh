@@ -512,4 +512,7 @@ ntest() {
     nvim $tests_path/$new_test_name
 }
 
+nh() {
+    task add $@ +h +next
+}
 
