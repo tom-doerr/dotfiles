@@ -305,3 +305,5 @@ map <M-e> :e<CR>
 
 " vim-taskwarrior
 let g:task_rc_override = 'rc._forcecolor=off'
+
+imap <M-k> <C-k>
