@@ -307,3 +307,5 @@ map <M-e> :e<CR>
 let g:task_rc_override = 'rc._forcecolor=off'
 
 imap <M-k> <C-k>
+
+let g:vim_markdown_math = 1
