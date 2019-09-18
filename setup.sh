@@ -4,6 +4,7 @@ apt install -y wget python3-pip
 
 # IPython
 pip3 install ipython
+mkdir -p ~/.ipython/profile_default
 ln -s ~/git/dotfiles/ipython_config.py ~/.ipython/profile_default/ipython_config.py
 
 # Inputrc
@@ -17,7 +18,7 @@ ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
 cd ~/.vim/bundle/vimproc.vim && make
 
 # Tmux
-sudo apt-get install -y tmux, xclip
+sudo apt-get install -y tmux xclip
 git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
 sudo apt-get install -y fonts-powerline
@@ -49,7 +50,7 @@ cd
 git clone https://github.com/supercrabtree/k $ZSH_CUSTOM/plugins/k
 curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 
-if [[ "$1" != "basic"]]
+if [[ "$1" != "basic" ]]
 then
     # Taskwarrior
     ln -s ~/Nextcloud/sonstiges/task ~/.task
