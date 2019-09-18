@@ -11,7 +11,7 @@ if [[ "$HOST" == "tom-Desktop-18" ]]
 then
     ZSH_THEME="robbyrussell"
 else
-    ZSH_THEME="agnoster"
+    ZSH_THEME="blinks"
 fi
 
 # Set list of themes to load
