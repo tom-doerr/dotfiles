@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 apt install -y wget python3-pip
 
