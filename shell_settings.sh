@@ -8,8 +8,8 @@ then
 elif [[ $HOSTNAME == "" ]]
 then
     source $HOME/.keychain/$HOST-sh
-else
-    echo 'Error! Can not get hostname, both $HOST and $HOSTNAME are empty.' 1>&2
-    sleep 0.2
-    #exit 1
+#else
+#    echo 'Error! Can not get hostname, both $HOST and $HOSTNAME are empty.' 1>&2
+#    sleep 0.2
+#    #exit 1
 fi
