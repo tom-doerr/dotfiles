@@ -42,6 +42,7 @@ Plugin 'tbabej/taskwiki'
 Plugin 'farseer90718/vim-taskwarrior'
 Plugin 'powerman/vim-plugin-AnsiEsc'
 Plugin 'dpelle/vim-LanguageTool'
+Plugin 'SirVer/ultisnips'
 
 
 " All of your Plugins must be added before the following line
@@ -292,7 +293,7 @@ map <Leader>s :e<CR>:TaskWikiMod +next_twt<CR>:!task +ACTIVE done; task +next_tw
 map <Leader>c :TaskWikiDone<CR>
 map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
 map <Leader>D :TaskWikiDelete<CR>
-map <Leader>S :TaskWikiStop<CR><CR>
+map <Leader>S :TaskWikiStop<CR>:TaskWikiMod -next_twt<CR>
 map <M-t> <M-j>jVs* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
@@ -309,3 +310,12 @@ let g:task_rc_override = 'rc._forcecolor=off'
 imap <M-k> <C-k>
 
 let g:vim_markdown_math = 1
+
+" Ultisnips
+let g:UltiSnipsExpandTrigger="<tab>"
+
+" vimwiki
+map <Leader>1 I =<C-o>0= 
+map <Leader>2 I ==<C-o>0== 
+map <Leader>3 I ===<C-o>0=== 
+map <Leader>4 I ====<C-o>0==== 
