@@ -516,3 +516,9 @@ nh() {
     task add $@ +h +next
 }
 
+kido() {
+    container_name="$(docker ps --no-trunc | ag output_audio/"$1"/ | awk 'END {print $NF}')"
+    docker kill "$container_name"
+}
+
+
