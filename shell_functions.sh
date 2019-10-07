@@ -522,4 +522,7 @@ kido() {
     docker kill "$container_name"
 }
 
+bms() {
+    bm status
+}
 
