@@ -31,6 +31,11 @@ context.theo=+theo or pro:theo.
 context.master=+master or pro:master.
 context.ai=+ai or pro:ai.
 context.mt=+mt
+context.idl=+idl
+context.vwl=+vwl
+context.nlp=+nlp
+context.ml=+ml
+context.gki=+gki
 
 ## Home
 context.h=(-ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt) or +next
