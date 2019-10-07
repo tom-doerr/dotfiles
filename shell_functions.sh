@@ -94,18 +94,19 @@ ts() {
             ts "${@:2}"
         fi
     else
-        tags_to_add=''
-        for e in $@
-        do
-            tags_to_add_tmp=$(cat ~/git/private/tags.config | jq -r "."$e )
-            if [[ $tags_to_add_tmp != "null" ]]
-            then
-                tags_to_add=$tags_to_add" "$tags_to_add_tmp
-                echo "tags_to_add: "$tags_to_add
-            fi
-        done    
+        #tags_to_add=''
+        #for e in $@
+        #do
+        #    tags_to_add_tmp=$(cat ~/git/private/tags.config | jq -r "."$e )
+        #    if [[ $tags_to_add_tmp != "null" ]]
+        #    then
+        #        tags_to_add=$tags_to_add" "$tags_to_add_tmp
+        #        echo "tags_to_add: "$tags_to_add
+        #    fi
+        #done    
+        tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
         stop_taskwarrior_timewarrior
-        timew start $tags_to_add $@
+        eval "timew start $tags_to_add $@"
     fi
 }
 
