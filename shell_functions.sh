@@ -171,8 +171,8 @@ swatch() {
 td() {
     if [[ $1 == "" ]]
     then
-        current_task_tags=$(task _get $(task +ACTIVE _uuid).tags)
-        task +ACTIVE done
+        current_task_tags=$(task _get $(task rc.context=none +ACTIVE _uuid).tags)
+        task rc.context=none +ACTIVE done
         tags_without_next_twt=${current_task_tags//next_twt/}
         eval "tw start ${tags_without_next_twt//,/ }"
     else
