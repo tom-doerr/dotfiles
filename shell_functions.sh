@@ -526,3 +526,23 @@ bms() {
     bm status
 }
 
+# Energy logging
+add_energy_level_entry_log() {
+    echo "$(date +"%s"), $1" >> ~/Nextcloud/documents/energy_log
+}
+
+ej() {
+    add_energy_level_entry_log 0
+}
+    
+ek() {
+    add_energy_level_entry_log 1
+}
+
+el() {
+    add_energy_level_entry_log 2
+}
+
+
+
+
