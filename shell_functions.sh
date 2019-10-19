@@ -355,6 +355,13 @@ kb() {
 
 schlafen() {
     ts schlafen
+    bash -c '
+    hue_lights="4 6" 
+    for e in $hue_lights 
+    do                    
+        hueadm light $e off 
+    done                    
+    '
     clear
     qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
     xset dpms force off
@@ -464,13 +471,26 @@ hcoff() {
     hueadm light 6 off
 }
 
-hc() {
-    if [[ $(hueadm light 6) == *"on: true"* ]] 
+toggle_light() {
+    if [[ $(hueadm light $1) == *"on: true"* ]] 
     then
-        hueadm light 6 off
+        hueadm light $1 off
     else
-        hueadm light 6 on
+        hueadm light $1 on
     fi
+}
+
+hc() {
+    toggle_light 6
+}
+
+hw() {
+    toggle_light 4
+}
+
+ha() {
+    toggle_light 4
+    toggle_light 6
 }
 
 bucket_item_done() {
