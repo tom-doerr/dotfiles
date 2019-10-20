@@ -563,6 +563,28 @@ el() {
     add_energy_level_entry_log 2
 }
 
+gkii() {
+    ta +gki inf $@
+}
 
+vwli() {
+    ta +vwl inf $@
+}
+
+gmmi() {
+    ta +gmm inf $@
+}
+
+mli() {
+    ta +ml inf $@
+}
+
+idli() {
+    ta +idl inf $@
+}
+
+nlpi() {
+    ta +nlp inf $@
+}
 
 
