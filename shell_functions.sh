@@ -104,6 +104,10 @@ ts() {
         #        echo "tags_to_add: "$tags_to_add
         #    fi
         #done    
+        if [[ "$(task _context)" == *$(printf "$1\n")* ]]
+        then
+            tc $1
+        fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
         stop_taskwarrior_timewarrior
         eval "timew start $tags_to_add $@"
