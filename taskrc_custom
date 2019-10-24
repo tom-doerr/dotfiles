@@ -32,6 +32,7 @@ context.master=+master or pro:master.
 context.ai=+ai and pro:
 context.mt=+mt
 context.idl=+idl
+context.gmm=+gmm
 context.vwl=+vwl
 context.nlp=+nlp
 context.ml=+ml
