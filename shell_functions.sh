@@ -481,6 +481,7 @@ toggle_light() {
         hueadm light $1 off
     else
         hueadm light $1 on
+        hueadm light $1 \=100% &> /dev/null; true
     fi
 }
 
