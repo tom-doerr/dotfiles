@@ -592,4 +592,19 @@ nlpi() {
     ta +nlp inf $@
 }
 
+tsf() {
+    eval 'echo "   "; timew su $(date --date "5 hours ago" +%Y-%m-%d)T05:00:00 - tomorrow '$1' | tail -2 | head -1 | { read first rest; echo $first; }'
+}
+
+tsfa() {
+    bash -c '
+        source ~/git/dotfiles/shell_functions.sh
+        TAGS="prof idl vwl nlp ml gki gmm"
+        for e in $TAGS
+        do
+            tsf $e
+            echo $e
+        done
+    '
+}
 
