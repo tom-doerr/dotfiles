@@ -608,3 +608,7 @@ tsfa() {
     '
 }
 
+gs() {
+    ~/git/scripts/goal_status_time.py
+}
+
