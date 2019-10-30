@@ -616,3 +616,6 @@ gs() {
     ~/git/scripts/goal_status_time.py
 }
 
+tabc() {
+    xinput map-to-output 13 DP-2
+}
