@@ -368,7 +368,11 @@ schlafen() {
     '
     clear
     qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
-    xset dpms force off
+    while true
+    do
+        xset dpms force off
+        sleep 10;
+    done
 }
 
 # Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
