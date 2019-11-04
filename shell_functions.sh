@@ -71,11 +71,27 @@ get_active_task_data() {
     grep ' start:"[0-9]*" ' ~/.task/pending.data
 }
 
+set_activity() {
+    qdbus org.kde.ActivityManager /ActivityManager/Activities SetCurrentActivity "$1"
+}
+
+choose_activity() {
+    if [[ $1 == *"ai"* ]]
+    then
+        set_activity a82a5cd2-bd0a-4c51-b5a7-5c1e1e3a06cd
+    elif [[ $1 == *"uni"* ]]
+    then
+        set_activity 77f6ab1e-fb44-4e21-919b-4c93347be591
+    else
+        set_activity 625aba1d-ac94-49b5-91ee-567a86d24fe5
+    fi
+}
 
 ts() {
     if [[ $1 == "" ]] 
     then
         end_taskwarrior_timewarrior
+        choose_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
@@ -110,6 +126,7 @@ ts() {
         fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
         stop_taskwarrior_timewarrior
+        choose_activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
     fi
 }
