@@ -619,3 +619,9 @@ gs() {
 tabc() {
     xinput map-to-output 13 DP-2
 }
+
+lock() {
+    qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
+    xset dpms force off
+}
+
