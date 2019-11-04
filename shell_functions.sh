@@ -91,7 +91,7 @@ ts() {
     if [[ $1 == "" ]] 
     then
         end_taskwarrior_timewarrior
-        tch
+        task context h
         choose_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
