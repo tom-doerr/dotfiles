@@ -110,16 +110,6 @@ ts() {
             ts "${@:2}"
         fi
     else
-        #tags_to_add=''
-        #for e in $@
-        #do
-        #    tags_to_add_tmp=$(cat ~/git/private/tags.config | jq -r "."$e )
-        #    if [[ $tags_to_add_tmp != "null" ]]
-        #    then
-        #        tags_to_add=$tags_to_add" "$tags_to_add_tmp
-        #        echo "tags_to_add: "$tags_to_add
-        #    fi
-        #done    
         if [[ "$(task _context)" == *$(printf "$1\n")* ]]
         then
             tc $1
