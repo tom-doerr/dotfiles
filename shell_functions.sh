@@ -129,12 +129,12 @@ ts() {
             ts "${@:2}"
         fi
     else
+        stop_taskwarrior_timewarrior
         if [[ "$(task _context)" == *$(printf "$1\n")* ]]
         then
             tc $1
         fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
-        stop_taskwarrior_timewarrior
         choose_activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
     fi
