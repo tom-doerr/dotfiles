@@ -75,6 +75,10 @@ set_activity() {
     qdbus org.kde.ActivityManager /ActivityManager/Activities SetCurrentActivity "$1"
 }
 
+switch_to_home_activity() {
+        set_activity 625aba1d-ac94-49b5-91ee-567a86d24fe5
+}
+
 choose_activity() {
     if [[ $1 == *"ai"* ]]
     then
@@ -100,8 +104,12 @@ choose_activity() {
     elif [[ $1 == *"uni"* ]]
     then
         set_activity 77f6ab1e-fb44-4e21-919b-4c93347be591
+    elif [[ $1 == *"bettzeit"* ]]
+    then
+        hueadm light 6 off
+        switch_to_home_activity
     else
-        set_activity 625aba1d-ac94-49b5-91ee-567a86d24fe5
+        switch_to_home_activity
     fi
 }
 
