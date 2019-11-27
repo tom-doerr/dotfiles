@@ -167,6 +167,8 @@ zle -N clear2
 bindkey '^[l' clear2
 
 bindkey '^P' expand-or-complete-prefix
+
+zle -N fzf-file-widget
 bindkey '^[a' fzf-file-widget
 
 zle -N vim_history
