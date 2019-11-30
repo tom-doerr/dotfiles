@@ -43,7 +43,7 @@ Plugin 'farseer90718/vim-taskwarrior'
 Plugin 'powerman/vim-plugin-AnsiEsc'
 Plugin 'dpelle/vim-LanguageTool'
 Plugin 'SirVer/ultisnips'
-
+Plugin 'meain/vim-printer'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -319,3 +319,6 @@ map <Leader>1 I =<C-o>0=
 map <Leader>2 I ==<C-o>0== 
 map <Leader>3 I ===<C-o>0=== 
 map <Leader>4 I ====<C-o>0==== 
+
+let g:vim_printer_print_below_keybinding = '<M-p>'
+
