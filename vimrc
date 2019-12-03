@@ -321,4 +321,5 @@ map <Leader>3 I ===<C-o>0===
 map <Leader>4 I ====<C-o>0==== 
 
 let g:vim_printer_print_below_keybinding = '<M-p>'
+let g:vim_printer_print_above_keybinding = '<M-P>'
 
