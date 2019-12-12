@@ -659,3 +659,7 @@ lock() {
     xset dpms force off
 }
 
+hms_to_hours() {
+    echo "$1" | awk -F: '{ print (($1 * 3600) + ($2 * 60) + $3) / 3600 }'
+}
+
