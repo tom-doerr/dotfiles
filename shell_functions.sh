@@ -391,15 +391,19 @@ kb() {
     ~/git/dotfiles/keyboard_config/start.sh
 }
 
-schlafen() {
-    ts schlafen
+turn_all_lights_off() {
     bash -c '
-    hue_lights="4 6" 
+    hue_lights="6 4" 
     for e in $hue_lights 
     do                    
         hueadm light $e off 
     done                    
     '
+}
+
+schlafen() {
+    ts schlafen
+    turn_all_lights_off
     clear
     qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
     while true
@@ -661,5 +665,12 @@ lock() {
 
 hms_to_hours() {
     echo "$1" | awk -F: '{ print (($1 * 3600) + ($2 * 60) + $3) / 3600 }'
+}
+
+leaving() {
+    sleep 15
+    turn_all_lights_off
+    spotifycli --pause
+    lock
 }
 
