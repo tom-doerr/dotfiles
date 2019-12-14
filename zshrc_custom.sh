@@ -174,6 +174,9 @@ bindkey '^[a' fzf-file-widget
 zle -N vim_history
 bindkey '^[s' vim_history
 
+zle -N ranger_cd
+bindkey '^[o' ranger_cd
+
 DISABLE_AUTO_UPDATE=true
 
 #if [[ -n $TMUX ]]
