@@ -674,3 +674,22 @@ leaving() {
     lock
 }
 
+# based on: https://github.com/ranger/ranger/blob/master/examples/bash_automatic_cd.sh
+ranger_cd() {
+    tempfile="$(mktemp -t tmp.XXXXXX)"
+    ranger --choosedir="$tempfile" "${@:-$(pwd)}"
+    test -f "$tempfile" &&
+    if [ "$(cat -- "$tempfile")" != "$(echo -n `pwd`)" ]; then
+        cd -- "$(cat "$tempfile")"
+    fi
+    rm -f -- "$tempfile"
+}
+
+r() {
+    ranger_cd
+}
+
+
+
+
+
