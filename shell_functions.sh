@@ -393,7 +393,7 @@ kb() {
 
 turn_all_lights_off() {
     bash -c '
-    hue_lights="6 4" 
+    hue_lights="7 6 4" 
     for e in $hue_lights 
     do                    
         hueadm light $e off 
@@ -535,9 +535,14 @@ hw() {
     toggle_light 4
 }
 
+hm() {
+    toggle_light 7
+}
+
 ha() {
     toggle_light 4
     toggle_light 6
+    toggle_light 7
 }
 
 bucket_item_done() {
