@@ -694,6 +694,18 @@ r() {
     ranger_cd
 }
 
+sst() {
+    spotifycli --pause
+}
+
+sp() {
+    spotifycli --play
+}
+
+sn() {
+    spotifycli --next
+}
+
 
 
 
