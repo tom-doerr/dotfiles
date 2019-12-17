@@ -79,7 +79,7 @@ switch_to_home_activity() {
         set_activity 625aba1d-ac94-49b5-91ee-567a86d24fe5
 }
 
-choose_activity() {
+trigger_commands_for activity() {
     if [[ $1 == *"ai"* ]]
     then
         set_activity a82a5cd2-bd0a-4c51-b5a7-5c1e1e3a06cd
@@ -109,6 +109,16 @@ choose_activity() {
         hueadm light 6 off
         hueadm light 7 off
         switch_to_home_activity
+    elif [[ $1 == *"Fruehstuecke"* ]]
+    then
+        hueadm light 6 on
+        hueadm light 7 on
+        switch_to_home_activity
+    elif [[ $1 == *"Arbeite an Fitness"* ]]
+    then
+        hueadm light 6 off
+        hueadm light 7 off
+        switch_to_home_activity
     else
         switch_to_home_activity
     fi
@@ -119,7 +129,7 @@ ts() {
     then
         end_taskwarrior_timewarrior
         task context h
-        choose_activity
+        trigger_commands_for activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
@@ -144,7 +154,7 @@ ts() {
             tc $1
         fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
-        choose_activity "$@""$tags_to_add"
+        trigger_commands_for activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
     fi
 }
