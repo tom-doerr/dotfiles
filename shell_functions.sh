@@ -684,7 +684,7 @@ hms_to_hours() {
 }
 
 leaving() {
-    sleep 15
+    sleep 30
     turn_all_lights_off
     spotifycli --pause
     lock
