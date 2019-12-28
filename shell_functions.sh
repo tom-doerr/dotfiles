@@ -717,12 +717,28 @@ sn() {
     spotifycli --next
 }
 
-hwa() {
-    time=$1
-    hueadm modify-schedule 5 "status=enabled" "localtime=$(date --date '13 hours' +%Y-%m-%d)T"$(date -d "$time 30min ago" +"%H:%M:%S")
-    hueadm modify-schedule 11 "status=enabled" "localtime=$(date --date '13 hours' +%Y-%m-%d)T"$(date -d "$time" +"%H:%M:%S")
+set_schedule_to_time() {
+    schedule_id=$1
+    time_hms=$2
+    hueadm modify-schedule $schedule_id "status=enabled" "localtime=$(date --date '13 hours' +%Y-%m-%d)T"$time_hms
 }
 
+get_time_hms_from_input() {
+    input_time=$1
+    offset=$2
+    date -d "$input_time $offset" +"%H:%M:%S"
+}
 
+hwa() {
+    time=$1
+    set_schedule_to_time 5 $(get_time_hms_from_input $time "30min ago")
+    set_schedule_to_time 11 $(get_time_hms_from_input $time)
+}
+
+hwas() {
+    time=$1
+    set_schedule_to_time 5 $(get_time_hms_from_input $time "30min ago")
+    hueadm modify-schedule 11 "status=disabled"
+}
 
 
