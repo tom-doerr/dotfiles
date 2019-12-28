@@ -717,6 +717,11 @@ sn() {
     spotifycli --next
 }
 
+hwa() {
+    time=$1
+    hueadm modify-schedule 5 "status=enabled" "localtime=$(date --date '13 hours' +%Y-%m-%d)T"$(date -d "$time 30min ago" +"%H:%M:%S")
+    hueadm modify-schedule 11 "status=enabled" "localtime=$(date --date '13 hours' +%Y-%m-%d)T"$(date -d "$time" +"%H:%M:%S")
+}
 
 
 
