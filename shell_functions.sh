@@ -417,6 +417,7 @@ schlafen() {
     turn_all_lights_off
     clear
     qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
+    spotifycli --pause
     while true
     do
         xset dpms force off
