@@ -742,4 +742,13 @@ hwas() {
     hueadm modify-schedule 11 "status=disabled"
 }
 
+v() {
+    if [[ "$(timew)" == *"video"* ]]
+    then
+        rt video
+    else
+        at video
+    fi
+}
+
 
