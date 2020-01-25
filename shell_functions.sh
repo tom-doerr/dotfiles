@@ -751,4 +751,20 @@ v() {
     fi
 }
 
+# source: https://faq.i3wm.org/question/6200/obtain-info-on-current-workspace-etc.1.html
+get_i3_workspace_id() {
+    i3-msg -t get_workspaces \
+  | jq '.[] | select(.focused==true).name' \
+  | cut -d"\"" -f2
+}
+
+toggle_workspace_99() {
+    if [[ $(get_i3_workspace_id) == "99" ]]
+    then
+        i3-msg workspace prev
+    else
+        i3-msg workspace 99
+    fi
+}
+
 
