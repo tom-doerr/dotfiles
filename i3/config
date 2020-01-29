@@ -13,7 +13,7 @@ font xft:URWGothic-Book 11
 
 floating_modifier $mod
 
-bindsym $mod+Return exec kitty ssh -t gard zsh 
+bindsym $mod+Return exec kitty ssh -X -t gard zsh 
 bindsym $mod+Shift+Return exec kitty
 bindsym $mod+a exec toggle_workspace_99
 bindsym F12 exec toggle_workspace_99
