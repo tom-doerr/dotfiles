@@ -66,6 +66,7 @@ fi
 plugins=(
   git
   colored-man-pages
+  last-working-dir
 )
 
 source $ZSH/oh-my-zsh.sh
