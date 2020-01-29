@@ -15,8 +15,8 @@ floating_modifier $mod
 
 bindsym $mod+Return exec ~/git/scripts/start_terminal_desktop.sh
 bindsym $mod+Shift+Return exec kitty
-bindsym $mod+a exec toggle_workspace_99
-bindsym F12 exec toggle_workspace_99
+bindsym $mod+a exec ~/git/scripts/toggle_workspace_99
+bindsym F12 exec ~/git/scripts/toggle_workspace_99
 
 # Window kill command
 bindsym $mod+Shift+q kill
