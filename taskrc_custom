@@ -82,3 +82,10 @@ report.list.columns=ID,Active,Age,D,P,Project,Tags,R,Sch,Due,Until,Description,U
 _forcecolor=on
 
 search.case.sensitive=no
+
+uda.reviewed.type=date
+uda.reviewed.label=Reviewed
+report._reviewed.description=Tasksh review report.  Adjust the filter to your needs.
+report._reviewed.columns=uuid
+report._reviewed.sort=reviewed+,modified+
+report._reviewed.filter=( reviewed.none: or reviewed.before:now-6days ) and ( +PENDING or +WAITING ) and -bu and -PARENT
