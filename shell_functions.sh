@@ -83,6 +83,9 @@ trigger_commands_for_activity() {
     if [[ $1 == *"ai"* ]]
     then
         set_activity a82a5cd2-bd0a-4c51-b5a7-5c1e1e3a06cd
+        #i3-msg workspace 10 output DVI-D-0
+        #i3-msg workspace 11 output DP-0
+        #i3-msg workspace 12 output DP-2
     elif [[ $1 == *"gmm"* ]]
     then
         set_activity 28de45b9-7f38-42b5-a689-22d1a9ff063d
@@ -231,7 +234,7 @@ td() {
 
 pa() {
     description_string="$@"
-    task $(t +ACTIVE _uuid) duplicate description:$description_string
+    task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string
 }
 
 rb() {
@@ -743,13 +746,12 @@ hwas() {
 }
 
 v() {
-    if [[ "$(timew)" == *"video"* ]]
-    then
-        rt video
-    else
-        at video
-    fi
+    at video
+    sleep 270
+    telegram-send "Break over"
+    rt video
 }
+
 
 # source: https://faq.i3wm.org/question/6200/obtain-info-on-current-workspace-etc.1.html
 get_i3_workspace_id() {
