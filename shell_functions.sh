@@ -521,7 +521,7 @@ tai() {
 }
 
 com() {
-    task end.after:today+5h completed
+    task all rc.context=none end.after:$(date --date '5 hours ago' +%Y-%m-%d)T05:00:00 +COMPLETED -bu $1
 }
 
 hcon() {
