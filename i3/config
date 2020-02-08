@@ -235,6 +235,7 @@ client.unfocused #b0b287 #1d1e26 #b0b287 #789073 #789073
 client.urgent #b0b287 #1d1e26 #b0b287 #789073 #789073
 client.placeholder #b0b287 #1d1e26 #b0b287 #789073 #789073
 
+
 client.background #1d1e26
 
 # Gaps
