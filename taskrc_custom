@@ -89,3 +89,8 @@ report._reviewed.description=Tasksh review report.  Adjust the filter to your ne
 report._reviewed.columns=uuid
 report._reviewed.sort=reviewed+,modified+
 report._reviewed.filter=( reviewed.none: or reviewed.before:now-6days ) and ( +PENDING or +WAITING ) and -bu and -PARENT
+
+bulk=3
+confirmation=no
+nag=
+recurrence.confirmation=no
