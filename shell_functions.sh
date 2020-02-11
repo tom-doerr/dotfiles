@@ -763,7 +763,7 @@ hwas() {
 v() {
     at video
     sleep 270
-    telegram-send "Break over"
+    telegram-send "Back to work! :)"
     rt video
 }
 
