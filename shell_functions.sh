@@ -368,20 +368,35 @@ iw() {
 }
 
 task_tag() {
-    if [[ $2 =~ ^-?[0-9]+$ ]]
+    if [[ $2 =~ ^-?([0-9]|,)+$ ]]
     then
-        task "${@:2}" mod $1
+        toggle_tag $1 "${@:2}"
     else
-        task add "${@:2}" $1
+        task add "${@:2}" '+'$1
     fi
 }
 
+toggle_tag() {
+    tag=$1
+    task_ids=${@:2}
+    for task_id in $(echo ${task_ids//,/ })
+    do
+        task_tags=$(task _get "$task_id".tags)
+        if [[ $task_tags =~ $tag ]]
+        then
+            task $task_id modify -"$tag"
+        else
+            task $task_id modify +"$tag"
+        fi
+    done
+}
+
 n() {
-    task_tag +next $@
+    task_tag next $@
 }
 
 nl() {
-    task_tag +next_local $@
+    task_tag next_local $@
 }
 
 tws() {
