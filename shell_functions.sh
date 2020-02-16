@@ -784,4 +784,13 @@ toggle_workspace_99() {
     fi
 }
 
+t() {
+    if [[ $@ == "" ]]
+    then
+        ~/git/private/taskfzf -bu
+    else
+        task $@
+    fi
+}
+
 
