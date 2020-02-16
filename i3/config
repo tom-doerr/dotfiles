@@ -16,7 +16,7 @@ floating_modifier $mod
 bindsym $mod+Return exec ~/git/scripts/start_terminal_desktop.sh
 bindsym $mod+Shift+Return exec kitty
 #bindsym $mod+a exec ~/git/scripts/toggle_workspace_99
-bindsym F12 exec ~/git/scripts/toggle_workspace_99
+#bindsym F12 exec ~/git/scripts/toggle_workspace_99
 
 # Window kill command
 bindsym $mod+Shift+q kill
@@ -113,6 +113,7 @@ bindsym $mod+6 workspace $ws6
 bindsym $mod+7 workspace $ws7
 bindsym $mod+8 workspace $ws8
 bindsym $mod+9 workspace $ws9
+bindsym F12 workspace $ws9
 
 # Move focused container to workspace
 bindsym $mod+Ctrl+1 move container to workspace $ws1
