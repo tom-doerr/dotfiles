@@ -761,8 +761,15 @@ hwas() {
 }
 
 v() {
+    sleep_time_min=$1
     at video
-    sleep 270
+    if [[ "$sleep_time_min" == "" ]]
+    then
+        sleep 270
+    else
+        sleep_time_sec=$(( 60 * $sleep_time_min ))
+        sleep $sleep_time_sec
+    fi
     telegram-send "Back to work! :)"
     rt video
 }
