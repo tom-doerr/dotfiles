@@ -761,8 +761,15 @@ hwas() {
 }
 
 v() {
+    sleep_time_min=$1
     at video
-    sleep 270
+    if [[ "$sleep_time_min" == "" ]]
+    then
+        sleep 270
+    else
+        sleep_time_sec=$(( 60 * $sleep_time_min ))
+        sleep $sleep_time_sec
+    fi
     telegram-send "Back to work! :)"
     rt video
 }
@@ -781,6 +788,15 @@ toggle_workspace_99() {
         i3-msg workspace prev
     else
         i3-msg workspace 99
+    fi
+}
+
+t() {
+    if [[ $@ == "" ]]
+    then
+        ~/git/private/taskfzf
+    else
+        task $@
     fi
 }
 
