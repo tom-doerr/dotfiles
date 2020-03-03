@@ -808,6 +808,10 @@ ve() {
             virtualenv --no-site-packages venv
             source venv/bin/activate
             pip install ipython
+            if [ ! -d requirements.txt ]
+            then
+                pip install -r requirements.txt
+            fi
         else
             source venv/bin/activate
         fi
