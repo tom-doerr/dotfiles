@@ -800,4 +800,20 @@ t() {
     fi
 }
 
+ve() {
+    if [[ ! $VIRTUAL_ENV ]]
+    then
+        if [ ! -d venv ]
+        then 
+            virtualenv --no-site-packages venv
+            source venv/bin/activate
+            pip install ipython
+        else
+            source venv/bin/activate
+        fi
+    else
+        deactivate
+    fi
+}
+
 
