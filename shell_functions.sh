@@ -820,4 +820,10 @@ ve() {
     fi
 }
 
+mark() {
+    at mark
+    rt mark
+}
+
+
 
