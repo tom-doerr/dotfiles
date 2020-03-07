@@ -38,12 +38,15 @@ context.vwl=+vwl
 context.nlp=+nlp
 context.ml=+ml
 context.gki=+gki
+context.padm=+padm
+context.rbad=+rbad
+context.dlcg=+dlcg
 
 ## Home
-context.h=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt) or +next)
+context.h=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt -padm -rbad -dlcg) or +next)
 
 ## Default not home
-context.nh=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -h -home -hobby -ing -ba -stat -theo -master -mt) or (+next and -h and -home))
+context.nh=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -h -home -hobby -ing -ba -stat -theo -master -mt -padm -rbad -dlcg) or (+next and -h and -home))
 
 
 
