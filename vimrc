@@ -260,7 +260,7 @@ let pyindent_nested_paren="&sw*2"
 let pyindent_open_paren="&sw*2"
 
 nnoremap <Leader>gc :Gcommit -v -q %:p<CR>i
-nnoremap <Leader>gp :Gpush
+nnoremap <Leader>gp :Gpush<CR>
 set conceallevel=2
 
 nnoremap <Leader>b I**<Esc>A**<Esc>
