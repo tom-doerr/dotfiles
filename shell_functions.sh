@@ -762,16 +762,18 @@ hwas() {
 
 v() {
     sleep_time_min=$1
-    at video
     if [[ "$sleep_time_min" == "" ]]
     then
-        sleep 270
+        btimem_val=$(btimem)
+        printf $btimem_val'\n\n'
+        sleep_time_sec=$(($btimem_val * 60))
     else
         sleep_time_sec=$(( 60 * $sleep_time_min ))
-        sleep $sleep_time_sec
     fi
+    at video break
+    sleep $sleep_time_sec
     telegram-send "Back to work! :)"
-    rt video
+    rt video break
 }
 
 
@@ -825,5 +827,19 @@ mark() {
     rt mark
 }
 
+get_time_h_day() {
+    hms_to_hours $(timew su $1 | tail -2 | head -1 | { read first rest; echo $first; })
+}
+
+btime() {
+    time_prof=$(get_time_h_day prof)
+    time_break=$(get_time_h_day break)
+    remaining_break_time_min=$(((($time_prof / 5) - $time_break) * 60))
+    echo $remaining_break_time_min
+}
+
+btimem() {
+    btime | awk '{print int($1)}'
+}
 
 
