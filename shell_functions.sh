@@ -834,7 +834,7 @@ get_time_h_day() {
 btime() {
     time_prof=$(get_time_h_day prof)
     time_break=$(get_time_h_day break)
-    remaining_break_time_min=$(((($time_prof / 5) - $time_break) * 60))
+    remaining_break_time_min=$(((($time_prof / 6) - $time_break) * 60))
     echo $remaining_break_time_min
 }
 
