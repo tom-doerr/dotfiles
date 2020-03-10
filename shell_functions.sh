@@ -810,6 +810,7 @@ ve() {
             virtualenv --no-site-packages venv
             source venv/bin/activate
             pip install ipython
+            pip install neovim
             if [ ! -d requirements.txt ]
             then
                 pip install -r requirements.txt
