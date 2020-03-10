@@ -842,4 +842,9 @@ btimem() {
     btime | awk '{print int($1)}'
 }
 
-
+bk() {
+    printf $(btimem)'\n\n'
+    at break
+    read
+    rt break
+}
