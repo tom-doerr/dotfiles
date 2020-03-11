@@ -765,13 +765,15 @@ v() {
     if [[ "$sleep_time_min" == "" ]]
     then
         btimem_val=$(btimem)
-        printf $btimem_val'\n\n'
-        sleep_time_sec=$(($btimem_val * 60))
+        vtimem_val=$(vtimem)
+        min_val=$(printf $btimem_val'\n'$vtimem_val'\n' | sort -g | head -n 1) 
+        printf $min_val'\n\n'
+        sleep_time_sec=$(($min_val * 60))
     else
         sleep_time_sec=$(( 60 * $sleep_time_min ))
     fi
     at video break
-    sleep $sleep_time_sec
+    timeout "$sleep_time_sec"s zsh -c read
     telegram-send "Back to work! :)"
     rt video break
 }
