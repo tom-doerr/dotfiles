@@ -832,15 +832,47 @@ get_time_h_day() {
     hms_to_hours $(timew su $1 | tail -2 | head -1 | { read first rest; echo $first; })
 }
 
-btime() {
+remaining_time() {
+    tag=$1
+    prof_tag_ratio=$2
     time_prof=$(get_time_h_day prof)
-    time_break=$(get_time_h_day break)
-    remaining_break_time_min=$((((($time_prof - $time_break) / 5) - $time_break) * 60))
+    time_tag=$(get_time_h_day $tag)
+    if [[ $tag == "break" ]]
+    then
+        time_to_remove=$time_tag
+        offset_time=0
+    elif [[ $tag == "video" ]]
+    then
+        time_to_remove=0
+        offset_time=0.25
+    else
+        time_to_remove=0
+        offset_time=0
+    fi
+    remaining_break_time_min=$((((($time_prof - $time_to_remove) / $prof_tag_ratio) \
+        - $time_tag + $offset_time) * 60))
     echo $remaining_break_time_min
 }
 
+btime() {
+    remaining_time break 5
+}
+
+vtime() {
+    remaining_time video 4
+}
+
+round_down() {
+    input_float=$1
+    echo $input_float | awk '{print int($1)}'
+}
+
 btimem() {
-    btime | awk '{print int($1)}'
+    round_down $(btime)
+}
+
+vtimem() {
+    round_down $(vtime)
 }
 
 bk() {
