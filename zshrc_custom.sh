@@ -198,3 +198,5 @@ source ~/git/dotfiles/shell_settings.sh
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
+export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.6/site-packages"
+
