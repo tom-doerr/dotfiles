@@ -809,7 +809,7 @@ ve() {
     then
         if [ ! -d venv ]
         then 
-            virtualenv --no-site-packages venv
+            virtualenv --no-site-packages -p python3 venv
             source venv/bin/activate
             pip install ipython
             pip install neovim
@@ -818,6 +818,7 @@ ve() {
                 pip install -r requirements.txt
             fi
         else
+            export PYTHONPATH=""
             source venv/bin/activate
         fi
     else
