@@ -809,7 +809,7 @@ ve() {
     then
         if [ ! -d venv ]
         then 
-            virtualenv --no-site-packages -p python3 venv
+            virtualenv --no-site-packages -p python3.8 venv
             source venv/bin/activate
             pip install ipython
             pip install neovim
