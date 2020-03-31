@@ -805,12 +805,17 @@ t() {
 }
 
 ve() {
+    python_version=$1
+    if [[ ! $python_version ]]
+    then
+        python_version=3.6
+    fi
     if [[ ! $VIRTUAL_ENV ]]
     then
         export PYTHONPATH=""
         if [ ! -d venv ]
         then 
-            virtualenv --no-site-packages -p python3.6 venv
+            virtualenv --no-site-packages -p python"$python_version" venv
             source venv/bin/activate
             pip install ipython
             pip install neovim
