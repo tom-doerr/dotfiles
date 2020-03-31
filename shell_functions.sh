@@ -889,3 +889,6 @@ bk() {
     read
     rt break
 }
+
+bt() { btime }
+vt() { vtime }
