@@ -890,5 +890,9 @@ bk() {
     rt break
 }
 
-bt() { btime }
-vt() { vtime }
+bt() { 
+    btime 
+}
+vt() { 
+    vtime 
+}
