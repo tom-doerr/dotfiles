@@ -299,7 +299,7 @@ map <Leader>S :TaskWikiStop<CR>:TaskWikiMod -next_twt<CR>
 map <M-t> <M-j>jVs* [ ] 
 
 autocmd BufRead * let g:auto_save = 1
-autocmd BufRead *.wiki let g:auto_save = 0
+"autocmd BufRead *.wiki let g:auto_save = 0
 
 let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandline.jar'
 
