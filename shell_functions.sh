@@ -851,7 +851,7 @@ remaining_time() {
         offset_time=0
     elif [[ $tag == "video" ]]
     then
-        time_to_remove=0
+        time_to_remove=$time_tag
         offset_time=0.25
     else
         time_to_remove=0
@@ -867,7 +867,7 @@ btime() {
 }
 
 vtime() {
-    remaining_time video 4
+    remaining_time video 5
 }
 
 round_down() {
