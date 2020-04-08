@@ -133,6 +133,12 @@ enter_j(){
     zle reset-prompt
 }
 
+enter_j_z_fzf() {
+    cd $(z -l . | fzf  --nth 2.. --tac --no-sort | awk '{$1=""; print $0}')
+    zle reset-prompt
+}
+
+
 enter_f(){
     f
     echo
@@ -158,8 +164,8 @@ update_display_variable(){
 
 bindkey '^R' history-incremental-search-backward
 
-zle -N enter_j
-bindkey '^[j' enter_j
+zle -N enter_j_z_fzf
+bindkey '^[j' enter_j_z_fzf
 
 zle -N enter_f
 bindkey '^[f' enter_f
@@ -185,6 +191,7 @@ DISABLE_AUTO_UPDATE=true
 #    add-zsh-hook precmd update_display_variable
 #fi
 
+eval "$(lua ~/git/z.lua/z.lua --init zsh)"
 
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
 export PATH="/home/tom/anaconda3/bin:$PATH"
