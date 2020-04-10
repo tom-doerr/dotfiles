@@ -896,3 +896,7 @@ bt() {
 vt() { 
     vtime 
 }
+
+disk-usage-analyzer() {
+    ncdu
+}
