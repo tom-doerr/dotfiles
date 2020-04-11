@@ -80,34 +80,34 @@ switch_to_home_activity() {
 }
 
 trigger_commands_for_activity() {
-    if [[ $1 == *"ai"* ]]
-    then
-        set_activity a82a5cd2-bd0a-4c51-b5a7-5c1e1e3a06cd
-        #i3-msg workspace 10 output DVI-D-0
-        #i3-msg workspace 11 output DP-0
-        #i3-msg workspace 12 output DP-2
-    elif [[ $1 == *"gmm"* ]]
-    then
-        set_activity 28de45b9-7f38-42b5-a689-22d1a9ff063d
-    elif [[ $1 == *"gki"* ]]
-    then
-        set_activity 3832cd48-8acb-4153-9d89-73d9efb5b0a4
-    elif [[ $1 == *"idl"* ]]
-    then
-        set_activity 8a7b6ae5-0966-41bc-9499-8a05624f5d5b
-    elif [[ $1 == *"ml"* ]]
-    then
-        set_activity 2abbc89b-7206-4f18-932b-b2d8c004f0d5
-    elif [[ $1 == *"nlp"* ]]
-    then
-        set_activity 3248cc70-ced4-4bfc-b2ef-9d7f62563f40
-    elif [[ $1 == *"vwl"* ]]
-    then
-        set_activity 4c9939ec-01e1-4833-ab25-3bf5a4f5e35b
-    elif [[ $1 == *"uni"* ]]
-    then
-        set_activity 77f6ab1e-fb44-4e21-919b-4c93347be591
-    elif [[ $1 == *"bettzeit"* ]]
+    #if [[ $1 == *"ai"* ]]
+    #then
+    #    set_activity a82a5cd2-bd0a-4c51-b5a7-5c1e1e3a06cd
+    #    #i3-msg workspace 10 output DVI-D-0
+    #    #i3-msg workspace 11 output DP-0
+    #    #i3-msg workspace 12 output DP-2
+    #elif [[ $1 == *"gmm"* ]]
+    #then
+    #    set_activity 28de45b9-7f38-42b5-a689-22d1a9ff063d
+    #elif [[ $1 == *"gki"* ]]
+    #then
+    #    set_activity 3832cd48-8acb-4153-9d89-73d9efb5b0a4
+    #elif [[ $1 == *"idl"* ]]
+    #then
+    #    set_activity 8a7b6ae5-0966-41bc-9499-8a05624f5d5b
+    #elif [[ $1 == *"ml"* ]]
+    #then
+    #    set_activity 2abbc89b-7206-4f18-932b-b2d8c004f0d5
+    #elif [[ $1 == *"nlp"* ]]
+    #then
+    #    set_activity 3248cc70-ced4-4bfc-b2ef-9d7f62563f40
+    #elif [[ $1 == *"vwl"* ]]
+    #then
+    #    set_activity 4c9939ec-01e1-4833-ab25-3bf5a4f5e35b
+    #elif [[ $1 == *"uni"* ]]
+    #then
+    #    set_activity 77f6ab1e-fb44-4e21-919b-4c93347be591
+    if [[ $1 == *"bettzeit"* ]]
     then
         hueadm light 6 off
         hueadm light 7 off
@@ -123,7 +123,7 @@ trigger_commands_for_activity() {
         hueadm light 7 off
         switch_to_home_activity
     else
-        switch_to_home_activity
+        #switch_to_home_activity
     fi
 }
 
