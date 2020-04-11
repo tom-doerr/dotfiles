@@ -122,8 +122,6 @@ trigger_commands_for_activity() {
         hueadm light 6 off
         hueadm light 7 off
         switch_to_home_activity
-    else
-        #switch_to_home_activity
     fi
 }
 
