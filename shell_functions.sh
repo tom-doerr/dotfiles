@@ -813,7 +813,7 @@ ve() {
         export PYTHONPATH=""
         if [ ! -d venv ]
         then 
-            virtualenv --no-site-packages -p python"$python_version" venv
+            virtualenv -p python"$python_version" venv
             source venv/bin/activate
             pip install ipython
             pip install neovim
