@@ -194,7 +194,8 @@ DISABLE_AUTO_UPDATE=true
 eval "$(lua ~/git/z.lua/z.lua --init zsh)"
 
 export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
-export PATH="/home/tom/anaconda3/bin:$PATH"
+export PATH="$HOME/anaconda3/bin:$PATH"
+export PATH="$PATH:$HOME/bin"
 
 source /usr/share/autojump/autojump.sh
 source ~/git/dotfiles/shell_functions.sh
@@ -206,4 +207,3 @@ source ~/git/dotfiles/shell_settings.sh
 source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.6/site-packages"
-
