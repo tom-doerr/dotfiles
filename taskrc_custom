@@ -41,6 +41,8 @@ context.gki=+gki
 context.padm=+padm
 context.rbad=+rbad
 context.dlcg=+dlcg
+context.ad=+ad
+context.mlr=+mlr
 
 ## Home
 context.h=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt -padm -rbad -dlcg) or +next)
