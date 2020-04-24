@@ -15,7 +15,7 @@ ln -s ~/git/dotfiles/inputrc ~/.inputrc
 apt install -y neovim
 git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 ln -s ~/git/dotfiles/vimrc ~/.vimrc
-mkdir ~/.config/nvim
+mkdir -p ~/.config/nvim
 ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
 cd ~/.vim/bundle/vimproc.vim && make
 
