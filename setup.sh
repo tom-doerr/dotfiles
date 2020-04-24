@@ -22,6 +22,7 @@ cd ~/.vim/bundle/vimproc.vim && make
 # FZF
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install --all
+echo '$PATH:~/.fzf/bin' >> ~/.zshrc
 
 # Autojump
 sudo apt install -y autojump
