@@ -22,6 +22,7 @@ cd ~/.vim/bundle/vimproc.vim && make
 # FZF
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install --all
+cp ~/.fzf/bin/fzf /usr/bin/
 
 # Autojump
 sudo apt install -y autojump
@@ -45,7 +46,6 @@ git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
 cd
 git clone https://github.com/supercrabtree/k $ZSH_CUSTOM/plugins/k
 curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
-echo '$PATH:~/.fzf/bin' >> ~/.zshrc
 
 if [[ "$1" == "all" ]]
 then
