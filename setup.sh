@@ -1,7 +1,7 @@
 #!/bin/bash
 
 apt update
-apt install -y wget python3-pip
+apt install -y wget python3-pip sudo 
 
 # IPython
 pip3 install ipython
