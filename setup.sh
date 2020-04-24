@@ -46,7 +46,7 @@ cd
 git clone https://github.com/supercrabtree/k $ZSH_CUSTOM/plugins/k
 curl -sL --proto-redir -all,https https://raw.githubusercontent.com/zplug/installer/master/installer.zsh | zsh
 
-if [[ "$1" != "basic" ]]
+if [[ "$1" == "all" ]]
 then
     # Taskwarrior
     ln -s ~/Nextcloud/sonstiges/task ~/.task
