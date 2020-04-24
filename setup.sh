@@ -1,5 +1,6 @@
 #!/bin/bash
 
+apt update
 apt install -y wget python3-pip
 
 # IPython
