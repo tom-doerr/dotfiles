@@ -18,12 +18,6 @@ mkdir ~/.config/nvim
 ln -s ~/git/dotfiles/vimrc ~/.config/nvim/init.vim
 cd ~/.vim/bundle/vimproc.vim && make
 
-# Tmux
-sudo apt-get install -y tmux xclip
-git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
-ln -s ~/git/dotfiles/tmux/tmux.conf ~/.tmux.conf
-sudo apt-get install -y fonts-powerline
-
 # FZF
 git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
 ~/.fzf/install
