@@ -841,7 +841,7 @@ get_time_h_day() {
 remaining_time() {
     tag=$1
     prof_tag_ratio=$2
-    time_prof=$(get_time_h_day prof)
+    time_obj=$(get_time_h_day obj)
     time_tag=$(get_time_h_day $tag)
     if [[ $tag == "break" ]]
     then
@@ -855,7 +855,7 @@ remaining_time() {
         time_to_remove=0
         offset_time=0
     fi
-    remaining_break_time_min=$((((($time_prof - $time_to_remove) / $prof_tag_ratio) \
+    remaining_break_time_min=$((((($time_obj - $time_to_remove) / $prof_tag_ratio) \
         - $time_tag + $offset_time) * 60))
     echo $remaining_break_time_min
 }
