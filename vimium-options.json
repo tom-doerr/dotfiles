@@ -1,5 +1,5 @@
 {
-  "settingsVersion": "1.64.6",
+  "settingsVersion": "1.66",
   "exclusionRules": [
     {
       "pattern": "https?://mail.google.com/*",
