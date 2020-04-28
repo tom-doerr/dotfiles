@@ -697,7 +697,9 @@ lock() {
 }
 
 hms_to_hours() {
-    echo "$1" | awk -F: '{ print (($1 * 3600) + ($2 * 60) + $3) / 3600 }'
+    hours_comma=$(echo "$1" | awk -F: '{ print (($1 * 3600) + ($2 * 60) + $3) / 3600 }')
+    hours_dot=${hours_comma/,/.}
+    echo $hours_dot
 }
 
 leaving() {
