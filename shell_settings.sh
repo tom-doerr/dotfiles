@@ -1,6 +1,6 @@
 #!/bin/bash
 
-/usr/bin/keychain --quiet --quick $HOME/.ssh/id_rsa
+/usr/bin/keychain --quiet --quick $HOME/.ssh/id_ed25519
 
 if [[ $HOST == "" ]]
 then
@@ -13,3 +13,6 @@ then
 #    sleep 0.2
 #    #exit 1
 fi
+
+export VISUAL=nvim
+export EDITOR="$VISUAL"
