@@ -301,7 +301,7 @@ map <M-t> <M-j>jVs* [ ]
 autocmd BufRead * let g:auto_save = 1
 "autocmd BufRead *.wiki let g:auto_save = 0
 
-let g:languagetool_jar='/opt/languagetool/LanguageTool-4.3/languagetool-commandline.jar'
+let g:languagetool_jar='/opt/languagetool/LanguageTool-4.9.1/languagetool-commandline.jar'
 
 map <M-w> :w<CR>
 map <M-e> :e<CR>
