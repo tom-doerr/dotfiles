@@ -166,9 +166,11 @@ bindkey '^R' history-incremental-search-backward
 
 zle -N enter_j_z_fzf
 bindkey '^[j' enter_j_z_fzf
+bindkey '^j' enter_j_z_fzf
 
 zle -N enter_f
 bindkey '^[f' enter_f
+bindkey '^f' enter_f
 
 zle -N clear2
 bindkey '^[l' clear2
@@ -177,9 +179,11 @@ bindkey '^P' expand-or-complete-prefix
 
 zle -N fzf-file-widget
 bindkey '^[a' fzf-file-widget
+bindkey '^a' fzf-file-widget
 
 zle -N vim_history
 bindkey '^[s' vim_history
+bindkey '^s' vim_history
 
 zle -N ranger_cd
 bindkey '^[o' ranger_cd
