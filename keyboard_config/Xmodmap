@@ -8,6 +8,8 @@ keycode 108 = Control_R
 keycode 107 = Super_R
 add Control = Control_R
 add Mod1 = Alt_R
+
+! Make lock super key
 clear Lock
 keycode 9 = Caps_Lock NoSymbol Caps_Lock
 keycode 66 = Escape NoSymbol Escape
