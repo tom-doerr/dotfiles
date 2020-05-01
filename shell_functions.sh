@@ -798,7 +798,7 @@ toggle_workspace_99() {
 t() {
     if [[ $@ == "" ]]
     then
-        ~/git/private/taskfzf
+        ~/git/taskwarrior-fzf/taskfzf
     else
         task $@
     fi
