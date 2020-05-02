@@ -163,6 +163,7 @@ update_display_variable(){
 
 
 bindkey '^R' history-incremental-search-backward
+bindkey '^K' fzf-history-widget
 
 zle -N enter_j_z_fzf
 bindkey '^[j' enter_j_z_fzf
