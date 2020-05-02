@@ -1,4 +1,6 @@
 # Extract files with ex command
+SPOTIFY_DBUS_CLIENT=spotifyd
+
 ex ()
 {
   if [ -f $1 ] ; then
@@ -433,7 +435,7 @@ schlafen() {
     turn_all_lights_off
     clear
     qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
-    spotifycli --pause
+    sp
     while true
     do
         xset dpms force off
@@ -578,11 +580,11 @@ bucket_item_done() {
 }
 
 splay() {
-    spotifycli --play
+    spotifycli --client $SPOTIFY_DBUS_CLIENT --play
 }
 
 spause() {
-    spotifycli --pause
+    spotifycli --client $SPOTIFY_DBUS_CLIENT --pause
 }
 
 sstop() {
@@ -590,11 +592,11 @@ sstop() {
 }
 
 snext() {
-    spotifycli --next
+    spotifycli --client $SPOTIFY_DBUS_CLIENT --next
 }
 
 sprev() {
-    spotifycli --prev
+    spotifycli --client $SPOTIFY_DBUS_CLIENT --prev
 }
 
 ntest() {
@@ -705,7 +707,7 @@ hms_to_hours() {
 leaving() {
     sleep 30
     turn_all_lights_off
-    spotifycli --pause
+    spause
     lock
 }
 
@@ -725,15 +727,15 @@ r() {
 }
 
 sst() {
-    spotifycli --pause
+    spause
 }
 
 sp() {
-    spotifycli --play
+    splay
 }
 
 sn() {
-    spotifycli --next
+    snext
 }
 
 set_schedule_to_time() {
