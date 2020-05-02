@@ -54,8 +54,6 @@ end_taskwarrior_timewarrior() {
     fi
 }
 
-
-
 ts_start_task() {
     while true; do
         task start "$@"
@@ -775,9 +773,11 @@ v() {
         sleep_time_sec=$(( 60 * $sleep_time_min ))
     fi
     at video break
+    sstop
     timeout "$sleep_time_sec"s zsh -c read
     telegram-send "Back to work! :)"
     rt video break
+    splay
 }
 
 
@@ -886,8 +886,10 @@ vtimem() {
 bk() {
     printf $(btimem)'\n\n'
     at break
+    spause
     read
     rt break
+    splay
 }
 
 bt() { 
