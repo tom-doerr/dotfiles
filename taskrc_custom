@@ -44,6 +44,7 @@ context.dlcg=+dlcg
 context.ad=+ad
 context.mlr=+mlr
 context.adlr=+adlr
+context.review=-WAITING -sm -bu
 
 ## Home
 context.h=((-gki -gmm -nlp -ml -vwl -idl -ai -admin -sm -lrz -hobby -ing -ba -stat -theo -master -mt -padm -rbad -dlcg) or +next)
