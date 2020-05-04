@@ -814,7 +814,7 @@ ve() {
     python_version=$1
     if [[ ! $python_version ]]
     then
-        python_version=3.6
+        python_version=3.8
     fi
     if [[ ! $VIRTUAL_ENV ]]
     then
