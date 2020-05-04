@@ -728,6 +728,10 @@ sst() {
     spause
 }
 
+st() {
+    spause
+}
+
 sp() {
     splay
 }
@@ -800,7 +804,7 @@ toggle_workspace_99() {
 t() {
     if [[ $@ == "" ]]
     then
-        ~/git/taskwarrior-fzf/taskfzf
+        ~/git/taskwarrior-fzf/taskfzf report1
     else
         task $@
     fi
