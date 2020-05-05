@@ -305,3 +305,4 @@ focus_follows_mouse no
 
 exec xset dpms 0 0 720
 
+for_window [class="Brave"] border normal
