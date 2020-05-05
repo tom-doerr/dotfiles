@@ -242,6 +242,7 @@ exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 
 # Theme colors
 client.focused #859900 #859900 #fdf6e3 #859900
+for_window [class=".*"] border pixel 2
 
 # Gaps
 gaps inner 10
@@ -303,5 +304,4 @@ exec --no-startup-id bash -c 'layout_file=~/.config/display_layout.sh; [ -f $lay
 focus_follows_mouse no
 
 exec xset dpms 0 0 720
-
 
