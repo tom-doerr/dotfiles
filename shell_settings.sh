@@ -16,3 +16,4 @@ fi
 
 export VISUAL=nvim
 export EDITOR="$VISUAL"
+export PYTHONBREAKPOINT=ipdb.set_trace
