@@ -432,13 +432,8 @@ schlafen() {
     ts schlafen
     turn_all_lights_off
     clear
-    qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock
-    sp
-    while true
-    do
-        xset dpms force off
-        sleep 10;
-    done
+    sstop
+    xset dpms force off
 }
 
 # Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
@@ -815,6 +810,7 @@ ve() {
     if [[ ! $python_version ]]
     then
         python_version=3.8
+
     fi
     if [[ ! $VIRTUAL_ENV ]]
     then
