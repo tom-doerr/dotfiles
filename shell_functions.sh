@@ -776,7 +776,6 @@ v() {
     timeout "$sleep_time_sec"s zsh -c read
     telegram-send "Back to work! :)"
     rt video break
-    splay
 }
 
 
@@ -889,7 +888,6 @@ bk() {
     spause
     read
     rt break
-    splay
 }
 
 bt() { 
