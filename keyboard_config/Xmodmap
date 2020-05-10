@@ -1,6 +1,6 @@
 !based on https://gist.github.com/jondlm/11277197
 
-!Swap right control and right alt
+! Swap right control and right alt
 remove Control = Control_R
 remove Mod1 = Alt_R
 keycode 105 = Alt_R
