@@ -5,9 +5,12 @@ remove Control = Control_R
 remove Mod1 = Alt_R
 keycode 105 = Alt_R
 keycode 108 = Control_R
-keycode 107 = Super_R
 add Control = Control_R
 add Mod1 = Alt_R
+
+! Make PrtSc super key
+keycode 107 = Super_R
+add mod4 = Super_R
 
 ! Make lock super key
 clear Lock
