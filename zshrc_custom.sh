@@ -161,20 +161,6 @@ update_display_variable(){
     $(tmux show-environment | grep '^DISPLAY=')
 }
 
-eval "$(lua ~/git/z.lua/z.lua --init zsh)"
-
-export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
-export PATH="$HOME/anaconda3/bin:$PATH"
-export PATH="$PATH:$HOME/bin"
-
-source /usr/share/autojump/autojump.sh
-source ~/git/dotfiles/shell_functions.sh
-source ~/git/dotfiles/alias.sh
-source ~/git/dotfiles/shell_settings.sh
-
-
-[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
-source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 bindkey '^R' history-incremental-search-backward
 bindkey '^K' fzf-history-widget
@@ -202,6 +188,20 @@ bindkey '^s' vim_history
 
 zle -N ranger_cd
 bindkey '^[o' ranger_cd
+
+eval "$(lua ~/git/z.lua/z.lua --init zsh)"
+
+export neowatch_page_number_file_path='/var/tmp/neowatch_page_number_file'
+export PATH="$HOME/anaconda3/bin:$PATH"
+export PATH="$PATH:$HOME/bin"
+
+source /usr/share/autojump/autojump.sh
+source ~/git/dotfiles/shell_functions.sh
+source ~/git/dotfiles/alias.sh
+source ~/git/dotfiles/shell_settings.sh
+
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh
 
 zle -N t
 bindkey '^t' t
