@@ -46,10 +46,10 @@ bindsym $mod+Right focus right
 #bindsym $mod+Shift+k move up 100px 
 #bindsym $mod+Shift+l move right 100px 
 
-bindsym $mod+Shift+j move left 100px
-bindsym $mod+Shift+k move down 100px
-bindsym $mod+Shift+l move up 100px
-bindsym $mod+Shift+semicolon move right 100px
+bindsym $mod+Shift+j move left 10px
+bindsym $mod+Shift+k move down 10px
+bindsym $mod+Shift+l move up 10px
+bindsym $mod+Shift+semicolon move right 10px
 
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
