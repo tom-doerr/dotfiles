@@ -701,7 +701,6 @@ leaving() {
     sleep 30
     turn_all_lights_off
     spause
-    lock
 }
 
 # based on: https://github.com/ranger/ranger/blob/master/examples/bash_automatic_cd.sh
