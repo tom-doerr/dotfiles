@@ -29,3 +29,4 @@ export VISUAL=nvim
 export EDITOR="$VISUAL"
 export PYTHONBREAKPOINT=ipdb.set_trace
 export PATH="$PATH":"$HOME"/.cargo/bin
+export PATH="$PATH":"$HOME"/go/bin
