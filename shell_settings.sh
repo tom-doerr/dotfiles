@@ -28,5 +28,6 @@ fi
 export VISUAL=nvim
 export EDITOR="$VISUAL"
 export PYTHONBREAKPOINT=ipdb.set_trace
+export SPOTIFY_DBUS_CLIENT=spotifyd
 export PATH="$PATH":"$HOME"/.cargo/bin
 export PATH="$PATH":"$HOME"/go/bin

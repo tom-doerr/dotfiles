@@ -1,5 +1,4 @@
 # Extract files with ex command
-SPOTIFY_DBUS_CLIENT=spotifyd
 
 ex ()
 {
