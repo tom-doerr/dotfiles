@@ -321,7 +321,8 @@ map <Leader>1 I =<C-o>0=
 map <Leader>2 I ==<C-o>0== 
 map <Leader>3 I ===<C-o>0=== 
 map <Leader>4 I ====<C-o>0==== 
-
+let g:vimwiki_list = [{'path': '~/vimwiki/',
+                      \ 'syntax': 'markdown', 'ext': '.md'}]
 let g:vim_printer_print_below_keybinding = '<M-p>'
 let g:vim_printer_print_above_keybinding = '<M-P>'
 
