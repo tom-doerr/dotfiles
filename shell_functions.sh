@@ -847,7 +847,7 @@ remaining_time() {
     then
         time_to_remove=$time_tag
         offset_time=0
-        time_obj=$(get_time_h_day prof)
+        time_obj=$(get_time_h_day obj)
     elif [[ $tag == "video" ]]
     then
         time_to_remove=$time_tag
