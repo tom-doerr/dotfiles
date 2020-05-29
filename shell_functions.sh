@@ -898,3 +898,21 @@ vt() {
 disk-usage-analyzer() {
     ncdu
 }
+
+get_current_taskwarrior_context() {
+    task context show | awk '{print substr($2, 2, length($2)-2)}'
+}
+
+# Adds a task to a project with the current context as a tag.
+pc() {
+    project="$1"
+    task_string="${@:2}"
+    current_taskwarrior_context="$(get_current_taskwarrior_context)"
+    if [[ "$current_taskwarrior_context" == "h" ]]
+    then
+        tag_to_add=""
+    else
+        tag_to_add="$current_taskwarrior_context"
+    fi
+    task add pro:"$project" "$task_string" +"$tag_to_add"
+}
