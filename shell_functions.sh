@@ -912,7 +912,7 @@ pc() {
     then
         tag_to_add=""
     else
-        tag_to_add="$current_taskwarrior_context"
+        tag_to_add=+"$current_taskwarrior_context"
     fi
-    task add pro:"$project" "$task_string" +"$tag_to_add"
+    eval "task add pro:$project $task_string $tag_to_add"
 }
