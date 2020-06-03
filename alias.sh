@@ -24,7 +24,6 @@ alias twm='timew @1 move '
 alias tri='task rc.context=inf'
 alias tis='task context inf && rs'
 alias tra='~/git/private/tracking.py'
-alias del='task del'
 alias day='timew day'
 alias twsua='timew summary 2018-01-01 - tomorrow'
 
