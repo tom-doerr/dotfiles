@@ -239,8 +239,8 @@ td() {
 }
 
 pa() {
-    description_string="$@"
-    task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string
+    description_string=$@
+    eval "task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string"
 }
 
 rb() {
