@@ -217,6 +217,15 @@ swatch() {
     done
 }
 
+execute_for_currently_active_tasks() {
+    taskwarrior_command_to_execute=$1
+    task rc.context=none +ACTIVE $taskwarrior_command_to_execute
+}
+
+get_uuids_currently_active_tasks() {
+    task rc.context=none +ACTIVE _uuid
+}
+
 td() {
     if [[ $1 == "" ]]
     then
@@ -915,4 +924,16 @@ pc() {
         tag_to_add=+"$current_taskwarrior_context"
     fi
     eval "task add pro:$project $task_string $tag_to_add"
+}
+
+del() {
+    task_ids="$1"
+    if [[ "$task_ids" != "" ]]
+    then
+        task delete $task_ids
+    else
+        active_tasks=$(get_uuids_currently_active_tasks)
+        task stop $active_tasks
+        task delete $active_tasks
+    fi
 }
