@@ -239,8 +239,9 @@ td() {
 }
 
 pa() {
-    description_string=$@
-    task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string
+    description_string="$(echo $@ | awk '{split($0,a,"-"); print a[1]}')"
+    modifications_string="$(echo $@ | awk '{split($0,a,"-"); print a[2]}')"
+    task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string $modifications_string
 }
 
 rb() {
