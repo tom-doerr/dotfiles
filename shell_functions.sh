@@ -853,14 +853,14 @@ remaining_time() {
     tag=$1
     prof_tag_ratio=$2
     time_tag=$(get_time_h_day $tag)
+    time_spent_sleeping=$(get_time_h_day "schlafen")
+    time_to_remove=$(($time_tag + $time_spent_sleeping))
     if [[ $tag == "break" ]]
     then
-        time_to_remove=$time_tag
         offset_time=0
         time_obj=$(get_time_h_day obj)
     elif [[ $tag == "video" ]]
     then
-        time_to_remove=$time_tag
         offset_time=0.25
         time_obj=$(get_time_h_day obj)
     fi
