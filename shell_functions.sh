@@ -407,7 +407,15 @@ nl() {
 }
 
 tws() {
-    timew @1 shorten $@
+    time_length="$1"
+    tags="${@:2}"
+    ts
+    timew @1 shorten $time_length
+    if [[ "$tags" != "" ]]
+    then
+        timestamp_start=$(date --date "$time_length ago" --utc "+%Y-%m-%dT%H:%M:%SZ")
+        timew start $timestamp_start $tags
+    fi
 }
 
 main() {
