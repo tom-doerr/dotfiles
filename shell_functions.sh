@@ -862,7 +862,12 @@ remaining_time() {
     prof_tag_ratio=$2
     time_tag=$(get_time_h_day $tag)
     time_spent_sleeping=$(get_time_h_day "schlafen")
-    time_to_remove=$(($time_tag + $time_spent_sleeping))
+    time_to_remove=$time_tag
+    for e in "schlafen" "leute"
+    do
+        time_spent_on_e=$(get_time_h_day $e)
+        time_to_remove=$(($time_to_remove + $time_spent_on_e))
+    done
     if [[ $tag == "break" ]]
     then
         offset_time=0
