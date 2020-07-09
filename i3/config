@@ -241,8 +241,17 @@ exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
 exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 exec --no-startup-id ~/git/dotfiles/keyboard_config/start.sh
-exec --no-startup-id i3-msg 'workspace 7; exec nextcloud-client'
-exec --no-startup-id i3-msg 'workspace 7; exec deja-dup'
+exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
+exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
+
+# Workspace setup
+exec --no-startup-id i3-msg 'workspace 1, move workspace to output DVI-D-0'
+exec --no-startup-id i3-msg 'orkspace 2, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'orkspace 3, move workspace to output DP-2'
+exec --no-startup-id i3-msg 'orkspace 5, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'orkspace 7, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'orkspace 8, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'orkspace 9, move workspace to output DP-0'
 
 # Theme colors
 client.focused #859900 #859900 #fdf6e3 #859900
