@@ -957,3 +957,11 @@ get_arc_size() {
     awk '/^size/ { print $1 " " $3 / 1073741824 }' < /proc/spl/kstat/zfs/arcstats
 
 }
+
+watch_arc_size() {
+    while true
+    do
+        get_arc_size
+        sleep 1
+    done
+}
