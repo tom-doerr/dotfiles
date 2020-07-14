@@ -954,7 +954,7 @@ del() {
 }
 
 get_arc_size() {
-    awk '/^size/ { print $1 " " $3 / 1073741824 }' < /proc/spl/kstat/zfs/arcstats
+    awk '/^size/ { print  $3 / 1073741824 }' < /proc/spl/kstat/zfs/arcstats
 
 }
 
