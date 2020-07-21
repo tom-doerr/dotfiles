@@ -969,3 +969,13 @@ watch_arc_size() {
 fa() {
     find | ag $@
 }
+
+dox() {
+    docker run \
+    -it \
+    --rm \
+    -v /tmp/.X11-unix:/tmp/.X11-unix \
+    -v ~/.Xauthority:/home/root/.Xauthority \
+    --env DISPLAY \
+    $@
+}
