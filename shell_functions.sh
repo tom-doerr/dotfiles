@@ -965,3 +965,7 @@ watch_arc_size() {
         sleep 1
     done
 }
+
+fa() {
+    find | ag $@
+}
