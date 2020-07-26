@@ -980,3 +980,28 @@ dox() {
     --env DISPLAY \
     $@
 }
+
+focus() {
+    timew_focus_tag="$1"
+    hours_to_focus=$2
+    [[ $hours_to_focus == "" ]] && hours_to_focus=3
+    tmux split-window -v 
+    timestamp_start=$(date +%s)
+    seconds_to_focus=$(( $hours_to_focus * 3600 ))
+    while true
+    do
+        timestamp_current=$(date +%s)
+        seconds_passed=$(( $timestamp_current - $timestamp_start ))
+        (( $seconds_passed > $seconds_to_focus )) && break
+        if [[ ! " $(timew) " =~ " $timew_focus_tag " ]]
+        then
+            telegram-send "Please continue working on '$timew_focus_tag' :)"
+            sleep 4
+        fi
+        remaining_time_in_hours=$(echo "scale=4; ($seconds_to_focus - $seconds_passed) / 3600" | bc)
+        clear
+        printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f\n" $remaining_time_in_hours
+        sleep 1
+    done
+    telegram-send "Focus time over :)"
+}
