@@ -985,7 +985,7 @@ focus() {
     timew_focus_tag="$1"
     hours_to_focus=$2
     [[ $hours_to_focus == "" ]] && hours_to_focus=3
-    tmux split-window -v 
+    tmux split-window -v
     timestamp_start=$(date +%s)
     seconds_to_focus=$(( $hours_to_focus * 3600 ))
     while true
@@ -1003,5 +1003,6 @@ focus() {
         printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f\n" $remaining_time_in_hours
         sleep 1
     done
+    clear
     telegram-send "Focus time over :)"
 }
