@@ -327,3 +327,6 @@ let g:vim_printer_print_below_keybinding = '<M-p>'
 let g:vim_printer_print_above_keybinding = '<M-P>'
 
 set viminfo='1000
+
+let g:vimwiki_global_ext = 0
+
