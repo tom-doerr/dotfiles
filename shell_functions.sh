@@ -984,7 +984,7 @@ dox() {
 focus() {
     timew_focus_tag="$1"
     hours_to_focus=$2
-    [[ $hours_to_focus == "" ]] && hours_to_focus=3
+    [[ $hours_to_focus == "" ]] && hours_to_focus=2
     tmux split-window -v
     timestamp_start=$(date +%s)
     seconds_to_focus=$(( $hours_to_focus * 3600 ))
