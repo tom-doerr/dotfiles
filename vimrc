@@ -44,6 +44,7 @@ Plugin 'powerman/vim-plugin-AnsiEsc'
 Plugin 'dpelle/vim-LanguageTool'
 Plugin 'SirVer/ultisnips'
 Plugin 'meain/vim-printer'
+Plugin 'tpope/vim-surround'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -264,7 +265,8 @@ nnoremap <Leader>gp :Gpush<CR>
 nnoremap <Leader>gl :Gpull<CR>
 set conceallevel=2
 
-nnoremap <Leader>b I**<Esc>A**<Esc>
+"nnoremap <Leader>b bi*<Esc>ea*<Esc>
+nmap <Leader>b ysiw*
 
 set modelines=0
 set nomodeline
@@ -329,4 +331,5 @@ let g:vim_printer_print_above_keybinding = '<M-P>'
 set viminfo='1000
 
 let g:vimwiki_global_ext = 0
+
 
