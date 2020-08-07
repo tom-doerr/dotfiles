@@ -988,6 +988,7 @@ focus() {
     tmux split-window -v
     timestamp_start=$(date +%s)
     seconds_to_focus=$(( $hours_to_focus * 3600 ))
+    last_check_tag_not_in_time_tags_string=false
     while true
     do
         timestamp_current=$(date +%s)
@@ -996,8 +997,15 @@ focus() {
         time_tags_string=" $(timew | head -n1) "
         if [[ ! "$time_tags_string" =~ " $timew_focus_tag " ]]
         then
-            telegram-send "Please continue working on '$timew_focus_tag' :)"
+            if [[ $last_check_tag_not_in_time_tags_string == false ]]
+            then
+                last_check_tag_not_in_time_tags_string=true
+            else
+                telegram-send "Please continue working on '$timew_focus_tag' :)"
+            fi
             sleep 4
+        else
+            last_check_tag_not_in_time_tags_string=false
         fi
         if [[ "$time_tags_string" =~ " video " ]]
         then
