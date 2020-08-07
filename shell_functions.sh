@@ -993,9 +993,15 @@ focus() {
         timestamp_current=$(date +%s)
         seconds_passed=$(( $timestamp_current - $timestamp_start ))
         (( $seconds_passed > $seconds_to_focus )) && break
-        if [[ ! " $(timew) " =~ " $timew_focus_tag " ]]
+        time_tags_string=" $(timew | head -n1) "
+        if [[ ! "$time_tags_string" =~ " $timew_focus_tag " ]]
         then
             telegram-send "Please continue working on '$timew_focus_tag' :)"
+            sleep 4
+        fi
+        if [[ "$time_tags_string" =~ " video " ]]
+        then
+            telegram-send "Please don't watch videos during focus time :)"
             sleep 4
         fi
         remaining_time_in_hours=$(echo "scale=4; ($seconds_to_focus - $seconds_passed) / 3600" | bc)
