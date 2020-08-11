@@ -861,7 +861,7 @@ get_time_h_day() {
 remaining_time() {
     tag=$1
     prof_tag_ratio=$2
-    TIME_TAGS_TO_REMOVE_FROM_CALCULATION=("schlafen" "leute")
+    TIME_TAGS_TO_REMOVE_FROM_CALCULATION=("schlafen")
     time_tag=$(get_time_h_day $tag)
     time_spent_sleeping=$(get_time_h_day "schlafen")
     time_to_remove=$time_tag
