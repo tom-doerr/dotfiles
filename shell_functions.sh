@@ -1020,3 +1020,8 @@ focus() {
     clear
     telegram-send "Focus time over :)"
 }
+
+tt() {
+    echo btime: $(btime)
+    echo vtime: $(vtime)
+}
