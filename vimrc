@@ -332,4 +332,5 @@ set viminfo='1000
 
 let g:vimwiki_global_ext = 0
 
+let g:tex_flavor='latex'
 
