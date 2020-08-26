@@ -239,7 +239,7 @@ exec --no-startup-id pamac-tray
 exec --no-startup-id clipit
 exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
-exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
+#exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 exec --no-startup-id ~/git/dotfiles/keyboard_config/start.sh
 exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
 exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
