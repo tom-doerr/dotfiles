@@ -214,4 +214,4 @@ DISABLE_AUTO_UPDATE=true
 #fi
 
 
-export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.6/site-packages"
+export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.8/site-packages"
