@@ -62,8 +62,6 @@ function lazygit() {
     git push
 }
 
-bind 'set completion-ignore-case on'
-
 # Use vim-mode
 set -o vi
 
