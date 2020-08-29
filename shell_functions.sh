@@ -1025,3 +1025,8 @@ tt() {
     echo btime: $(btime)
     echo vtime: $(vtime)
 }
+
+
+wd() {
+    nvim -c 'VimwikiDiaryIndex'
+}
