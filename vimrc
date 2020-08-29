@@ -334,3 +334,5 @@ let g:vimwiki_global_ext = 0
 
 let g:tex_flavor='latex'
 
+nnoremap <Leader>sd :setlocal spell spelllang=de<CR>
+nnoremap <Leader>se :setlocal spell spelllang=en<CR>
