@@ -1032,13 +1032,26 @@ wd() {
     nvim -c 'VimwikiDiaryIndex'
 }
 
+plot() {
+    plot_data=$1
+    color=$2
+    [ -v color ] && color='violet'
+    echo "$plot_data" | gnuplot -p -e "set terminal dumb; plot '<cat' lt rgb "'"'"$color"'"'""
+}
+
 track_time_focus() {
+counter=0
+data_in_seconds=''
+data_in_minutes=''
 while true
 do
         time_started_to_focus=$(date +%s)
         read
         time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
+        data_in_seconds="$data_in_seconds""\n$counter, $time_focused_seconds"
         time_focused_minutes=$(( $time_focused_seconds / 60 ))
-        echo $time_focused_minutes
+        counter=$(( counter + 1 ))
+        plot $data_in_seconds
+        echo Focused minutes: $time_focused_minutes
 done
 }
