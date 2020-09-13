@@ -1047,11 +1047,13 @@ while true
 do
         time_started_to_focus=$(date +%s)
         read
+        clear
         time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
         data_in_seconds="$data_in_seconds""\n$counter, $time_focused_seconds"
+        data_in_minutes="$data_in_minutes""\n$counter, $time_focused_minutes"
         time_focused_minutes=$(( $time_focused_seconds / 60 ))
         counter=$(( counter + 1 ))
-        plot $data_in_seconds
+        plot $data_in_minutes 2>/dev/null
         echo Focused minutes: $time_focused_minutes
 done
 }
