@@ -1031,3 +1031,14 @@ tt() {
 wd() {
     nvim -c 'VimwikiDiaryIndex'
 }
+
+track_time_focus() {
+while true
+do
+        time_started_to_focus=$(date +%s)
+        read
+        time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
+        time_focused_minutes=$(( $time_focused_seconds / 60 ))
+        echo $time_focused_minutes
+done
+}
