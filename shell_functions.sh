@@ -1054,6 +1054,6 @@ do
         time_focused_minutes=$(( $time_focused_seconds / 60 ))
         counter=$(( counter + 1 ))
         plot $data_in_minutes 2>/dev/null
-        echo Focused minutes: $time_focused_minutes
+        echo Minutes since last focused: $time_focused_minutes
 done
 }
