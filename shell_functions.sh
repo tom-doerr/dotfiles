@@ -241,9 +241,16 @@ td() {
 }
 
 pa() {
-    description_string="$(echo $@ | awk '{split($0,a,"-"); print a[1]}')"
-    modifications_string="$(echo $@ | awk '{split($0,a,"-"); print a[2]}')"
-    task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string $modifications_string
+    if [[ "$(task all +ACTIVE)" != "" ]]
+    then
+        description_string="$(echo $@ | awk '{split($0,a,"-"); print a[1]}')"
+        modifications_string="$(echo $@ | awk '{split($0,a,"-"); print a[2]}')"
+        task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string $modifications_string
+    else
+        current_taskwarrior_context="$(get_current_taskwarrior_context)"
+        task add $1 +"$current_taskwarrior_context"
+    fi
+
 }
 
 rb() {
@@ -944,10 +951,14 @@ pc() {
 }
 
 del() {
-    task_ids="$1"
-    if [[ "$task_ids" != "" ]]
+    if [[ $1 =~ ^[0-9]+$ ]]
     then
+        task_ids="$1"
         task delete $task_ids
+    elif [[ "$1" != "" ]]
+    then
+        tracking_tags=$1
+        ts $tracking_tags
     else
         active_tasks=$(get_uuids_currently_active_tasks)
         task stop $active_tasks
