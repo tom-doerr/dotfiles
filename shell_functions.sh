@@ -1,4 +1,5 @@
 # Extract files with ex command
+source ~/git/private/private_shell_functions.sh
 
 ex ()
 {
@@ -704,10 +705,6 @@ tsfa() {
     '
 }
 
-gs() {
-    ~/git/scripts/goal_status_time.py
-}
-
 tabc() {
     xinput map-to-output 13 DP-2
 }
@@ -917,8 +914,13 @@ bk() {
     printf $(btimem)'\n\n'
     at break
     spause
-    read
+    while true
+    do
+        read -t 1 && break
+        [[ " "$(timew)" " =~ " break " ]] || break
+    done
     rt break
+    true
 }
 
 bt() { 
@@ -1068,3 +1070,4 @@ do
         echo Minutes since last focused: $time_focused_minutes
 done
 }
+
