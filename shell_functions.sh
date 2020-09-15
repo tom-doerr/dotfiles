@@ -408,6 +408,21 @@ toggle_tag() {
     done
 }
 
+execute_for_id_argument_else_fzf() {
+    command_to_execute="$1"
+    command_arguments="${@:2}"
+    if [[ "$command_arguments" != "" ]]
+    then
+        eval "$command_to_execute $command_arguments"
+    else
+        id="$(get_task_id_fzf)"
+        if [[ ! -z "$id" ]]
+        then
+            eval "$command_to_execute $id"
+        fi
+    fi
+}
+
 n() {
     task_tag next $@
 }
@@ -421,14 +436,18 @@ get_task_id_fzf() {
 }
 
 nl() {
-    if [[ "$1" != "" ]]
-    then
-        task_tag next_local $@
-    else
-        id="$(get_task_id_fzf)"
-        nl $id
-    fi
+    execute_for_id_argument_else_fzf "task_tag next_local" "$@"
 }
+
+#nl() {
+#    if [[ "$1" != "" ]]
+#    then
+#        task_tag next_local $@
+#    else
+#        id="$(get_task_id_fzf)"
+#        nl $id
+#    fi
+#}
 
 tws() {
     time_length="$1"
