@@ -424,7 +424,7 @@ execute_for_id_argument_else_fzf() {
 }
 
 n() {
-    task_tag next $@
+    execute_for_id_argument_else_fzf "task_tag next" "$@"
 }
 
 get_task_id_fzf() {
