@@ -412,8 +412,22 @@ n() {
     task_tag next $@
 }
 
+get_task_id_fzf() {
+    task report1 | 
+        head -n-2 | 
+        tail -n+3 | 
+        fzf --ansi | 
+        awk '{print $1}'
+}
+
 nl() {
-    task_tag next_local $@
+    if [[ "$1" != "" ]]
+    then
+        task_tag next_local $@
+    else
+        id="$(get_task_id_fzf)"
+        nl $id
+    fi
 }
 
 tws() {
