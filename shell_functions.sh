@@ -230,15 +230,16 @@ get_uuids_currently_active_tasks() {
 }
 
 td() {
-    if [[ $1 == "" ]]
-    then
-        current_task_tags=$(task _get $(task rc.context=none +ACTIVE _uuid).tags)
-        task rc.context=none +ACTIVE done
-        tags_without_next_twt=${current_task_tags//next_twt/}
-        eval "tw start ${tags_without_next_twt//,/ }"
-    else
-        task done $@
-    fi
+    execute_for_id_argument_else_fzf "task done" "$@"
+    #if [[ $1 == "" ]]
+    #then
+    #    current_task_tags=$(task _get $(task rc.context=none +ACTIVE _uuid).tags)
+    #    task rc.context=none +ACTIVE done
+    #    tags_without_next_twt=${current_task_tags//next_twt/}
+    #    eval "tw start ${tags_without_next_twt//,/ }"
+    #else
+    #    task done $@
+    #fi
 }
 
 pa() {
