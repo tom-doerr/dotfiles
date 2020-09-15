@@ -910,15 +910,19 @@ vtimem() {
     round_down $(vtime)
 }
 
-bk() {
-    printf $(btimem)'\n\n'
-    at break
-    spause
+auto_continue_no_more_break() {
     while true
     do
         read -t 1 && break
         [[ " "$(timew)" " =~ " break " ]] || break
     done
+}
+
+bk() {
+    printf $(btimem)'\n\n'
+    at break
+    spause
+    auto_continue_no_more_break
     rt break
     true
 }
