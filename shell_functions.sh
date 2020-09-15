@@ -990,8 +990,7 @@ del() {
         ts $tracking_tags
     else
         active_tasks=$(get_uuids_currently_active_tasks)
-        task stop $active_tasks
-        task delete $active_tasks
+        execute_for_id_argument_else_fzf "task delete" "$active_tasks"
     fi
 }
 
