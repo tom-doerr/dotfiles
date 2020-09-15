@@ -423,6 +423,10 @@ execute_for_id_argument_else_fzf() {
     fi
 }
 
+st() {
+    execute_for_id_argument_else_fzf "ts" "$@"
+}
+
 n() {
     execute_for_id_argument_else_fzf "task_tag next" "$@"
 }
@@ -768,9 +772,9 @@ sst() {
     spause
 }
 
-st() {
-    spause
-}
+#st() {
+#    spause
+#}
 
 sp() {
     splay
