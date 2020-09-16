@@ -1102,3 +1102,11 @@ do
 done
 }
 
+get_last_clone_stats() {
+    for e in audio_adversarial_examples TecoGAN commonroad-docker commonroad_batch_processing i3_workspace_toggle
+do
+        echo $e
+        gt $e Nextcloud/documents/github_traffic_stats | grep 'Referring sites' -B 2 | awk 'NR == 1'
+        echo
+done
+}
