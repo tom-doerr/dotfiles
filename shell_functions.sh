@@ -1093,7 +1093,7 @@ do
         read
         clear
         time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
-        time_focused_minutes=$(( $time_focused_seconds / 60 ))
+        time_focused_minutes=$(bc <<< "scale=2; $time_focused_seconds / 60" )
         data_in_seconds="$data_in_seconds""\n$counter, $time_focused_seconds"
         data_in_minutes="$data_in_minutes""\n$counter, $time_focused_minutes"
         counter=$(( counter + 1 ))
