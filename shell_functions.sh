@@ -1080,7 +1080,7 @@ plot() {
     plot_data=$1
     color=$2
     [ -v color ] && color='violet'
-    echo "$plot_data" | gnuplot -p -e "set terminal dumb; plot '<cat' lt rgb "'"'"$color"'"'""
+    echo "$plot_data" | gnuplot -p -e "set terminal dumb; plot '<cat' with lines"
 }
 
 track_time_focus() {
@@ -1093,9 +1093,9 @@ do
         read
         clear
         time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
+        time_focused_minutes=$(( $time_focused_seconds / 60 ))
         data_in_seconds="$data_in_seconds""\n$counter, $time_focused_seconds"
         data_in_minutes="$data_in_minutes""\n$counter, $time_focused_minutes"
-        time_focused_minutes=$(( $time_focused_seconds / 60 ))
         counter=$(( counter + 1 ))
         plot $data_in_minutes 2>/dev/null
         echo Minutes since last focused: $time_focused_minutes
