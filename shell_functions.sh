@@ -1090,6 +1090,7 @@ data_in_minutes=''
 time_started_to_focus=$(date +%s)
 while true
 do
+        clear
         time_focused_seconds=$(( $(date +%s) - $time_started_to_focus ))
         time_focused_minutes=$(bc <<< "scale=2; $time_focused_seconds / 60" )
         data_in_seconds="$data_in_seconds""\n$counter, $time_focused_seconds"
@@ -1099,7 +1100,6 @@ do
         echo Minutes since last focused: $time_focused_minutes
         time_started_to_focus=$(date +%s)
         read
-        clear
 done
 }
 
