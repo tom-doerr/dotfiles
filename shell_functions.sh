@@ -1053,6 +1053,25 @@ plot() {
     echo "$plot_data" | gnuplot -p -e "set terminal dumb; plot '<cat' with lines"
 }
 
+
+get_last_clone_stats() {
+    output_metric=$1
+    for e in audio_adversarial_examples TecoGAN commonroad-docker commonroad_batch_processing i3_workspace_toggle DeepSpeech
+do
+        echo $e
+        gt_output="$(gt $e Nextcloud/documents/github_traffic_stats)"
+        if [[ $output_metric == 'totals' ]]
+        then
+            echo $gt_output | grep 'Git clones' -A 2 | awk 'END {print}'
+        else
+        echo $gt_output | grep 'Referring sites' -B 2 | awk 'NR == 1'
+        fi
+        echo
+done
+}
+
+
+
 track_time_focus() {
 counter=0
 data_in_seconds=''
@@ -1073,11 +1092,3 @@ do
 done
 }
 
-get_last_clone_stats() {
-    for e in audio_adversarial_examples TecoGAN commonroad-docker commonroad_batch_processing i3_workspace_toggle
-do
-        echo $e
-        gt $e Nextcloud/documents/github_traffic_stats | grep 'Referring sites' -B 2 | awk 'NR == 1'
-        echo
-done
-}
