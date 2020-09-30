@@ -854,6 +854,7 @@ ve() {
 
 mark() {
     at mark
+    sleep 1
     rt mark
 }
 
