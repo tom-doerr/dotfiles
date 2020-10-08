@@ -1093,3 +1093,8 @@ do
 done
 }
 
+op() {
+    xdg-open $@ &
+    disown
+}
+
