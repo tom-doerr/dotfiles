@@ -1098,3 +1098,7 @@ op() {
     disown
 }
 
+hs() {
+    hm
+    hw
+}
