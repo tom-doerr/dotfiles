@@ -1104,7 +1104,7 @@ hs() {
 }
 
 check_sites() {
-    brave-browser --new-window https://dl.acm.org/doi/10.1145/3385003.3410921 &
+    brave-browser --new-window https://dl.acm.org/doi/10.1145/3385003.3410921
     sleep 0.1
     brave-browser https://github.com/tom-doerr
     brave-browser https://hub.docker.com/u/tomdoerr
