@@ -281,6 +281,8 @@ map <M-s> :History<CR>
 let g:jedi#completions_enabled = 0
 autocmd FileType python setlocal completeopt-=preview
 
+autocmd FileType markdown TableModeEnable
+
 " Statusline
 set statusline+=%f
 
