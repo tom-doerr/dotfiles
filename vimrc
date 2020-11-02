@@ -275,7 +275,7 @@ set nomodeline
 imap <c-x><c-p> <plug>(fzf-complete-path)
 map <Leader>f :Rg<CR>
 map <M-;> :Lines<CR>
-map <M-s> :History<CR>
+map <C-s> :History<CR>
 
 " Jedi
 let g:jedi#completions_enabled = 0
