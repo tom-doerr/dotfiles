@@ -46,6 +46,7 @@ context.mlr=+mlr
 context.adlr=+adlr
 context.qc=+qc
 context.warp=+warp
+context.adlc=+adlc
 context.review=-WAITING -sm -bu
 
 ## Home
