@@ -44,6 +44,7 @@ context.dlcg=+dlcg
 context.ad=+ad
 context.mlr=+mlr
 context.adlr=+adlr
+context.qc=+qc
 context.review=-WAITING -sm -bu
 
 ## Home
@@ -101,3 +102,4 @@ bulk=3
 confirmation=no
 nag=
 recurrence.confirmation=no
+context=h
