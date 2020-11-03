@@ -952,7 +952,8 @@ pc() {
     else
         tag_to_add=+"$current_taskwarrior_context"
     fi
-    eval "task add pro:$project $task_string $tag_to_add"
+    eval "task add pro:$current_taskwarrior_context.$project\
+        $task_string $tag_to_add"
 }
 
 del() {
