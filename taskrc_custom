@@ -49,6 +49,8 @@ context.warp=+warp
 context.adlc=+adlc
 context.ea=+ea
 context.uni=+uni
+context.prof=+prof
+context.ai=+ai
 context.review=-WAITING -sm -bu
 
 ## Home
