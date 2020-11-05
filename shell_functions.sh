@@ -1073,6 +1073,20 @@ done
 }
 
 
+wa() {
+    wait_time=$1
+    id="$(get_task_id_fzf)"
+    task $id mod wait:$wait_time
+
+}
+
+wad() {
+    wa 1d
+}
+
+waw() {
+    wa 1w
+}
 
 track_time_focus() {
 counter=0
@@ -1088,7 +1102,7 @@ do
         data_in_minutes="$data_in_minutes""\n$counter, $time_focused_minutes"
         counter=$(( counter + 1 ))
         plot $data_in_minutes 2>/dev/null
-        echo Minutes since last focused: $time_focused_minutes
+        echo "Minutes since last focused: $time_focused_minutes"
         time_started_to_focus=$(date +%s)
         read
 done
@@ -1111,3 +1125,4 @@ check_sites() {
     brave-browser https://hub.docker.com/u/tomdoerr
     brave-browser https://stackexchange.com/users/8102914/user6105651\?tab\=accounts
 }
+
