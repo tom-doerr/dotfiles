@@ -1095,6 +1095,26 @@ ca() {
 
 }
 
+
+op() {
+    xdg-open $@ &
+    disown
+}
+
+hs() {
+    hm
+    hw
+}
+
+check_sites() {
+    brave-browser --new-window https://dl.acm.org/doi/10.1145/3385003.3410921
+    sleep 0.1
+    brave-browser https://github.com/tom-doerr
+    brave-browser https://hub.docker.com/u/tomdoerr
+    brave-browser https://stackexchange.com/users/8102914/user6105651\?tab\=accounts
+}
+
+
 track_time_focus() {
 counter=0
 data_in_seconds=''
@@ -1113,23 +1133,5 @@ do
         time_started_to_focus=$(date +%s)
         read
 done
-}
-
-op() {
-    xdg-open $@ &
-    disown
-}
-
-hs() {
-    hm
-    hw
-}
-
-check_sites() {
-    brave-browser --new-window https://dl.acm.org/doi/10.1145/3385003.3410921
-    sleep 0.1
-    brave-browser https://github.com/tom-doerr
-    brave-browser https://hub.docker.com/u/tomdoerr
-    brave-browser https://stackexchange.com/users/8102914/user6105651\?tab\=accounts
 }
 
