@@ -52,6 +52,7 @@ context.uni=+uni
 context.prof=+prof
 context.ai=+ai
 context.fp=+fp
+context.flh=+flh
 context.review=-WAITING -sm -bu
 
 ## Home
@@ -109,4 +110,4 @@ bulk=3
 confirmation=no
 nag=
 recurrence.confirmation=no
-context=h
+context=uni
