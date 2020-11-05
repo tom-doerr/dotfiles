@@ -1088,6 +1088,13 @@ waw() {
     wa 1w
 }
 
+
+ca() {
+    current_taskwarrior_context="$(get_current_taskwarrior_context)"
+    task add $1 +"$current_taskwarrior_context"
+
+}
+
 track_time_focus() {
 counter=0
 data_in_seconds=''
