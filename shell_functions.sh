@@ -1091,7 +1091,7 @@ waw() {
 
 ca() {
     current_taskwarrior_context="$(get_current_taskwarrior_context)"
-    task add $@ +"$current_taskwarrior_context"
+    task add +"$current_taskwarrior_context" pro:"$current_taskwarrior_context" $@ 
 
 }
 
