@@ -1081,11 +1081,15 @@ wa() {
 }
 
 wad() {
-    wa 1d
+    wa 1day
 }
 
 waw() {
-    wa 1w
+    wa 1week
+}
+
+wam() {
+    wa 1month
 }
 
 
