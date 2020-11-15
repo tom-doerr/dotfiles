@@ -247,12 +247,12 @@ exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
 
 # Workspace setup
 exec --no-startup-id i3-msg 'workspace 1, move workspace to output DVI-D-0'
-exec --no-startup-id i3-msg 'orkspace 2, move workspace to output DP-0'
-exec --no-startup-id i3-msg 'orkspace 3, move workspace to output DP-2'
-exec --no-startup-id i3-msg 'orkspace 5, move workspace to output DP-0'
-exec --no-startup-id i3-msg 'orkspace 7, move workspace to output DP-0'
-exec --no-startup-id i3-msg 'orkspace 8, move workspace to output DP-0'
-exec --no-startup-id i3-msg 'orkspace 9, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'workspace 2, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'workspace 3, move workspace to output DP-2'
+exec --no-startup-id i3-msg 'workspace 5, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'workspace 7, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'workspace 8, move workspace to output DP-0'
+exec --no-startup-id i3-msg 'workspace 9, move workspace to output DP-0'
 
 # Theme colors
 client.focused #859900 #859900 #fdf6e3 #859900
@@ -322,3 +322,4 @@ exec xset dpms 0 0 720
 for_window [class="Brave"] border normal
 
 exec feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg 
+
