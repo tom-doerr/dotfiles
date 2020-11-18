@@ -1115,9 +1115,19 @@ hs() {
 check_sites() {
     brave-browser --new-window https://dl.acm.org/doi/10.1145/3385003.3410921
     sleep 0.1
+    brave-browser https://github.com/Fraunhofer-AISEC/towards-resistant-audio-adversarial-examples
     brave-browser https://github.com/tom-doerr
     brave-browser https://hub.docker.com/u/tomdoerr
     brave-browser https://stackexchange.com/users/8102914/user6105651\?tab\=accounts
+}
+
+
+beeminder_sites() {
+    brave-browser --new-window https://www.beeminder.com/user0882138/leute_kennengelernt
+    sleep 0.1
+    brave-browser https://www.beeminder.com/user0882138/times_started_prof_work_10_am
+    brave-browser https://www.beeminder.com/user0882138/sb
+    brave-browser https://www.beeminder.com/user0882138/main_goal_reached
 }
 
 
