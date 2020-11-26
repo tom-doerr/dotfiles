@@ -87,7 +87,7 @@ trigger_commands_for_activity() {
         hueadm light 7 off
         bash -c '
 feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
-sleep 8h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
+sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
 ' &; disown
     elif [[ $1 == *"Fruehstuecke"* ]]
     then
