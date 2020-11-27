@@ -80,15 +80,18 @@ switch_to_home_activity() {
         set_activity 625aba1d-ac94-49b5-91ee-567a86d24fe5
 }
 
+set_background_night() {
+    feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
+    sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
+}
+
 trigger_commands_for_activity() {
     if [[ $1 == *"bettzeit"* ]]
     then
         hueadm light 6 off
         hueadm light 7 off
-        bash -c '
-feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
-sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
-' &; disown
+        set_background_night &
+        disown
     elif [[ $1 == *"Fruehstuecke"* ]]
     then
         hueadm light 6 on
