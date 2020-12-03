@@ -82,6 +82,7 @@ switch_to_home_activity() {
 
 set_background_night() {
     feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
+    #feh --bg-fill /usr/share/backgrounds/gnome/Icetwigs.jpg
     sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
 }
 
