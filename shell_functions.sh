@@ -1133,7 +1133,7 @@ check_sites() {
 beeminder_sites() {
     brave-browser --new-window https://www.beeminder.com/user0882138/leute_kennengelernt
     sleep 0.1
-    brave-browser https://www.beeminder.com/user0882138/times_started_prof_work_10_am
+    #brave-browser https://www.beeminder.com/user0882138/times_started_prof_work_10_am
     brave-browser https://www.beeminder.com/user0882138/sb
     brave-browser https://www.beeminder.com/user0882138/main_goal_reached
 }
