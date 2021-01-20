@@ -1138,6 +1138,9 @@ beeminder_sites() {
     brave-browser https://www.beeminder.com/user0882138/main_goal_reached
 }
 
+tc() {
+    task context $@
+}
 
 track_time_focus() {
 counter=0
