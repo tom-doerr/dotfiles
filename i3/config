@@ -324,3 +324,7 @@ for_window [class="Brave"] border normal
 exec feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg 
 
 for_window [class="org.gnome.DejaDup"] focus
+
+bindsym F9 exec bash ~/git/scripts/log_timestamp_refocused.sh
+bindsym $mod+g exec bash ~/git/scripts/log_timestamp_refocused.sh
+
