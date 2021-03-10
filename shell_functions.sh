@@ -430,6 +430,7 @@ tws() {
     if [[ "$tags" != "" ]]
     then
         timestamp_start=$(date --date "$time_length ago" --utc "+%Y-%m-%dT%H:%M:%SZ")
+        sleep 0.2
         eval "ts $timestamp_start $tags"
     fi
 }
@@ -1162,3 +1163,6 @@ do
 done
 }
 
+prod() { 
+    ~/git/private/prod.py
+} 
