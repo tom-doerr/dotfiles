@@ -347,3 +347,10 @@ bindsym $mod+g exec bash ~/git/scripts/log_timestamp_refocused.sh
 #bindsym XF86AudioPause exec playerctl play-pause
 #bindsym XF86AudioNext exec playerctl next
 #bindsym XF86AudioPrev exec playerctl previous
+
+
+set $concentration_label_path ~/git/concentration_tracking/label
+bindsym F1 exec bash -ic 'echo 1 > $concentration_label_path'
+bindsym F2 exec bash -ic 'echo 2 > $concentration_label_path'
+bindsym F3 exec bash -ic 'echo 3 > $concentration_label_path'
+bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
