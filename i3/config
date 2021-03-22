@@ -324,7 +324,7 @@ exec feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplas
 
 for_window [class="org.gnome.DejaDup"] focus
 
-bindsym F9 exec bash ~/git/scripts/log_timestamp_refocused.sh
+bindsym F9 exec ~/git/scripts/log_timestamp_refocused.sh
 bindsym $mod+g exec bash ~/git/scripts/log_timestamp_refocused.sh
 
 
