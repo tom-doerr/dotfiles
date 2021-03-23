@@ -889,7 +889,7 @@ remaining_time() {
         time_obj=$(get_time_h_day obj)
     elif [[ $tag == "video" ]]
     then
-        offset_time=1
+        offset_time=0.25
         time_obj=$(get_time_h_day obj)
     fi
     remaining_break_time_min=$((((($time_obj - $time_to_remove) / $prof_tag_ratio) \
