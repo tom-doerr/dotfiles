@@ -86,13 +86,26 @@ set_background_night() {
     sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
 }
 
+switch_to_non_monitoring_workspace() {
+    for e in 4 1 9
+    do
+        i3-msg workspace number $e
+    done
+    sleep 3h
+    for e in 1 4  9
+    do
+        i3-msg workspace number $e
+    done
+{
+
+
 trigger_commands_for_activity() {
     if [[ $1 == *"bettzeit"* ]]
     then
         hueadm light 6 off
         hueadm light 7 off
-        set_background_night &
-        disown
+        set_background_night & disown
+        switch_to_non_monitoring_workspace & disown
     elif [[ $1 == *"Fruehstuecke"* ]]
     then
         hueadm light 6 on
