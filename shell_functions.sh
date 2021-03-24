@@ -96,7 +96,7 @@ switch_to_non_monitoring_workspace() {
     do
         i3-msg workspace number $e
     done
-{
+}
 
 
 trigger_commands_for_activity() {
