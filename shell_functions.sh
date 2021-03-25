@@ -818,10 +818,16 @@ v() {
         sleep_time_sec=$(( 60 * $sleep_time_min ))
     fi
     at video break
-    sstop
-    timeout "$sleep_time_sec"s zsh -c read
+    #sstop
+    if false # disable timeout
+    then
+        timeout "$sleep_time_sec"s zsh -c read
+        rt video break
+    else
+        #zsh -c read
+        auto_continue_no_more_break
+    fi
     telegram-send "Back to work! :)"
-    rt video break
 }
 
 
