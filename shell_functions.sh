@@ -254,7 +254,7 @@ rb() {
     if [[ $command == "" ]]
     then
         bucket_item_done
-    elif [[ $command =~ '[0-9].*' ]]
+    elif [[ $command =~ '^[0-9].*' ]]
     then
         first_task_id=$(get_first_task '+bu +PENDING')
         task $first_task_id mod wait:$command
