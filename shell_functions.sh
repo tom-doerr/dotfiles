@@ -822,12 +822,12 @@ v() {
     if false # disable timeout
     then
         timeout "$sleep_time_sec"s zsh -c read
-        rt video break
     else
         #zsh -c read
         auto_continue_no_more_break
     fi
     telegram-send "Back to work! :)"
+    rt video break
 }
 
 
