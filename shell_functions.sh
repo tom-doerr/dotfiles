@@ -92,7 +92,7 @@ switch_to_non_monitoring_workspace() {
         i3-msg workspace number $e
     done
     sleep 3h
-    for e in 1 4  9
+    for e in 1 4 9
     do
         i3-msg workspace number $e
     done
