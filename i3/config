@@ -354,3 +354,6 @@ bindsym F1 exec bash -ic 'echo 1 > $concentration_label_path'
 bindsym F2 exec bash -ic 'echo 2 > $concentration_label_path'
 bindsym F3 exec bash -ic 'echo 3 > $concentration_label_path'
 bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
+
+set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
+bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
