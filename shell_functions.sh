@@ -257,7 +257,13 @@ rb() {
     elif [[ $command =~ '^[0-9].*' ]]
     then
         first_task_id=$(get_first_task '+bu +PENDING')
-        task $first_task_id mod wait:$command
+        if [[ $command =~ '^[0-9]*$' ]]
+        then
+            time_unit="d"
+        else
+            time_unit=""
+        fi
+        task $first_task_id mod wait:$command"$time_unit"
     else
         eval $command
     fi
@@ -1165,6 +1171,10 @@ beeminder_sites() {
 
 tc() {
     task context $@
+}
+
+bet() {
+    ts bettzeit
 }
 
 
