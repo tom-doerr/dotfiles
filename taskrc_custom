@@ -58,10 +58,10 @@ context.dmkd=+dmkd
 context.review=-WAITING -sm -bu
 
 ## Home
-context.h=((-admin -sm -lrz -hobby -ing -uni) or +next)
+context.h=((-admin -sm -lrz -hobby -ing -uni) or +next or +scheduled_today_custom)
 
 ## Default not home
-context.nh=((-admin -sm -lrz -h -home -hobby -ing -uni) or (+next and -h and -home))
+context.nh=((-admin -sm -lrz -h -home -hobby -ing -uni) or ((+next or +scheduled_today_custom) and -h and -home))
 
 
 
@@ -113,4 +113,4 @@ bulk=3
 confirmation=no
 nag=
 recurrence.confirmation=no
-context=ma
+context=nh
