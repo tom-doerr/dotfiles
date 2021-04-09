@@ -1177,6 +1177,10 @@ bet() {
     ts bettzeit
 }
 
+a() {
+    date >> '/home/tom/telegram_reminders/soon_time_to_sleep' 
+}
+
 
 track_time_focus() {
 counter=0
