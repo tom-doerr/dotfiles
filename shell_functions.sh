@@ -326,6 +326,9 @@ ds() {
     start_first_task timeboxing
 }
 
+dd() {
+    task done $(get_first_task timeboxing)
+}
 
 logp() {
 
