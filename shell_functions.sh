@@ -327,7 +327,7 @@ ds() {
     start_first_task timeboxing
 }
 
-dd() {
+sc() {
     task done $(get_first_task timeboxing)
 }
 
