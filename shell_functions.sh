@@ -1185,6 +1185,10 @@ a() {
     date >> '/home/tom/telegram_reminders/soon_time_to_sleep' 
 }
 
+tb() {
+    task +bu 
+}
+
 
 track_time_focus() {
 counter=0
