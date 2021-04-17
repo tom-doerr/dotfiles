@@ -265,6 +265,10 @@ rb() {
             time_unit=""
         fi
         task $first_task_id mod wait:$command"$time_unit"
+    elif [[ $command =~ '^(d|w|m|y)$' ]]
+    then
+        first_task_id=$(get_first_task '+bu +PENDING')
+        task $first_task_id mod wait:1"$command"
     else
         eval $command
     fi
