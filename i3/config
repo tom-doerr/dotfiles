@@ -357,3 +357,5 @@ bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
 
 set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
+
+bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
