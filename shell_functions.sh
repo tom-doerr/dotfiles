@@ -1194,6 +1194,13 @@ tb() {
     task +bu 
 }
 
+vh() {
+    hueadm light 6 off
+    hueadm light 7 off
+    export DISPLAY=:0
+    xset dpms force off
+}
+
 
 track_time_focus() {
 counter=0
