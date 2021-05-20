@@ -635,7 +635,7 @@ ha() {
 }
 
 bucket_item_done() {
-    task done $(get_first_task '+bu +PENDING')
+    task done $(get_first_task review_bucket_items)
 }
 
 splay() {
