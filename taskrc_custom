@@ -58,6 +58,7 @@ context.dmkd=+dmkd
 context.mvf=+mvf
 context.review=-WAITING -sm -bu
 context.cs=+cs
+context.agt=+agt
 
 ## Home
 context.h=((-admin -sm -lrz -hobby -ing -uni) or +next or +scheduled_today_custom)
