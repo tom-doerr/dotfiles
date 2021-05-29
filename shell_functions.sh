@@ -258,7 +258,7 @@ rb() {
         bucket_item_done
     elif [[ $command =~ '^[0-9].*' ]]
     then
-        first_task_id=$(get_first_task '+bu +PENDING')
+        first_task_id=$(get_first_task 'review_bucket_items')
         if [[ $command =~ '^[0-9]*$' ]]
         then
             time_unit="d"
@@ -268,7 +268,7 @@ rb() {
         task $first_task_id mod wait:$command"$time_unit"
     elif [[ $command =~ '^(d|w|m|y)$' ]]
     then
-        first_task_id=$(get_first_task '+bu +PENDING')
+        first_task_id=$(get_first_task 'review_bucket_items')
         task $first_task_id mod wait:1"$command"
     else
         eval $command
