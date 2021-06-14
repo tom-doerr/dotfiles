@@ -59,6 +59,7 @@ context.mvf=+mvf
 context.review=-WAITING -sm -bu
 context.cs=+cs
 context.agt=+agt
+context.rladv=+rladv
 
 ## Home
 context.h=((-admin -sm -lrz -hobby -ing -uni) or +next or +scheduled_today_custom)
@@ -116,4 +117,4 @@ bulk=3
 confirmation=no
 nag=
 recurrence.confirmation=no
-context=uni
+context=rladv
