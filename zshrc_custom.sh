@@ -206,7 +206,7 @@ source  ~/.oh-my-zsh/custom/plugins/zsh-syntax-highlighting/zsh-syntax-highlight
 zle -N t
 bindkey '^t' t
 
-DISABLE_AUTO_UPDATE=true
+export DISABLE_AUTO_UPDATE=true
 
 #if [[ -n $TMUX ]]
 #then
