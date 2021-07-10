@@ -1216,6 +1216,12 @@ exc() {
     elif [[ $interpreter == "zsh" ]]
     then
         echo "#!/bin/zsh" >> $filename
+    elif [[ $filename =~ ".*\.py" ]]
+    then
+        echo "#!/usr/bin/env python3" >> $filename
+    elif [[ $filename =~ ".*\.sh" ]]
+    then
+        echo "#!/bin/bash" >> $filename
     elif [[ $interpreter == "" ]]
     then
         echo PLease specify an interpreter as the second argument.
@@ -1226,6 +1232,9 @@ exc() {
     fi
 
     chmod +x $filename
+    echo "\n" >> $filename
+    #vi -c 'startinsert' $filename
+    vi -c 'normal G' $filename
 
 }
 
