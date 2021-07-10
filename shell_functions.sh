@@ -1204,6 +1204,31 @@ vh() {
     xset dpms force off
 }
 
+exc() {
+    filename=$1
+    interpreter=$2
+    if [[ $interpreter == "python" ]]
+    then
+        echo "#!/usr/bin/env python3" >> $filename
+    elif [[ $interpreter == "bash" ]]
+    then
+        echo "#!/bin/bash" >> $filename
+    elif [[ $interpreter == "zsh" ]]
+    then
+        echo "#!/bin/zsh" >> $filename
+    elif [[ $interpreter == "" ]]
+    then
+        echo PLease specify an interpreter as the second argument.
+        return 1
+    else
+        echo "Unknown interpreter $interpreter."
+        return 1
+    fi
+
+    chmod +x $filename
+
+}
+
 
 track_time_focus() {
 counter=0
