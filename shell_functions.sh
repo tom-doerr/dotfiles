@@ -1238,6 +1238,10 @@ exc() {
 
 }
 
+le(){
+    ~/git/leute_organisation/main.py $@
+}
+
 
 track_time_focus() {
 counter=0
