@@ -938,11 +938,11 @@ remaining_time() {
 }
 
 btime() {
-    remaining_time break 5
+    remaining_time break 4
 }
 
 vtime() {
-    remaining_time video 5
+    remaining_time video 4
 }
 
 round_down() {
