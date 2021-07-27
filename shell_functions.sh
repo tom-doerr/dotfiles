@@ -1057,6 +1057,7 @@ focus() {
     timestamp_start=$(date +%s)
     seconds_to_focus=$(( $hours_to_focus * 3600 ))
     last_check_tag_not_in_time_tags_string=false
+    mark
     while true
     do
         timestamp_current=$(date +%s)
@@ -1087,6 +1088,8 @@ focus() {
     done
     clear
     telegram-send "Focus time over :)"
+    tw @1 tag block
+    rt block
 }
 
 tt() {
