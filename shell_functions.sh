@@ -159,6 +159,11 @@ at() {
     timew stop && eval "timew cont && timew @1 tag $tags_to_add $@"
 }
 
+atc() {
+    tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
+    eval "timew @1 tag $tags_to_add $@"
+}
+
 rt() {
     timew stop && timew cont && timew @1 untag $@
 }
