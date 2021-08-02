@@ -1,0 +1,3 @@
+set guioptions none
+map l navigate next
+map h navigate previous
