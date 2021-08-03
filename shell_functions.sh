@@ -1,4 +1,9 @@
 # Extract files with ex command
+
+task() {
+    flock /home/tom/.task task $@
+}
+
 source ~/git/private/private_shell_functions.sh
 
 ex ()
@@ -41,7 +46,7 @@ stop_taskwarrior_timewarrior() {
         else
             timew stop
             task +ACTIVE done
-            wait_if_process_running 0.0001 $!
+            #wait_if_process_running 0.0001 $!
         fi
         # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
