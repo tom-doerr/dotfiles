@@ -1,8 +1,8 @@
 # Extract files with ex command
 
-task() {
-    flock /home/tom/.task task $@
-}
+#task() {
+#    flock /home/tom/.task task $@
+#}
 
 source ~/git/private/private_shell_functions.sh
 
