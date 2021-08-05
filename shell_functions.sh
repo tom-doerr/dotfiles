@@ -276,7 +276,7 @@ rb() {
             time_unit=""
         fi
         task $first_task_id mod wait:$command"$time_unit"
-    elif [[ $command =~ '^(d|w|m|y)$' ]]
+    elif [[ $command =~ '^(d|w|m|y|q)$' ]]
     then
         first_task_id=$(get_first_task 'review_bucket_items')
         task $first_task_id mod wait:1"$command"
