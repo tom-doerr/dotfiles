@@ -1,11 +1,10 @@
-# Extract files with ex command
-
 #task() {
 #    flock /home/tom/.task task $@
 #}
 
 source ~/git/private/private_shell_functions.sh
 
+# Extract files with ex command
 ex ()
 {
   if [ -f $1 ] ; then
