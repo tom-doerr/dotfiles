@@ -256,6 +256,8 @@ pa() {
 
 }
 
+
+
 rb() {
     tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
     task +bu
@@ -1058,6 +1060,9 @@ dox() {
     $@
 }
 
+
+
+
 focus() {
     timew_focus_tag="$1"
     hours_to_focus=$2
@@ -1091,8 +1096,12 @@ focus() {
             sleep 4
         fi
         remaining_time_in_hours=$(echo "scale=4; ($seconds_to_focus - $seconds_passed) / 3600" | bc)
+        remaining_time_hours_floor=$(echo $remaining_time_in_hours | awk -F. '{print $1}')
+        remaining_time_hours_rest=$(echo $remaining_time_in_hours | awk -F. '{print $2}')
+        remaining_time_rest_minutes=$(echo "scale=4; (60 * $remaining_time_hours_rest)" | bc)
         clear
         printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f\n" $remaining_time_in_hours
+        #printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f" "$remaining_time_hours_floor"' '"$remaining_time_rest_minutes"
         sleep 1
     done
     clear
