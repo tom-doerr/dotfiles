@@ -31,7 +31,7 @@ Plugin 'dhruvasagar/vim-table-mode'
 Plugin 'vim-scripts/DrawIt'
 Plugin 'lervag/vimtex'
 Plugin 'szw/vim-tags'
-"Plugin 'junegunn/fzf'
+Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
 "Plugin 'ludovicchabant/vim-gutentags'
 Plugin 'davidhalter/jedi-vim'
@@ -275,6 +275,7 @@ set nomodeline
 " FZF mappings
 imap <c-x><c-p> <plug>(fzf-complete-path)
 nnoremap <Leader>f :Rg<CR>
+nnoremap <C-f> :Rg<CR>
 map <M-;> :Lines<CR>
 map <C-s> :History<CR>
 
