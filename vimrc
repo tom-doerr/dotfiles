@@ -261,8 +261,8 @@ endfunction
 let pyindent_nested_paren="&sw*2"
 let pyindent_open_paren="&sw*2"
 
-nnoremap <Leader>gc :Gcommit -v -q %:p<CR>i
-nnoremap <Leader>gp :Gpush<CR>
+nnoremap <Leader>gc :Git commit -v -q %:p<CR>i
+nnoremap <Leader>gp :Git push<CR>
 nnoremap <Leader>gl :Gpull<CR>
 set conceallevel=2
 
