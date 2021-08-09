@@ -45,6 +45,7 @@ Plugin 'dpelle/vim-LanguageTool'
 Plugin 'SirVer/ultisnips'
 Plugin 'meain/vim-printer'
 Plugin 'tpope/vim-surround'
+Plugin 'airblade/vim-rooter'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
@@ -273,7 +274,7 @@ set nomodeline
 
 " FZF mappings
 imap <c-x><c-p> <plug>(fzf-complete-path)
-map <Leader>f :Rg<CR>
+nnoremap <Leader>f :Rg<CR>
 map <M-;> :Lines<CR>
 map <C-s> :History<CR>
 
@@ -293,7 +294,7 @@ map <M-r><C-o> o%todo: add reference<CR>
 map <Leader>r <C-o> o%todo: add reference<CR>
 map <Leader>to o. -- Tom}<C-o>I\todo[inline]{TODO: 
 map <Leader>ts o. -- Tom}<C-o>I\todo[inline]{@Tom: TODO:  
-
+"
 " Taskwiki
 map <Leader>s :TaskWikiMod +next_twt<CR>:!task rc.context=none +ACTIVE done; task rc.context=none +next_twt +PENDING start &>> /var/log/taskwiki_custom<CR><CR>:e<CR>
 map <Leader>c :TaskWikiDone<CR>
@@ -340,3 +341,5 @@ nnoremap <Leader>sd :setlocal spell spelllang=de<CR>
 nnoremap <Leader>se :setlocal spell spelllang=en<CR>
 
 set autochdir
+
+
