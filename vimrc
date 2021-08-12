@@ -78,8 +78,6 @@ map <Space> H<Plug>(easymotion-w)
 " autocmd TextChanged,TextChangedI <buffer> silent write
 
 "let g:gruvbox_italic=1
-colorscheme gruvbox
-hi Normal guibg=NONE ctermbg=NONE
 
 " post by ying17zi https://stackoverflow.com/questions/6778961/alt-key-shortcuts-not-working-on-gnome-terminal-with-vim
 " Alt-j/k to add a blank line
@@ -344,4 +342,5 @@ nnoremap <Leader>se :setlocal spell spelllang=en<CR>
 
 set autochdir
 
-
+colorscheme gruvbox
+autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
