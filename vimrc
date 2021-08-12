@@ -79,6 +79,7 @@ map <Space> H<Plug>(easymotion-w)
 
 "let g:gruvbox_italic=1
 colorscheme gruvbox
+hi Normal guibg=NONE ctermbg=NONE
 
 " post by ying17zi https://stackoverflow.com/questions/6778961/alt-key-shortcuts-not-working-on-gnome-terminal-with-vim
 " Alt-j/k to add a blank line
