@@ -46,6 +46,7 @@ Plugin 'SirVer/ultisnips'
 Plugin 'meain/vim-printer'
 Plugin 'tpope/vim-surround'
 Plugin 'airblade/vim-rooter'
+Plugin 'codota/tabnine-vim'
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
