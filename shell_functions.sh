@@ -919,7 +919,7 @@ mark() {
 }
 
 get_time_h_day() {
-    hms_to_hours $(timew su $1 | tail -2 | head -1 | { read first rest; echo $first; })
+    hms_to_hours $(timew su $(date --date "301 minutes ago" +%Y-%m-%d)T05:00:00 - tomorrow $1 | tail -2 | head -1 | { read first rest; echo $first; })
 }
 
 remaining_time() {
@@ -1259,8 +1259,14 @@ exc() {
 
 }
 
-le(){
+le() {
     ~/git/leute_organisation/main.py $@
+}
+
+kt() {
+    opacity=$1
+    kitty --config <(cat ~/git/dotfiles/kitty.conf; echo "background_opacity $opacity") &
+    disown                               
 }
 
 
