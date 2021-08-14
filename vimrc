@@ -345,3 +345,5 @@ set autochdir
 
 colorscheme gruvbox
 autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
+
+map <C-c> <plug>NERDCommenterToggle
