@@ -1131,7 +1131,7 @@ plot() {
 get_last_clone_stats() {
     output_metric=$1
     for e in audio_adversarial_examples TecoGAN commonroad-docker commonroad_batch_processing \
-        i3_workspace_toggle DeepSpeech
+        i3_workspace_toggle DeepSpeech vim_codex
 do
         echo $e
         gt_output="$(gt $e Nextcloud/documents/github_traffic_stats)"
