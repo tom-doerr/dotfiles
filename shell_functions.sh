@@ -1269,6 +1269,10 @@ kt() {
     disown                               
 }
 
+nb() {
+    ~/git/set_random_wallpaper_reddit/main.sh
+}
+
 
 track_time_focus() {
 counter=0
