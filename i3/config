@@ -236,7 +236,7 @@ mode "resize" {
 }
 
 # Autostart applications
-exec --no-startup-id nitrogen --restore; sleep 1; compton -b
+exec --no-startup-id nitrogen --restore; sleep 1; picom -b --experimental-backends 
 exec --no-startup-id nm-applet
 # exec --no-startup-id xfce4-power-manager
 exec --no-startup-id pamac-tray
@@ -360,3 +360,4 @@ set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
 
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
+bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
