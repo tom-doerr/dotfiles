@@ -1270,7 +1270,11 @@ kt() {
 }
 
 nb() {
-    ~/git/set_random_wallpaper_reddit/main.sh
+    while read -r LINE
+    do
+        ~/git/set_random_wallpaper_reddit/main.sh
+        echo 'loaded.'
+    done
 }
 
 
