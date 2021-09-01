@@ -48,6 +48,7 @@ Plugin 'tpope/vim-surround'
 Plugin 'airblade/vim-rooter'
 Plugin 'codota/tabnine-vim'
 Plugin 'ycm-core/YouCompleteMe'
+"Plugin 'altercation/vim-colors-solarized'
 
 Plugin 'file:///home/git/vim_codex'
 "Plugin 'tom-doerr/vim_codex'
@@ -348,6 +349,8 @@ nnoremap <Leader>se :setlocal spell spelllang=en<CR>
 set autochdir
 
 colorscheme gruvbox
+"set background =dark
+"colorscheme solarized
 autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
 
 map <C-c> <plug>NERDCommenterToggle
