@@ -1002,7 +1002,7 @@ get_current_taskwarrior_context() {
 }
 
 # Adds a task to a project with the current context as a tag.
-pc() {
+pct() {
     project="$1"
     task_string="${@:2}"
     current_taskwarrior_context="$(get_current_taskwarrior_context)"
@@ -1168,7 +1168,8 @@ wam() {
 
 ca() {
     current_taskwarrior_context="$(get_current_taskwarrior_context)"
-    task add +"$current_taskwarrior_context" pro:"$current_taskwarrior_context" $@ 
+    tags_to_add=$(get_current_taskwarrior_context_tags)
+    eval "task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" 
 
 }
 
@@ -1203,7 +1204,12 @@ beeminder_sites() {
 }
 
 tc() {
-    task context $@
+    if [[ $@ == "" ]]
+    then
+        switch_to_taskwarrior_context_using_fzf
+    else
+        task context $@
+    fi
 }
 
 bet() {
@@ -1275,6 +1281,40 @@ nb() {
         ~/git/set_random_wallpaper_reddit/main.sh
         echo 'loaded.'
     done
+}
+
+pc() {
+    project="$1"
+    shift
+    tags="$@"
+    current_taskwarrior_context="$(get_current_taskwarrior_context)"
+    if [[ "$current_taskwarrior_context" == "h" ]]
+    then
+        tag_to_add=""
+        project_prefix=""
+    else
+        tag_to_add="+$current_taskwarrior_context"
+        project_prefix="$current_taskwarrior_context."
+    fi
+    full_project_name="$project_prefix""$project"
+    # Replace all dots in project_prefix by " +".
+    project_split_tags="+"$(echo $full_project_name | sed 's/\./ \+/g')
+    echo "context."$full_project_name"="$tags $project_split_tags >> ~/.taskrc
+}
+
+get_current_taskwarrior_context_tags() {
+    current_taskwarrior_context="$(get_current_taskwarrior_context)"
+    context_definition_start="context.$current_taskwarrior_context="
+    line_matching_context_in_config=$(grep $context_definition_start ~/.taskrc)
+    config_definition=$(echo $line_matching_context_in_config | sed "s/"$context_definition_start"//g")
+    echo $config_definition
+}
+
+
+switch_to_taskwarrior_context_using_fzf() {
+    taskwarrior_contexts="$(grep -E "^\s*context\." ~/.taskrc | cut -f1 -d"=" | sed s/context.//g)"
+    context_so_select=$(echo "$taskwarrior_contexts" | fzf)
+    task context $context_so_select
 }
 
 
