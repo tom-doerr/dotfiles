@@ -1317,6 +1317,13 @@ switch_to_taskwarrior_context_using_fzf() {
     task context $context_so_select
 }
 
+add_symlink_wallpaper() {
+    link_name=$1
+    wallpapers_dir=~/Pictures/Wallpapers/
+    symlink_path="$wallpapers_dir""current.jpg"
+    ln -s $(realpath $symlink_path) "$wallpapers_dir"$link_name".jpg"
+}
+
 
 track_time_focus() {
 counter=0
