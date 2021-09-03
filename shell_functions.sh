@@ -87,8 +87,7 @@ switch_to_home_activity() {
 
 set_background_night() {
     feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
-    #feh --bg-fill /usr/share/backgrounds/gnome/Icetwigs.jpg
-    sleep 3h; feh --bg-fill --no-xinerama ~/git/private/nate-johnston-BW9bM5UoLk4-unsplash.jpg
+    sleep 3h; feh --bg-fill --no-xinerama ~/Pictures/Wallpapers/current.jpg
 }
 
 switch_to_non_monitoring_workspace() {
@@ -1322,6 +1321,16 @@ add_symlink_wallpaper() {
     wallpapers_dir=~/Pictures/Wallpapers/
     symlink_path="$wallpapers_dir""current.jpg"
     ln -s $(realpath $symlink_path) "$wallpapers_dir"$link_name".jpg"
+}
+
+autotag() {
+    tags_to_add=$@
+    tmux split-window -v
+    while true
+    do
+        atc $tags_to_add
+        sleep 1
+    done
 }
 
 
