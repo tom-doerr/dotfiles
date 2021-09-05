@@ -216,3 +216,9 @@ export DISABLE_AUTO_UPDATE=true
 
 export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.8/site-packages"
 [ -f ~/.zprofile ] || echo "No ~/.zprofile found. You might want to create a symlink using 'ln -s .profile .zprofile'."
+
+if [[ $1 == eval ]]
+then
+    "$@"
+    set --
+fi
