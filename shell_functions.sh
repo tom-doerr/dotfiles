@@ -1,7 +1,3 @@
-#task() {
-#    flock /home/tom/.task task $@
-#}
-
 source ~/git/private/private_shell_functions.sh
 
 WALLPAPERS_DIR=~/Pictures/Wallpapers/
