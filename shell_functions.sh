@@ -1324,8 +1324,13 @@ tf() {
         file_ending=$1
         random_string=$(head /dev/urandom | tr -dc a-z0-9 | head -c 3)
         file_path=~/test/"$random_string"".""$file_ending"
+        ln -s $file_path ~/test/latest
     done
     exc $file_path
+}
+
+tl() {
+    ~/test/latest
 }
 
 
