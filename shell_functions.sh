@@ -261,31 +261,7 @@ pa() {
 
 rb() {
     tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
-    task +bu
-    while true
-    do
-        read command
-    if [[ $command == "" ]]
-    then
-        bucket_item_done
-    elif [[ $command =~ '^[0-9].*' ]]
-    then
-        first_task_id=$(get_first_task 'review_bucket_items')
-        if [[ $command =~ '^[0-9]*$' ]]
-        then
-            time_unit="d"
-        else
-            time_unit=""
-        fi
-        task $first_task_id mod wait:$command"$time_unit"
-    elif [[ $command =~ '^(d|w|m|y|q)$' ]]
-    then
-        first_task_id=$(get_first_task 'review_bucket_items')
-        task $first_task_id mod wait:1"$command"
-    else
-        eval $command
-    fi
-    done
+    zsh -is eval "source ~/git/scripts/review_bucket_mappings.sh"
 }
 
 sm() {
@@ -1339,6 +1315,16 @@ autotag() {
         atc $tags_to_add
         sleep 1
     done
+}
+
+tf() {
+    while [ -e $file_path ]
+    do
+        file_ending=$1
+        random_string=$(head /dev/urandom | tr -dc a-z0-9 | head -c 3)
+        file_path=~/test/"$random_string"".""$file_ending"
+    done
+    exc $file_path
 }
 
 
