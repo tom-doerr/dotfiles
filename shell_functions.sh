@@ -1326,7 +1326,7 @@ tf() {
 }
 
 tl() {
-    ~/test/latest
+    ~/test/latest $@
 }
 
 
