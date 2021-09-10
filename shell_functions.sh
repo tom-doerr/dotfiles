@@ -1315,6 +1315,7 @@ autotag() {
 }
 
 tf() {
+    file_path=/dev/null
     while [ -e $file_path ]
     do
         file_ending=$1
