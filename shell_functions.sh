@@ -314,7 +314,7 @@ rs() {
 }
 
 ds() {
-    start_first_task timeboxing
+    start_first_task "rc.context=none timeboxing"
 }
 
 sc() {
