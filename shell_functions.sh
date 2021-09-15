@@ -43,9 +43,7 @@ stop_taskwarrior_timewarrior() {
         else
             timew stop
             task +ACTIVE done
-            #wait_if_process_running 0.0001 $!
         fi
-        # ~/git/scripts/tw_hist.py $(tw get dom.active.tag.1)
 }
 
 end_taskwarrior_timewarrior() {
