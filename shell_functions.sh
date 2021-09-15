@@ -49,7 +49,7 @@ stop_taskwarrior_timewarrior() {
 }
 
 end_taskwarrior_timewarrior() {
-    task_output="$(task +ACTIVE done 2>&1)"
+    task_output="$(task rc.context=none +ACTIVE done 2>&1)"
     if [[ "$task_output" = *"No tasks specified."* ]] 
     then
         timew stop
