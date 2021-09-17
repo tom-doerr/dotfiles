@@ -316,7 +316,7 @@ ds() {
 }
 
 sc() {
-    task done $(get_first_task timeboxing)
+    task done $(get_first_task "rc.context=none timeboxing")
 }
 
 logp() {
