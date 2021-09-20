@@ -353,7 +353,7 @@ colorscheme gruvbox
 "colorscheme solarized
 autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
 
-map <C-c> <plug>NERDCommenterToggle
+map <C-p> <plug>NERDCommenterToggle
 nnoremap  <C-x> :CreateCompletion<CR>
 inoremap  <C-x> <Esc>li<C-g>u<Esc>l:CreateCompletion<CR>
 
