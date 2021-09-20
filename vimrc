@@ -354,5 +354,6 @@ colorscheme gruvbox
 autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
 
 map <C-c> <plug>NERDCommenterToggle
-nmap  <C-x> :CreateCompletion<CR>
-imap  <C-x> <Esc>l:CreateCompletion<CR>i
+nnoremap  <C-x> :CreateCompletion<CR>
+inoremap  <C-x> <Esc>li<C-g>u<Esc>l:CreateCompletion<CR>
+
