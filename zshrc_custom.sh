@@ -67,6 +67,7 @@ plugins=(
   git
   colored-man-pages
   last-working-dir
+  zsh_codex
 )
 
 source $ZSH/oh-my-zsh.sh
@@ -222,3 +223,9 @@ then
     "$@"
     set --
 fi
+
+
+# Change the color of comments in ZSH to grey.
+ZSH_HIGHLIGHT_STYLES[comment]='none'
+
+bindkey '^X' create_completion
