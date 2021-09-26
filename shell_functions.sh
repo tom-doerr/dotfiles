@@ -1102,8 +1102,7 @@ plot() {
 
 get_last_clone_stats() {
     output_metric=$1
-    for e in vim_codex audio_adversarial_examples TecoGAN commonroad-docker commonroad_batch_processing \
-        i3_workspace_toggle DeepSpeech 
+    for e in zsh_codex vim_codex TecoGAN DeepSpeech 
 do
         echo $e
         gt_output="$(gt $e Nextcloud/documents/github_traffic_stats)"
@@ -1141,6 +1140,7 @@ wam() {
 ca() {
     current_taskwarrior_context="$(get_current_taskwarrior_context)"
     tags_to_add=$(get_current_taskwarrior_context_tags)
+    echo ""task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" : " "$"task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" "
     eval "task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" 
 
 }
@@ -1222,6 +1222,9 @@ exc() {
     elif [[ $filename =~ ".*\.sh" ]]
     then
         echo "#!/bin/bash" >> $filename
+    elif [[ $filname =~ ".*\.hs" ]]
+    then
+        echo "#!/usr/bin/env runhaskellI" >> $filename
     elif [[ $interpreter == "" ]]
     then
         echo PLease specify an interpreter as the second argument.
