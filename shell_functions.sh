@@ -480,6 +480,7 @@ turn_all_lights_off() {
 }
 
 schlafen() {
+    a
     ts schlafen
     turn_all_lights_off
     clear
