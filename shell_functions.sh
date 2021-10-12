@@ -1103,7 +1103,7 @@ plot() {
 
 get_last_clone_stats() {
     output_metric=$1
-    for e in zsh_codex vim_codex TecoGAN DeepSpeech 
+    for e in codex-readme zsh_codex vim_codex TecoGAN DeepSpeech 
 do
         echo $e
         gt_output="$(gt $e Nextcloud/documents/github_traffic_stats)"
