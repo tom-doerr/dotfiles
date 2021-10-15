@@ -526,7 +526,7 @@ j() {
 }
 
 b() {
-    task add +bu +clarify +stuff $@
+    task add rc.context=none +bu +clarify +stuff $@
 }
 
 B() {
@@ -534,7 +534,7 @@ B() {
 }
 
 ta() {
-    task add $@
+    task add rc.context=none $@
 }
 
 we() {
