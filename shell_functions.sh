@@ -383,7 +383,7 @@ task_tag() {
     then
         toggle_tag $1 "${@:2}"
     else
-        task add "${@:2}" '+'$1
+        task add rc.context=none "${@:2}" '+'$1
     fi
 }
 
@@ -1062,6 +1062,10 @@ focus() {
             sleep 4
         else
             last_check_tag_not_in_time_tags_string=false
+        fi
+        if [[ ! "$time_tags_string" =~ " focus " ]]
+        then
+            tw @1 tag focus
         fi
         if [[ "$time_tags_string" =~ " video " ]]
         then
