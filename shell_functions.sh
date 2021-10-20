@@ -1065,7 +1065,7 @@ focus() {
         fi
         if [[ ! "$time_tags_string" =~ " focus " ]]
         then
-            tw @1 tag focus
+            timew @1 tag focus
         fi
         if [[ "$time_tags_string" =~ " video " ]]
         then
