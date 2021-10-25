@@ -972,7 +972,12 @@ disk-usage-analyzer() {
 }
 
 get_current_taskwarrior_context() {
-    task context show | awk '{print substr($2, 2, length($2)-2)}'
+    #task context show | awk '{print substr($2, 2, length($2)-2)}'
+    text=$(task context show)
+    text=${text#*' '}
+    text=${text%' '*}
+    text=${text%' '*}
+    echo $text
 }
 
 # Adds a task to a project with the current context as a tag.
