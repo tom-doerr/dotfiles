@@ -1,4 +1,5 @@
 source ~/git/private/private_shell_functions.sh
+source ~/git/private/private_environment_variables.sh
 
 WALLPAPERS_DIR=~/Pictures/Wallpapers/
 
