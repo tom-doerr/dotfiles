@@ -1248,7 +1248,7 @@ exc() {
     chmod +x $filename
     echo "\n" >> $filename
     #vi -c 'startinsert' $filename
-    vi -c 'normal G' $filename
+    nvim -c 'normal G' $filename
 
 }
 
