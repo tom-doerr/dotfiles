@@ -49,9 +49,11 @@ Plugin 'airblade/vim-rooter'
 Plugin 'codota/tabnine-vim'
 Plugin 'ycm-core/YouCompleteMe'
 "Plugin 'altercation/vim-colors-solarized'
+Plugin 'github/copilot.vim'
 
 Plugin 'file:///home/git/vim_codex'
 "Plugin 'tom-doerr/vim_codex'
+
 
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
