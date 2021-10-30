@@ -1317,12 +1317,15 @@ set_wallpaper() {
 }
 
 autotag() {
-    tags_to_add=$@
+    tag_to_add=$@
     tmux split-window -v
     while true
     do
-        atc $tags_to_add
-        sleep 1
+        time_tags_string=" $(timew | head -n1) "
+        if [[ ! "$time_tags_string" =~ " $tag_to_add " ]]
+        then
+            atc $tag_to_add
+        fi
     done
 }
 
