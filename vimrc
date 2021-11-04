@@ -50,6 +50,7 @@ Plugin 'airblade/vim-rooter'
 Plugin 'ycm-core/YouCompleteMe'
 "Plugin 'altercation/vim-colors-solarized'
 Plugin 'github/copilot.vim'
+Plugin 'psf/black'
 
 Plugin 'file:///home/git/vim_codex'
 "Plugin 'tom-doerr/vim_codex'
@@ -274,7 +275,7 @@ nnoremap <Leader>gl :Gpull<CR>
 set conceallevel=2
 
 "nnoremap <Leader>b bi*<Esc>ea*<Esc>
-nmap <Leader>b ysiw*
+"nmap <Leader>b ysiw*
 
 set modelines=0
 set nomodeline
@@ -358,4 +359,6 @@ autocmd vimenter * hi Normal guibg=NONE ctermbg=NONE
 map <C-p> <plug>NERDCommenterToggle
 nnoremap  <C-x> :CreateCompletion<CR>
 inoremap  <C-x> <Esc>li<C-g>u<Esc>l:CreateCompletion<CR>
+
+nnoremap <Leader>b :Black<CR>
 
