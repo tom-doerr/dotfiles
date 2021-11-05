@@ -1149,10 +1149,11 @@ wam() {
 
 
 ca() {
-    current_taskwarrior_context="$(get_current_taskwarrior_context)"
-    tags_to_add=$(get_current_taskwarrior_context_tags)
-    echo ""task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" : " "$"task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" "
-    eval "task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" 
+    #current_taskwarrior_context="$(get_current_taskwarrior_context)"
+    #tags_to_add=$(get_current_taskwarrior_context_tags)
+    #echo ""task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" : " "$"task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" "
+    #eval "task add +$current_taskwarrior_context $tags_to_add pro:$current_taskwarrior_context $@" 
+    task add $@
 
 }
 
