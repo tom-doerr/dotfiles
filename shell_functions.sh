@@ -441,6 +441,8 @@ nl() {
 tws() {
     time_length="$1"
     tags=${@:2}
+    # check if time_length is valid for date.
+    date --date "$time_length ago" || return 1
     ts
     timew @1 shorten $time_length
     if [[ "$tags" != "" ]]
