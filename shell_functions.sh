@@ -974,12 +974,7 @@ disk-usage-analyzer() {
 }
 
 get_current_taskwarrior_context() {
-    #task context show | awk '{print substr($2, 2, length($2)-2)}'
-    text=$(task context show)
-    text=${text#*' '}
-    text=${text%' '*}
-    text=${text%' '*}
-    echo $text
+    task _get rc.context
 }
 
 # Adds a task to a project with the current context as a tag.
@@ -1273,24 +1268,46 @@ nb() {
     done
 }
 
+
 pc() {
-    project="$1"
-    shift
-    tags="$@"
-    current_taskwarrior_context="$(get_current_taskwarrior_context)"
-    if [[ "$current_taskwarrior_context" == "h" ]]
+    input_file_name=~/.taskrc
+    new_project_name=$1
+
+    file_content=$(cat $input_file_name)
+    echo "file_content: " "$file_content"
+
+    # taskwarrior get name current context
+    current_context=$(get_current_taskwarrior_context)
+
+    # get lines containing context.new_project_name.read=
+    context_lines=$(echo "$file_content" | grep "^context.$current_context.read=")
+    echo "context_lines: " "$context_lines"
+
+    # extract pro:testp
+    pro_proname=$(echo "$context_lines" | cut -d "=" -f 2 | cut -d " " -f 1)
+    echo "pro_proname: " "$pro_proname"
+
+    echo "pro_proname: " "'$pro_proname'"
+    if [[ "$pro_proname" == "" ]]
     then
-        tag_to_add=""
-        project_prefix=""
+        prefix=""
     else
-        tag_to_add="+$current_taskwarrior_context"
-        project_prefix="$current_taskwarrior_context."
+        # extract testp
+        project_name=$(echo "$pro_proname" | cut -d ":" -f 2)
+        if [[ project_name == "h" ]]
+        then
+            prefix=""
+        else
+            prefix="$project_name."
+        fi
     fi
-    full_project_name="$project_prefix""$project"
-    # Replace all dots in project_prefix by " +".
-    project_split_tags="+"$(echo $full_project_name | sed 's/\./ \+/g')
-    echo "context."$full_project_name"="$tags $project_split_tags >> ~/.taskrc
+    project_str="$prefix""$new_project_name"
+    # all words in project_str are separated by " +"
+    project_str_split_tags="+"$(echo $project_str | sed 's/\./ \+/g')
+    task context define $new_project_name "pro:$project_str" $project_str_split_tags
+
 }
+
 
 get_current_taskwarrior_context_tags() {
     current_taskwarrior_context="$(get_current_taskwarrior_context)"
@@ -1302,7 +1319,11 @@ get_current_taskwarrior_context_tags() {
 
 
 switch_to_taskwarrior_context_using_fzf() {
-    taskwarrior_contexts="$(grep -E "^\s*context\." ~/.taskrc | cut -f1 -d"=" | sed s/context.//g)"
+    taskwarrior_contexts_read_write="$(grep -E "^\s*context\." ~/.taskrc | cut -f1 -d"=" | sed s/context.//g)"
+    # Remove '.write' and '.read' from the strings in the list.
+    taskwarrior_contexts_all=$(echo "$taskwarrior_contexts_read_write" | sed -E 's/(\.write|\.read)//g')
+    # remove duplicates
+    taskwarrior_contexts=$(echo "$taskwarrior_contexts_all" | tr ' ' '\n' | sort -u)
     context_so_select=$(echo "$taskwarrior_contexts" | fzf)
     task context $context_so_select
 }
