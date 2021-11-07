@@ -1274,20 +1274,16 @@ pc() {
     new_project_name=$1
 
     file_content=$(cat $input_file_name)
-    echo "file_content: " "$file_content"
 
     # taskwarrior get name current context
     current_context=$(get_current_taskwarrior_context)
 
     # get lines containing context.new_project_name.read=
     context_lines=$(echo "$file_content" | grep "^context.$current_context.read=")
-    echo "context_lines: " "$context_lines"
 
     # extract pro:testp
     pro_proname=$(echo "$context_lines" | cut -d "=" -f 2 | cut -d " " -f 1)
-    echo "pro_proname: " "$pro_proname"
 
-    echo "pro_proname: " "'$pro_proname'"
     if [[ "$pro_proname" == "" ]]
     then
         prefix=""
