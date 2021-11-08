@@ -1181,8 +1181,8 @@ beeminder_sites() {
     sleep 0.1
     #brave-browser https://www.beeminder.com/user0882138/times_started_prof_work_10_am
     brave-browser https://www.beeminder.com/user0882138/sb &
-    brave-browser https://www.beeminder.com/user0882138/main_goal_reached &
-    brave-browser https://www.beeminder.com/user0882138/start_work_main
+    #brave-browser https://www.beeminder.com/user0882138/main_goal_reached &
+    #brave-browser https://www.beeminder.com/user0882138/start_work_main
 }
 
 tc() {
