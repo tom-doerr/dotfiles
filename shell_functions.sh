@@ -1261,10 +1261,16 @@ kt() {
 }
 
 nb() {
+    i=1
     while read -r LINE
     do
-        ~/git/set_random_wallpaper_reddit/main.sh
+        if ! $(~/git/set_random_wallpaper_reddit/main.sh $i) 
+        then
+            echo 'Setting images from beginning'
+            i=1
+        fi
         echo 'loaded.'
+        i=$((i+1))
     done
 }
 
