@@ -83,7 +83,8 @@ switch_to_home_activity() {
 }
 
 set_background_night() {
-    feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
+    #feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
+    exec feh --bg-fill --no-xinerama /home/tom/Pictures/Wallpapers/i.redd.it/privtmr2u6y71.jpg
     sleep 3h; feh --bg-fill --no-xinerama ~/Pictures/Wallpapers/current.jpg
 }
 
@@ -1332,14 +1333,14 @@ switch_to_taskwarrior_context_using_fzf() {
 
 add_symlink_wallpaper() {
     link_name=$1
-    symlink_path="$WALLPAPERS_DIR""current.jpg"
-    ln -s $(realpath $symlink_path) "$WALLPAPERS_DIR"$link_name".jpg"
+    symlink_path="$WALLPAPERS_DIR""current"
+    ln -s $(realpath $symlink_path) "$WALLPAPERS_DIR"$link_name
 }
 
 set_wallpaper() {
     wallpaper_name=$1
-    ln -sf "$WALLPAPERS_DIR""$wallpaper_name"".jpg" "$WALLPAPERS_DIR""current.jpg"
-    feh --bg-fill --no-xinerama "$WALLPAPERS_DIR""current.jpg"
+    ln -sf "$WALLPAPERS_DIR""$wallpaper_name" "$WALLPAPERS_DIR""current"
+    feh --bg-fill --no-xinerama "$WALLPAPERS_DIR""current"
 }
 
 autotag() {
