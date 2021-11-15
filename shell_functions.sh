@@ -85,7 +85,7 @@ switch_to_home_activity() {
 set_background_night() {
     #feh --bg-fill /usr/share/backgrounds/gnome/adwaita-night.jpg  
     exec feh --bg-fill --no-xinerama /home/tom/Pictures/Wallpapers/i.redd.it/privtmr2u6y71.jpg
-    sleep 3h; feh --bg-fill --no-xinerama ~/Pictures/Wallpapers/current.jpg
+    sleep 3h; feh --bg-fill --no-xinerama ~/Pictures/Wallpapers/current
 }
 
 switch_to_non_monitoring_workspace() {
