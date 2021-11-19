@@ -1354,6 +1354,7 @@ autotag() {
         then
             atc $tag_to_add
         fi
+        sleep 1
     done
 }
 
