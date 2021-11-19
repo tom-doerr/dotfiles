@@ -1345,6 +1345,7 @@ set_wallpaper() {
 
 autotag() {
     tag_to_add=$@
+    cd
     tmux split-window -v
     while true
     do
