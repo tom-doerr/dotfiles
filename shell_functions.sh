@@ -1268,7 +1268,7 @@ nb() {
         if ! $(~/git/set_random_wallpaper_reddit/main.sh $i) 
         then
             echo 'Setting images from beginning'
-            i=1
+            i=0
         fi
         echo 'loaded.'
         i=$((i+1))
