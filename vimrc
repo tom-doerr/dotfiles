@@ -362,3 +362,4 @@ inoremap  <C-x> <Esc>li<C-g>u<Esc>l:CreateCompletion<CR>
 
 nnoremap <Leader>b :Black<CR>
 
+set inccommand=nosplit
