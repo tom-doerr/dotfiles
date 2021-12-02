@@ -1075,13 +1075,18 @@ focus() {
             telegram-send "Please don't watch videos during focus time :)"
             sleep 4
         fi
-        remaining_time_in_hours=$(echo "scale=4; ($seconds_to_focus - $seconds_passed) / 3600" | bc)
-        remaining_time_hours_floor=$(echo $remaining_time_in_hours | awk -F. '{print $1}')
-        remaining_time_hours_rest=$(echo $remaining_time_in_hours | awk -F. '{print $2}')
-        remaining_time_rest_minutes=$(echo "scale=4; (60 * $remaining_time_hours_rest)" | bc)
+
+        # Show the remaining time in HH:MM format
+        remaining_time_in_seconds=$(( $seconds_to_focus - $seconds_passed ))
+        remaining_time_in_minutes=$(( $remaining_time_in_seconds / 60 ))
+        remaining_time_in_hours=$(( $remaining_time_in_minutes / 60 ))
+        remaining_time_in_hours_rounded=$(round_down $remaining_time_in_hours)
+        remaining_time_in_minutes_rounded=$(( $remaining_time_in_minutes - $remaining_time_in_hours_rounded * 60 ))
+        remaining_time_in_seconds_rounded=$(( $remaining_time_in_seconds - $remaining_time_in_hours_rounded * 3600 - $remaining_time_in_minutes_rounded * 60 ))
+        remaining_time_in_hours_string=$(printf "%02d" $remaining_time_in_hours_rounded)
+        remaining_time_in_minutes_string=$(printf "%02d" $remaining_time_in_minutes_rounded)
         clear
-        printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f\n" $remaining_time_in_hours
-        #printf "\n\n\n\n\n\n             Focus on $timew_focus_tag %.4f" "$remaining_time_hours_floor"' '"$remaining_time_rest_minutes"
+        printf "\n\n\n\n\n\n             Focus on $timew_focus_tag   $remaining_time_in_hours_string:$remaining_time_in_minutes_string\n" 
         sleep 1
     done
     clear
