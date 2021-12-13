@@ -1280,7 +1280,7 @@ nb() {
 }
 
 
-pc() {
+pc_old() {
     input_file_name=~/.taskrc
     new_project_name=$1
 
@@ -1314,6 +1314,33 @@ pc() {
     task context define $new_project_name "pro:$project_str" $project_str_split_tags
 
 }
+
+
+pc() {
+    input_file_name=~/.taskrc
+    new_project_name=$1
+
+    file_content=$(cat $input_file_name)
+
+    # taskwarrior get name current context
+    current_context=$(get_current_taskwarrior_context)
+    echo "current_context: " "$current_context"
+
+    # split current context on the ':' token
+    current_context_split=$(echo $current_context | sed 's/:/ /g')
+
+    # add the '+' sign in front of each word
+    current_context_split_with_plus=''
+    for word in ${(z)current_context_split}
+    do
+        current_context_split_with_plus=$current_context_split_with_plus"+"$word" "
+    done
+
+    echo "current_context_split_with_plus: " "$current_context_split_with_plus"
+
+    task context define $current_context:$new_project_name "pro:$current_context:$new_project_name" $current_context_split_with_plus +$new_project_name
+}
+
 
 
 get_current_taskwarrior_context_tags() {
