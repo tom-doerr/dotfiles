@@ -31,3 +31,6 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 export SPOTIFY_DBUS_CLIENT=spotifyd
 export PATH="$PATH":"$HOME"/.cargo/bin
 export PATH="$PATH":"$HOME"/go/bin
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
