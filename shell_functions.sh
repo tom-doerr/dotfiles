@@ -1324,7 +1324,6 @@ pc() {
 
     # taskwarrior get name current context
     current_context=$(get_current_taskwarrior_context)
-    echo "current_context: " "$current_context"
 
     # remove the 'h.' or 'nh.' part at the beginning
     if [[ $current_context =~ '^(h|nh)\.' ]]
@@ -1337,8 +1336,6 @@ pc() {
         current_context_without_home_prefix=$current_context
     fi
 
-    echo "current_context_without_home_prefix: " "$current_context_without_home_prefix"
-
 
     # split current context on the ':' token
     current_context_split=$(echo $current_context_without_home_prefix | sed 's/:/ /g')
@@ -1349,8 +1346,6 @@ pc() {
     do
         current_context_split_with_plus=$current_context_split_with_plus"+"$word" "
     done
-
-    echo "current_context_split_with_plus: " "$current_context_split_with_plus"
 
     if [[ $current_context_without_home_prefix == "" ]]
     then
