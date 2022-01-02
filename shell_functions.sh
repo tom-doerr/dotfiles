@@ -1326,8 +1326,22 @@ pc() {
     current_context=$(get_current_taskwarrior_context)
     echo "current_context: " "$current_context"
 
+    # remove the 'h.' or 'nh.' part at the beginning
+    if [[ $current_context =~ '^(h|nh)\.' ]]
+    then
+        current_context_without_home_prefix=$(echo $current_context | cut -d "." -f 2)
+    elif [[ $current_context =~ '(h|nh)' ]]
+    then
+        current_context_without_home_prefix=""
+    else
+        current_context_without_home_prefix=$current_context
+    fi
+
+    echo "current_context_without_home_prefix: " "$current_context_without_home_prefix"
+
+
     # split current context on the ':' token
-    current_context_split=$(echo $current_context | sed 's/:/ /g')
+    current_context_split=$(echo $current_context_without_home_prefix | sed 's/:/ /g')
 
     # add the '+' sign in front of each word
     current_context_split_with_plus=''
@@ -1338,7 +1352,14 @@ pc() {
 
     echo "current_context_split_with_plus: " "$current_context_split_with_plus"
 
-    task context define $current_context:$new_project_name "pro:$current_context:$new_project_name" $current_context_split_with_plus +$new_project_name
+    if [[ $current_context_without_home_prefix == "" ]]
+    then
+        prefix_str=""
+    else
+        prefix_str="$current_context_without_home_prefix:"
+    fi
+
+    task context define $prefix_str$new_project_name "pro:$prefix_str$new_project_name" $current_context_split_with_plus +$new_project_name
 }
 
 
