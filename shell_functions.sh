@@ -664,7 +664,7 @@ ntest() {
 }
 
 nh() {
-    task add $@ +h +next
+    execute_for_id_argument_else_fzf "task_tag next +h" "$@"
 }
 
 kido() {
