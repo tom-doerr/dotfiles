@@ -1116,7 +1116,7 @@ plot() {
 get_last_clone_stats() {
     output_metric=$1
     for e in fix codex-readme zsh_codex vim_codex TecoGAN DeepSpeech 
-do
+    do
         echo $e
         gt_output="$(gt $e Nextcloud/documents/github_traffic_stats)"
         if [[ $output_metric == 'totals' ]]
@@ -1126,7 +1126,7 @@ do
         echo $gt_output | grep 'Referring sites' -B 2 | awk 'NR == 1'
         fi
         echo
-done
+    done
 }
 
 
