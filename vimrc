@@ -54,8 +54,8 @@ Plugin 'github/copilot.vim'
 
 Plugin 'psf/black'
 
-Plugin 'file:///home/git/vim_codex'
-"Plugin 'tom-doerr/vim_codex'
+"Plugin 'file:///home/git/vim_codex'
+Plugin 'tom-doerr/vim_codex'
 
 
 " All of your Plugins must be added before the following line
