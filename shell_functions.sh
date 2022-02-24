@@ -1421,6 +1421,10 @@ tl() {
     ~/test/latest $@
 }
 
+ghp() {
+    gh repo create -c -l MIT --public --gitignore Python $@
+}
+
 
 track_time_focus() {
 counter=0
