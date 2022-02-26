@@ -51,7 +51,6 @@ Plugin 'ycm-core/YouCompleteMe'
 "Plugin 'altercation/vim-colors-solarized'
 Plugin 'github/copilot.vim'
 "Plugin 'Lucklyric/copilot.vim'
-
 Plugin 'psf/black'
 
 Plugin 'file:///home/tom/git/vim_codex'
