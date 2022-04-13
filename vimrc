@@ -370,3 +370,5 @@ let g:copilot_filetypes = {
                               \ 'xml': v:false,
                               \ 'fish': v:true,
                               \ }
+
+imap <silent><script><expr> <C-J> copilot#Accept("")
