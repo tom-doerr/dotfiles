@@ -34,8 +34,6 @@ Plugin 'szw/vim-tags'
 Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
 "Plugin 'ludovicchabant/vim-gutentags'
-"Plugin 'davidhalter/jedi-vim'
-"Plugin 'deoplete-plugins/deoplete-jedi'
 Plugin 'Shougo/deoplete.nvim'
 Plugin 'morhetz/gruvbox'
 "Plugin 'tbabej/taskwiki'
@@ -47,11 +45,14 @@ Plugin 'meain/vim-printer'
 Plugin 'tpope/vim-surround'
 Plugin 'airblade/vim-rooter'
 "Plugin 'codota/tabnine-vim'
-Plugin 'ycm-core/YouCompleteMe'
+"Plugin 'ycm-core/YouCompleteMe'
 "Plugin 'altercation/vim-colors-solarized'
 Plugin 'github/copilot.vim'
 "Plugin 'Lucklyric/copilot.vim'
 Plugin 'psf/black'
+"Plugin 'google/vim-codefmt'
+
+Plugin 'davidhalter/jedi-vim'
 
 Plugin 'file:///home/tom/git/vim_codex'
 "Plugin 'file:///home/tom/git/vim-openai'
@@ -309,7 +310,7 @@ map <Leader>ts o. -- Tom}<C-o>I\todo[inline]{@Tom: TODO:
 " Taskwiki
 map <Leader>s :TaskWikiMod +next_twt<CR>:!task rc.context=none +ACTIVE done; task rc.context=none +next_twt +PENDING start &>> /var/log/taskwiki_custom<CR><CR>:e<CR>
 map <Leader>c :TaskWikiDone<CR>
-map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
+"map <Leader>d :!source ~/.zshrc && td<CR><CR>:e<CR>
 map <Leader>D :TaskWikiDelete<CR>
 map <Leader>S :TaskWikiStop<CR>:TaskWikiMod -next_twt<CR>
 map <M-t> <M-j>jVs* [ ] 
@@ -362,7 +363,8 @@ map <C-p> <plug>NERDCommenterToggle
 nnoremap  <C-x> :CreateCompletion<CR>
 inoremap  <C-x> <Esc>li<C-g>u<Esc>l:CreateCompletion<CR>
 
-nnoremap <Leader>b :Black<CR>
+let g:black_skip_string_normalization = 1
+nnoremap <Leader>b :Black <CR>
 
 set inccommand=nosplit
 
@@ -372,3 +374,11 @@ let g:copilot_filetypes = {
                               \ }
 
 imap <silent><script><expr> <C-J> copilot#Accept("")
+
+"let g:deoplete#enable_at_startup = 1
+
+"let g:jedi#goto_command = "<leader>d"
+map <Leader>d :jedi-goto-definition<CR>
+
+
+
