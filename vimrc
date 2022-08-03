@@ -226,7 +226,7 @@ set ignorecase
 set smartcase
 
 " ALE linting 
-let g:ale_enabled = 0
+"let g:ale_enabled = 0
 nmap <silent> [W <Plug>(ale_first)
 nmap <silent> [w <Plug>(ale_previous)
 nmap <silent> ]w <Plug>(ale_next)
@@ -381,4 +381,4 @@ imap <silent><script><expr> <C-J> copilot#Accept("")
 map <Leader>d :jedi-goto-definition<CR>
 
 
-
+let g:ale_python_pylint_options = '--disable=E1101 --disable=C0114 --disable=C0114 --disable=C0114'
