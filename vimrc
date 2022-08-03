@@ -381,4 +381,4 @@ imap <silent><script><expr> <C-J> copilot#Accept("")
 map <Leader>d :jedi-goto-definition<CR>
 
 
-let g:ale_python_pylint_options = '--disable=E1101 --disable=C0114 --disable=C0114 --disable=C0114'
+let g:ale_python_pylint_options = '--disable=E1101,C0114,C0114,C0114'
