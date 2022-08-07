@@ -1149,6 +1149,10 @@ wam() {
     wa 1month
 }
 
+way() {
+    wa 1year
+}
+
 
 ca() {
     #current_taskwarrior_context="$(get_current_taskwarrior_context)"
@@ -1422,7 +1426,7 @@ tl() {
 }
 
 ghp() {
-    gh repo create -c -l MIT --public --gitignore Python $@
+    gh repo create -y -l MIT --public --gitignore Python $@
 }
 
 
