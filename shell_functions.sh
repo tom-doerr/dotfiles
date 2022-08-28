@@ -2,7 +2,7 @@ source ~/git/private/private_shell_functions.sh
 source ~/git/private/private_environment_variables.sh
 
 WALLPAPERS_DIR=~/Pictures/Wallpapers/
-PATH_TASK_CONTINUOUS_TAGS=~/.task/task_permanent_tags
+PATH_TASK_CONTINUOUS_TAGS=~/.task/task_continuous_tags
 
 
 # Extract files with ex command
