@@ -2,6 +2,8 @@ source ~/git/private/private_shell_functions.sh
 source ~/git/private/private_environment_variables.sh
 
 WALLPAPERS_DIR=~/Pictures/Wallpapers/
+PATH_TASK_CONTINUOUS_TAGS=~/.task/task_permanent_tags
+
 
 # Extract files with ex command
 ex ()
@@ -148,6 +150,9 @@ ts() {
             tc $1
         fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
+        tags_to_add="$tags_to_add $(cat $PATH_TASK_CONTINUOUS_TAGS)"
+        # remove newlines
+        tags_to_add="$(echo "$tags_to_add" | tr '\n' ' ')"
         trigger_commands_for_activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
     fi
@@ -1428,6 +1433,15 @@ tl() {
 ghp() {
     gh repo create -y -l MIT --public --gitignore Python $@
 }
+
+aat() {
+    echo $@ >> $PATH_TASK_CONTINUOUS_TAGS
+}
+
+rrt() {
+    sed -i "/$@/d" $PATH_TASK_CONTINUOUS_TAGS
+}
+
 
 
 track_time_focus() {
