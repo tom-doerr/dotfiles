@@ -1435,10 +1435,12 @@ ghp() {
 }
 
 aat() {
+    at $@
     echo $@ >> $PATH_TASK_CONTINUOUS_TAGS
 }
 
 rrt() {
+    rt $@
     sed -i "/$@/d" $PATH_TASK_CONTINUOUS_TAGS
 }
 
