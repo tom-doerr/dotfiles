@@ -22,7 +22,8 @@ bindsym $mod+Shift+Return exec kitty
 bindsym $mod+Shift+q kill
 
 # start program launcher
-bindsym $mod+d exec --no-startup-id rofi -show run
+#bindsym $mod+d exec --no-startup-id rofi -show run
+bindsym $mod+d exec --no-startup-id dmenu_run
 
 # change focus
 #bindsym $mod+h focus left
@@ -361,3 +362,11 @@ bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
 
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
 bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
+
+bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
+bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
+
+
+bar {
+        status_command i3status
+}
