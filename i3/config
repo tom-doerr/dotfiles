@@ -22,7 +22,8 @@ bindsym $mod+Shift+Return exec kitty
 bindsym $mod+Shift+q kill
 
 # start program launcher
-bindsym $mod+d exec --no-startup-id rofi -show run
+#bindsym $mod+d exec --no-startup-id rofi -show run
+bindsym $mod+d exec --no-startup-id dmenu_run
 
 # change focus
 #bindsym $mod+h focus left
@@ -312,7 +313,7 @@ exec --no-startup-id mate-power-manager
 bindsym XF86TouchpadOn exec --no-startup-id synclient Touchpadoff=0
 bindsym XF86TouchpadOff exec --no-startup-id synclient Touchpadoff=1
 
-bindsym Mod1+Ctrl+l exec lock.sh
+bindsym Mod1+Ctrl+l exec --no-startup-id betterlockscreen -l
 bindsym Mod1+Ctrl+k exec ~/git/scripts/switch_keyboard_layout.sh
 exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f $layout_file ] && $layout_file'
 focus_follows_mouse no
@@ -361,3 +362,11 @@ bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
 
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
 bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
+
+bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
+bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
+
+
+bar {
+        status_command i3status
+}
