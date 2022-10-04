@@ -260,7 +260,7 @@ pa() {
 
 
 rb() {
-    tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
+    tmux split-window -v -t "$pane" "watch --color -n 0,01 task review_bucket_items"
     tmux last-pane
     zsh -is eval "source ~/git/scripts/review_bucket_mappings.sh"
 }
