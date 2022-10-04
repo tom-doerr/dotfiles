@@ -260,7 +260,8 @@ pa() {
 
 
 rb() {
-    tmux split-window -v -t "$pane" "watch --color -n 0,01 task review_bucket_items"
+    interval_tasklist_refresh="${1:='0,001'}"
+    tmux split-window -v -t "$pane" "watch --color -n $interval_tasklist_refresh task review_bucket_items"
     tmux last-pane
     zsh -is eval "source ~/git/scripts/review_bucket_mappings.sh"
 }
