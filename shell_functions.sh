@@ -105,8 +105,8 @@ switch_to_non_monitoring_workspace() {
 trigger_commands_for_activity() {
     if [[ $1 == *"bettzeit"* ]]
     then
-        hueadm light 6 off
-        hueadm light 7 off
+        #hueadm light 6 off
+        #hueadm light 7 off
         set_background_night & disown
         switch_to_non_monitoring_workspace & disown
     elif [[ $1 == *"Fruehstuecke"* ]]
