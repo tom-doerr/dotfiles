@@ -122,15 +122,6 @@ trigger_commands_for_activity() {
 
 
 ts() {
-    # check if the last argument is a number
-    last_arg="${@: -1}"
-    if [[ $last_arg =~ ^[0-9]+$ ]]
-    then
-        timelimit=$last_arg
-    else
-        timelimit=""
-    fi
-
     if [[ $1 == "" ]] 
     then
         end_taskwarrior_timewarrior
@@ -154,6 +145,15 @@ ts() {
             ts "${@:2}"
         fi
     else
+        # check if the last argument is a number
+        last_arg="${@: -1}"
+        if [[ $last_arg =~ ^[0-9]+$ ]]
+        then
+            timelimit=$last_arg
+        else
+            timelimit=""
+        fi
+
         stop_taskwarrior_timewarrior
         if [[ "$(task _context)" == *$(printf "$1\n")* ]]
         then
