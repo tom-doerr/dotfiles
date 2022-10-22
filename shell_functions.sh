@@ -120,7 +120,17 @@ trigger_commands_for_activity() {
     fi
 }
 
+
 ts() {
+    # check if the last argument is a number
+    last_arg="${@: -1}"
+    if [[ $last_arg =~ ^[0-9]+$ ]]
+    then
+        timelimit=$last_arg
+    else
+        timelimit=""
+    fi
+
     if [[ $1 == "" ]] 
     then
         end_taskwarrior_timewarrior
@@ -155,6 +165,10 @@ ts() {
         tags_to_add="$(echo "$tags_to_add" | tr '\n' ' ')"
         trigger_commands_for_activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
+    fi
+    if [[ $timelimit != "" ]]
+    then
+        atc "_t""$timelimit"
     fi
 }
 
