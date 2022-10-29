@@ -108,7 +108,7 @@ trigger_commands_for_activity() {
         #hueadm light 6 off
         #hueadm light 7 off
         set_background_night & disown
-        switch_to_non_monitoring_workspace & disown
+        #switch_to_non_monitoring_workspace & disown
     elif [[ $1 == *"Fruehstuecke"* ]]
     then
         hueadm light 6 on
@@ -1459,6 +1459,10 @@ rrt() {
     sed -i "/$@/d" $PATH_TASK_CONTINUOUS_TAGS
 }
 
+li() {
+    timelimit=$1
+    atc "_t""$timelimit"
+}
 
 
 track_time_focus() {
