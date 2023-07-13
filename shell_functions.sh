@@ -105,10 +105,10 @@ switch_to_non_monitoring_workspace() {
 trigger_commands_for_activity() {
     if [[ $1 == *"bettzeit"* ]]
     then
-        hueadm light 6 off
-        hueadm light 7 off
+        #hueadm light 6 off
+        #hueadm light 7 off
         set_background_night & disown
-        switch_to_non_monitoring_workspace & disown
+        #switch_to_non_monitoring_workspace & disown
     elif [[ $1 == *"Fruehstuecke"* ]]
     then
         hueadm light 6 on
@@ -119,6 +119,7 @@ trigger_commands_for_activity() {
         hueadm light 7 off
     fi
 }
+
 
 ts() {
     if [[ $1 == "" ]] 
@@ -144,6 +145,15 @@ ts() {
             ts "${@:2}"
         fi
     else
+        # check if the last argument is a number
+        last_arg="${@: -1}"
+        if [[ $last_arg =~ ^[0-9]+$ ]]
+        then
+            timelimit=$last_arg
+        else
+            timelimit=""
+        fi
+
         stop_taskwarrior_timewarrior
         if [[ "$(task _context)" == *$(printf "$1\n")* ]]
         then
@@ -155,6 +165,10 @@ ts() {
         tags_to_add="$(echo "$tags_to_add" | tr '\n' ' ')"
         trigger_commands_for_activity "$@""$tags_to_add"
         eval "timew start $tags_to_add $@"
+    fi
+    if [[ $timelimit != "" ]]
+    then
+        atc "_t""$timelimit"
     fi
 }
 
@@ -260,7 +274,8 @@ pa() {
 
 
 rb() {
-    tmux split-window -v -t "$pane" "watch --color -n 0,1 task review_bucket_items"
+    interval_tasklist_refresh="${1:='0,001'}"
+    tmux split-window -v -t "$pane" "watch --color -n $interval_tasklist_refresh task review_bucket_items"
     tmux last-pane
     zsh -is eval "source ~/git/scripts/review_bucket_mappings.sh"
 }
@@ -1445,6 +1460,10 @@ rrt() {
     sed -i "/$@/d" $PATH_TASK_CONTINUOUS_TAGS
 }
 
+li() {
+    timelimit=$1
+    atc "_t""$timelimit"
+}
 
 
 track_time_focus() {
