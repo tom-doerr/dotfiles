@@ -1415,6 +1415,7 @@ autotag() {
 }
 
 tf() {
+    mkdir -p ~/test
     file_path=/dev/null
     while [ -e $file_path ]
     do
@@ -1431,7 +1432,7 @@ tl() {
 }
 
 ghp() {
-    gh repo create -y -l MIT --public --gitignore Python $@
+    gh repo create --clone -l MIT --public --gitignore Python $@
 }
 
 aat() {
