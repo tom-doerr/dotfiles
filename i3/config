@@ -237,7 +237,7 @@ mode "resize" {
 }
 
 # Autostart applications
-exec --no-startup-id nitrogen --restore; sleep 1; picom -b --experimental-backends 
+exec --no-startup-id nitrogen --restore; sleep 1; picom -b
 exec --no-startup-id nm-applet
 # exec --no-startup-id xfce4-power-manager
 exec --no-startup-id pamac-tray
@@ -246,8 +246,8 @@ exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
 #exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 exec --no-startup-id ~/git/dotfiles/keyboard_config/start.sh
-exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
-exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
+#exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
+#exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
 
 # Workspace setup
 exec --no-startup-id i3-msg 'workspace 1, move workspace to output DVI-D-0'
