@@ -263,8 +263,8 @@ client.focused #859900 #859900 #fdf6e3 #859900
 for_window [class=".*"] border pixel 2
 
 # Gaps
-gaps inner 10
-gaps outer -4
+gaps inner 80
+gaps outer 0
 
 smart_gaps on
 
