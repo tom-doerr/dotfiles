@@ -120,8 +120,7 @@ bindsym $mod+5 workspace $ws5
 bindsym $mod+6 workspace $ws6
 bindsym $mod+7 workspace $ws7
 bindsym $mod+8 workspace $ws8
-bindsym $mod+9 exec bash ~/git/i3_workspace_toggle/toggle_workspace.sh 9
-bindsym F12 exec bash ~/git/i3_workspace_toggle/toggle_workspace.sh 9
+bindsym $mod+9 workspace $ws9
 #bindsym F12 workspace $ws9
 
 # Move focused container to workspace
