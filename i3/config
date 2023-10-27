@@ -83,7 +83,7 @@ bindsym $mod+Shift+space floating toggle
 bindsym $mod+space focus mode_toggle
 
 # toggle sticky
-bindsym $mod+Shift+s sticky toggle
+#bindsym $mod+Shift+s sticky toggle
 
 # focus the parent container
 bindsym $mod+a focus parent
@@ -369,21 +369,7 @@ bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 
 
-
-#bindcode --release $print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
-# also h m s
-bindcode --release $print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
-#bindcode $print workspace 1
-
-bindsym Mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
-#bindsym --release Mod+Shift+S workspace 1
-
-#bindsym --release Print exec --no-startup-id workspace 1
-bindsym --release Shift+Print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
-bindsym --release 107 exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
-
-
-#bindsym --release $mod+p workspace 1
+bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
 
 
 bar {
