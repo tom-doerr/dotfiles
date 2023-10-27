@@ -110,6 +110,7 @@ set $ws6 6
 set $ws7 7
 set $ws8 8
 set $ws9 9
+set $print 107
 
 # switch to workspace
 bindsym $mod+1 workspace $ws1
@@ -359,11 +360,30 @@ bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
 set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
 
+
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
 bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
 
+
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
+
+
+
+#bindcode --release $print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
+# also h m s
+bindcode --release $print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
+#bindcode $print workspace 1
+
+bindsym Mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
+#bindsym --release Mod+Shift+S workspace 1
+
+#bindsym --release Print exec --no-startup-id workspace 1
+bindsym --release Shift+Print exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
+bindsym --release 107 exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_$wx$h_scrot.png'
+
+
+#bindsym --release $mod+p workspace 1
 
 
 bar {
