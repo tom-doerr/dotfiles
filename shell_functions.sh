@@ -1061,11 +1061,11 @@ dox() {
 
 focus() {
     timew_focus_tag="$1"
-    hours_to_focus=$2
-    [[ $hours_to_focus == "" ]] && hours_to_focus=1
+    minutes_to_focus=$2
+    [[ $minutes_to_focus == "" ]] && minutes_to_focus=1
     tmux split-window -v
     timestamp_start=$(date +%s)
-    seconds_to_focus=$(( $hours_to_focus * 3600 ))
+    seconds_to_focus=$(( $minutes_to_focus * 60 ))
     last_check_tag_not_in_time_tags_string=false
     mark
     while true
