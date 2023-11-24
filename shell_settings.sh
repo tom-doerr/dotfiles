@@ -32,6 +32,11 @@ if [[ ! "$SSH_AUTH_SOCK" ]]; then
     eval "$(<~/.ssh-agent-thing)"
 fi
 
+# Check if your key is already added
+if ! ssh-add -l | grep -q "id_ed25519"; then
+    ssh-add /home/tom/.ssh/id_ed25519
+fi
+
 
 
 export VISUAL=nvim
