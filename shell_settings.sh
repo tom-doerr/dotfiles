@@ -33,7 +33,7 @@ if [[ ! "$SSH_AUTH_SOCK" ]]; then
 fi
 
 # Check if your key is already added
-if ! ssh-add -l | grep -q "id_ed25519"; then
+if ! ssh-add -l | grep -q "ED25519"; then
     ssh-add /home/tom/.ssh/id_ed25519
 fi
 
