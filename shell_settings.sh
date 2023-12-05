@@ -25,13 +25,17 @@
 ##    #exit 1
 #fi
 
+
+
+
 if ! pgrep -u "$USER" ssh-agent > /dev/null; then
     ssh-agent > ~/.ssh-agent-thing
 fi
-if [[ ! "$SSH_AUTH_SOCK" ]]; then
-    eval "$(<~/.ssh-agent-thing)"
-fi
+#if [[ ! "$SSH_AUTH_SOCK" ]]; then
+    #eval "$(<~/.ssh-agent-thing)"
+#fi
 
+export SSH_AUTH_SOCK=$(find /tmp -name "agent.*" -user $(whoami) 2>/dev/null | head -n 1)
 # Check if your key is already added
 if ! ssh-add -l | grep -q "ED25519"; then
     ssh-add /home/tom/.ssh/id_ed25519
