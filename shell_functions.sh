@@ -5,6 +5,26 @@ WALLPAPERS_DIR=~/Pictures/Wallpapers/
 PATH_TASK_CONTINUOUS_TAGS=~/.task/task_continuous_tags
 
 
+o() {
+    ts obj
+}
+
+o2() {
+    ts obj2
+}
+
+o3() {
+    ts obj3
+}
+
+ai() {
+    ts ai
+}
+
+aa() {
+    ts ai obj3 
+}
+
 # Extract files with ex command
 ex ()
 {
@@ -595,13 +615,13 @@ add_pro() {
     echo "" >> $projects_filename
 }
 
-ai() {
-    b ai $@ 
-}
+#ai() {
+    #b ai $@ 
+#}
 
-tai() {
-    ta +ai $@
-}
+#tai() {
+    #ta +ai $@
+#}
 
 com() {
     task all rc.context=none end.after:$(date --date '5 hours ago' +%Y-%m-%d)T05:00:00 +COMPLETED -bu $1
