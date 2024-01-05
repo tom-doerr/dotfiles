@@ -83,7 +83,7 @@ bindsym $mod+Shift+space floating toggle
 bindsym $mod+space focus mode_toggle
 
 # toggle sticky
-bindsym $mod+Shift+s sticky toggle
+#bindsym $mod+Shift+s sticky toggle
 
 # focus the parent container
 bindsym $mod+a focus parent
@@ -110,6 +110,7 @@ set $ws6 6
 set $ws7 7
 set $ws8 8
 set $ws9 9
+set $print 107
 
 # switch to workspace
 bindsym $mod+1 workspace $ws1
@@ -120,8 +121,7 @@ bindsym $mod+5 workspace $ws5
 bindsym $mod+6 workspace $ws6
 bindsym $mod+7 workspace $ws7
 bindsym $mod+8 workspace $ws8
-bindsym $mod+9 exec bash ~/git/i3_workspace_toggle/toggle_workspace.sh 9
-bindsym F12 exec bash ~/git/i3_workspace_toggle/toggle_workspace.sh 9
+bindsym $mod+9 workspace $ws9
 #bindsym F12 workspace $ws9
 
 # Move focused container to workspace
@@ -237,7 +237,7 @@ mode "resize" {
 }
 
 # Autostart applications
-exec --no-startup-id nitrogen --restore; sleep 1; picom -b --experimental-backends 
+exec --no-startup-id nitrogen --restore; sleep 1; picom -b
 exec --no-startup-id nm-applet
 # exec --no-startup-id xfce4-power-manager
 exec --no-startup-id pamac-tray
@@ -246,8 +246,8 @@ exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
 #exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 exec --no-startup-id ~/git/dotfiles/keyboard_config/start.sh
-exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
-exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
+#exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
+#exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
 
 # Workspace setup
 exec --no-startup-id i3-msg 'workspace 1, move workspace to output DVI-D-0'
@@ -263,8 +263,8 @@ client.focused #859900 #859900 #fdf6e3 #859900
 for_window [class=".*"] border pixel 2
 
 # Gaps
-gaps inner 10
-gaps outer -4
+gaps inner 80
+gaps outer 0
 
 smart_gaps on
 
@@ -360,11 +360,16 @@ bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
 set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 bindsym F5 exec bash -ic 'echo r > $inference_signal_file'
 
+
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
 bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
 
+
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
+
+
+bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
 
 
 bar {
