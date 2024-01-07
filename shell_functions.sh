@@ -25,6 +25,10 @@ aa() {
     ts ai obj3 
 }
 
+mvf() {
+    ts mvf
+}
+
 # Extract files with ex command
 ex ()
 {
