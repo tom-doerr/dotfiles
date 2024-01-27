@@ -5,6 +5,14 @@ WALLPAPERS_DIR=~/Pictures/Wallpapers/
 PATH_TASK_CONTINUOUS_TAGS=~/.task/task_continuous_tags
 
 
+s() {
+    ts $@
+}
+
+sa() {
+    ts sa
+}
+
 o() {
     ts obj
 }
