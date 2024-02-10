@@ -5,6 +5,20 @@ WALLPAPERS_DIR=~/Pictures/Wallpapers/
 PATH_TASK_CONTINUOUS_TAGS=~/.task/task_continuous_tags
 
 
+
+
+
+
+
+
+cla() {
+    ts clarify
+}
+
+main() {
+    ts main
+}
+
 s() {
     ts $@
 }
@@ -151,6 +165,59 @@ trigger_commands_for_activity() {
         hueadm light 7 off
     fi
 }
+
+get_limit_current_task() {
+    #uuids=$(task +ACTIVE _uuid)
+    uuid=$(task +ACTIVE _uuid)
+    if [[ $uuid == "" ]]
+    then
+        echo "No active task"
+        return
+    fi
+    echo $(task _get "$uuid".limit)
+
+}
+
+iso8601_to_seconds() {
+    local duration=$1
+    local seconds=0
+
+    # Extract components of the duration
+    local days=$(echo "$duration" | sed 's/PT\([0-9]*\)D/\1/')
+    local hours=$(echo "$duration" | sed 's/.*T\([0-9]*\)H.*/\1/')
+    local minutes=$(echo "$duration" | sed 's/.*T\([0-9]*\)M.*/\1/')
+    local seconds_part=$(echo "$duration" | sed 's/.*T\([0-9]*\)S.*/\1/') 
+
+    # Convert days, hours, minutes, and seconds to seconds
+    seconds=$((days * 86400))
+    seconds=$((seconds + hours * 3600))
+    seconds=$((seconds + minutes * 60))
+    seconds=$((seconds + seconds_part))
+
+    echo "$seconds"
+}
+
+current_active_time_seconds() {
+    iso_time=$(timew get dom.active.duration)
+    time_in_seconds=$(iso8601_to_seconds $iso_time)
+    echo $time_in_seconds
+}
+
+current_task_limit_seconds() {
+    iso_limit=$(get_limit_current_task)
+    limit_in_seconds=$(iso8601_to_seconds $iso_limit)
+    echo $limit_in_seconds                           
+}
+
+
+# Example usage:
+#limit="PT6M"
+#PT16M30S
+#limit="PT16M30S"
+#limit="PT0M0S"
+#seconds=$(iso8601_to_seconds "$limit")
+#echo "Limit '$limit' in seconds: $seconds"
+
 
 
 ts() {
@@ -507,9 +574,9 @@ tws() {
     fi
 }
 
-main() {
-    task add pro:$(awk 'NR==1' ~/main_project) +next $@
-}
+#main() {
+    #task add pro:$(awk 'NR==1' ~/main_project) +next $@
+#}
 
 pas() {
     pa $@ +next
@@ -588,9 +655,48 @@ B() {
     b $@
 }
 
-ta() {
-    task add rc.context=none $@
+extract_last_number() {
+    local string="$@"
+    local last_word=$(echo "$string" | awk '{print $NF}')
+    
+    if [[ "$last_word" =~ ^[0-9]+$ ]]; then
+        echo "$last_word"
+    #else
+        #echo ""
+    fi
 }
+
+ #Example usage:
+#input="This is a test 123"
+#result=$(extract_last_number "$input")
+#echo "Last number: $result"
+
+
+ta() {
+    #echo test
+    # check if last word is a number
+    #if [[ $@ =~ ^-?([0-9]|,)+$ ]]
+    #then
+        #trailing_args=${@:1:$#-1}
+        #echo "trailing_args: $trailing_args"
+        #task add rc.context=none $trailing_args +$@ 
+    #else
+        #task add rc.context=none $@ +next
+    #fi
+    trailing_number=$(extract_last_number "$@")
+    echo "trailing_number: $trailing_number"
+    if [[ "$trailing_number" != "" ]]; then
+        trailing_args=${@:1:$#-1}
+        echo "trailing_args: $trailing_args"
+        #task add rc.context=none $trailing_args +$trailing_number
+        task add rc.context=none $trailing_args limit:"$trailing_number"min
+    else
+        task add rc.context=none $@ +next
+    fi
+}
+
+    #task add rc.context=none $@
+#}
 
 we() {
     curl v2.wttr.in/garching_bei_muenchen | head -31
