@@ -3,11 +3,56 @@ source ~/git/private/private_environment_variables.sh
 
 WALLPAPERS_DIR=~/Pictures/Wallpapers/
 PATH_TASK_CONTINUOUS_TAGS=~/.task/task_continuous_tags
+PROJECT_TAG_PATH=~/project_tag
 
 
 
+pt() {
+    #echo "$@" > ~/project_tag
+    echo "$@" > $PROJECT_TAG_PATH
+    # check if empty 
+    if [[ -z "$1" ]]; then
+        echo "" > $PROJECT_TAG_PATH
+    else
+        echo "+""$@" > $PROJECT_TAG_PATH
+    fi
+}
 
+n1() {
+    #ta "+next +obj $@"
+    #eval "ta +next +obj $@"
+    ta +next +obj $@
+    #ta  $@
+    #atc next
+}
 
+n2() {
+    ta +next +obj +obj2 $@
+}
+
+n3() {
+    ta +next +obj +obj2 +obj3 $@
+}
+
+na() {
+    ta +next +obj +obj2 +obj3 +ai $@
+}
+
+j1() {
+    ta +obj $@
+}
+
+j2() {
+    ta +obj +obj2 $@
+}
+
+j3() {
+    ta +obj +obj2 +obj3 $@
+}
+
+ja() {
+    ta +obj +obj2 +obj3 +ai $@
+}
 
 
 
@@ -683,15 +728,18 @@ ta() {
     #else
         #task add rc.context=none $@ +next
     #fi
+    project_tag_str=$(cat $PROJECT_TAG_PATH)
     trailing_number=$(extract_last_number "$@")
     echo "trailing_number: $trailing_number"
     if [[ "$trailing_number" != "" ]]; then
         trailing_args=${@:1:$#-1}
         echo "trailing_args: $trailing_args"
         #task add rc.context=none $trailing_args +$trailing_number
-        task add rc.context=none $trailing_args limit:"$trailing_number"min
+        #task add rc.context=none $trailing_args limit:"$trailing_number"min
+        limit_str="limit:""$trailing_number""min"
+        eval "task add rc.context=none $trailing_args $project_tag_str""$limit_str"
     else
-        task add rc.context=none $@ +next
+        task add rc.context=none $@ $project_tag_str
     fi
 }
 
