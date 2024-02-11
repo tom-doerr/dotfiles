@@ -473,6 +473,7 @@ start_first_task() {
 }
 
 rs() {
+    ts
     start_first_task report1
 }
 
