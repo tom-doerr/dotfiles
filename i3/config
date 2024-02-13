@@ -371,7 +371,8 @@ bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 
 bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
 
+set $SCRIPT_DIR=/usr/share/i3blocks
 
 bar {
-        status_command i3status
+      status_command i3blocks
 }
