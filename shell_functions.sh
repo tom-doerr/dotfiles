@@ -60,6 +60,10 @@ cla() {
     ts clarify
 }
 
+nf() {
+    ts nf
+}
+
 main() {
     ts main
 }
@@ -738,7 +742,7 @@ ta() {
         #task add rc.context=none $trailing_args +$trailing_number
         #task add rc.context=none $trailing_args limit:"$trailing_number"min
         limit_str="limit:""$trailing_number""min"
-        eval "task add rc.context=none $trailing_args $project_tag_str""$limit_str"
+        eval "task add rc.context=none $trailing_args $project_tag_str" "$limit_str"
     else
         task add rc.context=none $@ $project_tag_str
     fi
@@ -973,7 +977,8 @@ ranger_cd() {
 }
 
 r() {
-    ranger_cd
+    #ranger_cd
+    rs
 }
 
 sst() {
