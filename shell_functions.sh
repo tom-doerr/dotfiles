@@ -277,15 +277,16 @@ current_task_limit_seconds() {
 
 
 ts() {
+    end_taskwarrior_timewarrior
     if [[ $1 == "" ]] 
     then
-        end_taskwarrior_timewarrior
+        #end_taskwarrior_timewarrior
         #task context h
         trigger_commands_for_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
-        end_taskwarrior_timewarrior
+        #end_taskwarrior_timewarrior
         task start $uuid
     elif [[ $1 = "stop" ]]
     then
