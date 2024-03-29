@@ -373,5 +373,5 @@ bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-
 
 
 bar {
-        status_command i3status
+      status_command i3blocks
 }
