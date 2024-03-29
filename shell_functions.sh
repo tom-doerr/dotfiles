@@ -62,6 +62,7 @@ cla() {
 
 nf() {
     ts nf
+    pt nf
 }
 
 main() {
@@ -74,6 +75,12 @@ s() {
 
 sa() {
     ts sa
+    pt sa
+}
+
+va() {
+    ts va
+    pt va
 }
 
 o() {
@@ -273,7 +280,7 @@ ts() {
     if [[ $1 == "" ]] 
     then
         end_taskwarrior_timewarrior
-        task context h
+        #task context h
         trigger_commands_for_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
@@ -1410,9 +1417,15 @@ tc() {
     if [[ $@ == "" ]]
     then
         switch_to_taskwarrior_context_using_fzf
+        pt
     else
         task context $@
     fi
+}
+
+tch() {
+    task context h
+    pt
 }
 
 bet() {
