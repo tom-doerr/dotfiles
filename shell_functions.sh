@@ -7,6 +7,12 @@ PROJECT_TAG_PATH=~/project_tag
 
 
 
+
+
+ai3() {
+    ts ai3
+}
+
 pt() {
     #echo "$@" > ~/project_tag
     echo "$@" > $PROJECT_TAG_PATH
