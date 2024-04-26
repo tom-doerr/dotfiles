@@ -8,6 +8,9 @@ PROJECT_TAG_PATH=~/project_tag
 
 
 
+noo() {
+    ts noo
+}
 
 ai3() {
     ts ai3
