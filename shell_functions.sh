@@ -7,6 +7,15 @@ PROJECT_TAG_PATH=~/project_tag
 
 
 
+
+noo() {
+    ts noo
+}
+
+ai3() {
+    ts ai3
+}
+
 pt() {
     #echo "$@" > ~/project_tag
     echo "$@" > $PROJECT_TAG_PATH
@@ -60,6 +69,11 @@ cla() {
     ts clarify
 }
 
+nf() {
+    ts nf
+    pt nf
+}
+
 main() {
     ts main
 }
@@ -70,6 +84,12 @@ s() {
 
 sa() {
     ts sa
+    pt sa
+}
+
+va() {
+    ts va
+    pt va
 }
 
 o() {
@@ -266,15 +286,16 @@ current_task_limit_seconds() {
 
 
 ts() {
+    end_taskwarrior_timewarrior
     if [[ $1 == "" ]] 
     then
-        end_taskwarrior_timewarrior
-        task context h
+        #end_taskwarrior_timewarrior
+        #task context h
         trigger_commands_for_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         uuid=$(task $1 _uuid)
-        end_taskwarrior_timewarrior
+        #end_taskwarrior_timewarrior
         task start $uuid
     elif [[ $1 = "stop" ]]
     then
@@ -738,7 +759,7 @@ ta() {
         #task add rc.context=none $trailing_args +$trailing_number
         #task add rc.context=none $trailing_args limit:"$trailing_number"min
         limit_str="limit:""$trailing_number""min"
-        eval "task add rc.context=none $trailing_args $project_tag_str""$limit_str"
+        eval "task add rc.context=none $trailing_args $project_tag_str" "$limit_str"
     else
         task add rc.context=none $@ $project_tag_str
     fi
@@ -973,7 +994,8 @@ ranger_cd() {
 }
 
 r() {
-    ranger_cd
+    #ranger_cd
+    rs
 }
 
 sst() {
@@ -1302,6 +1324,63 @@ focus() {
     rt block
 }
 
+focus2() {
+    timew_focus_tag="$1"
+    minutes_to_focus=$2
+    [[ $minutes_to_focus == "" ]] && minutes_to_focus=1
+    tmux split-window -v
+    timestamp_start=$(date +%s)
+    seconds_to_focus=$(( $minutes_to_focus * 60 ))
+    last_check_tag_not_in_time_tags_string=false
+    mark
+    while true
+    do
+        timestamp_current=$(date +%s)
+        seconds_passed=$(( $timestamp_current - $timestamp_start ))
+        (( $seconds_passed > $seconds_to_focus )) && break
+        time_tags_string=" $(timew | head -n1) "
+        if [[ ! "$time_tags_string" =~ " $timew_focus_tag " ]]
+        then
+            if [[ $last_check_tag_not_in_time_tags_string == false ]]
+            then
+                last_check_tag_not_in_time_tags_string=true
+            else
+                telegram-send "Please continue working on '$timew_focus_tag' :)"
+            fi
+            sleep 4
+        else
+            last_check_tag_not_in_time_tags_string=false
+        fi
+        if [[ ! "$time_tags_string" =~ " focus " ]]
+        then
+            timew @1 tag focus
+        fi
+        #if [[ "$time_tags_string" =~ " video " ]]
+        #then
+            #telegram-send "Please don't watch videos during focus time :)"
+            #sleep 4
+        #fi
+
+        # Show the remaining time in HH:MM format
+        remaining_time_in_seconds=$(( $seconds_to_focus - $seconds_passed ))
+        remaining_time_in_minutes=$(( $remaining_time_in_seconds / 60 ))
+        remaining_time_in_hours=$(( $remaining_time_in_minutes / 60 ))
+        remaining_time_in_hours_rounded=$(round_down $remaining_time_in_hours)
+        remaining_time_in_minutes_rounded=$(( $remaining_time_in_minutes - $remaining_time_in_hours_rounded * 60 ))
+        remaining_time_in_seconds_rounded=$(( $remaining_time_in_seconds - $remaining_time_in_hours_rounded * 3600 - $remaining_time_in_minutes_rounded * 60 ))
+        remaining_time_in_hours_string=$(printf "%02d" $remaining_time_in_hours_rounded)
+        remaining_time_in_minutes_string=$(printf "%02d" $remaining_time_in_minutes_rounded)
+        clear
+        printf "\n\n\n\n\n\n             Focus on $timew_focus_tag   $remaining_time_in_hours_string:$remaining_time_in_minutes_string\n" 
+        sleep 1
+    done
+    clear
+    telegram-send "Focus time over :)"
+    tw @1 tag block
+    rt block
+}
+
+
 tt() {
     echo btime: $(btime)
     echo vtime: $(vtime)
@@ -1405,9 +1484,15 @@ tc() {
     if [[ $@ == "" ]]
     then
         switch_to_taskwarrior_context_using_fzf
+        pt
     else
         task context $@
     fi
+}
+
+tch() {
+    task context h
+    pt
 }
 
 bet() {
