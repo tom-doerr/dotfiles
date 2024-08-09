@@ -1154,7 +1154,7 @@ remaining_time() {
 }
 
 btime() {
-    remaining_time break 4
+    remaining_time break 6
 }
 
 vtime() {
