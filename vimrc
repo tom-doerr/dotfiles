@@ -9,8 +9,8 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'easymotion/vim-easymotion.git'
 "Plugin 'ivanov/vim-ipython'
-Plugin 'scrooloose/nerdtree'
-Plugin 'christoomey/vim-tmux-navigator'
+"Plugin 'scrooloose/nerdtree'
+"Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'djoshea/vim-autoread'
 Plugin 'lumiliet/vim-twig'
 Plugin 'vim-scripts/Txtfmt-The-Vim-Highlighter'
@@ -23,13 +23,13 @@ Plugin 'tpope/vim-fugitive'
 Plugin 'junegunn/vim-easy-align'
 Plugin 'Shougo/vimproc.vim'
 Plugin 'Shougo/unite.vim'
-Plugin 'godlygeek/tabular'
-Plugin 'plasticboy/vim-markdown'
-Plugin 'rhysd/vim-grammarous'
-Plugin 'w0rp/ale'
+"Plugin 'godlygeek/tabular'
+"Plugin 'plasticboy/vim-markdown'
+"Plugin 'rhysd/vim-grammarous'
+"Plugin 'w0rp/ale'
 Plugin 'dhruvasagar/vim-table-mode'
-Plugin 'vim-scripts/DrawIt'
-Plugin 'lervag/vimtex'
+"Plugin 'vim-scripts/DrawIt'
+"Plugin 'lervag/vimtex'
 Plugin 'szw/vim-tags'
 Plugin 'junegunn/fzf'
 Plugin 'junegunn/fzf.vim'
@@ -52,7 +52,7 @@ Plugin 'github/copilot.vim'
 Plugin 'psf/black'
 "Plugin 'google/vim-codefmt'
 
-Plugin 'davidhalter/jedi-vim'
+"Plugin 'davidhalter/jedi-vim'
 
 Plugin 'file:///home/tom/git/vim_codex'
 "Plugin 'file:///home/tom/git/vim-openai'
@@ -331,7 +331,7 @@ imap <M-k> <C-k>
 let g:vim_markdown_math = 1
 
 " Ultisnips
-let g:UltiSnipsExpandTrigger="<tab>"
+"let g:UltiSnipsExpandTrigger="<tab>"
 
 " vimwiki
 map <Leader>1 I =<C-o>0= 
@@ -382,3 +382,15 @@ map <Leader>d :jedi-goto-definition<CR>
 
 
 let g:ale_python_pylint_options = '--disable=E1101,C0114,C0114,C0114'
+
+
+nnoremap <M-y> ggVGy  " Alt+y
+nnoremap <M-p> ggVGp  " Alt+p
+
+nmap <leader>y ggVGy
+nmap <leader>p ggVGp
+
+
+imap <silent><script><expr> <Tab> copilot#Accept("\<CR>")
+
+
