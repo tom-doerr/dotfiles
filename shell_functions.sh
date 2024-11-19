@@ -671,10 +671,10 @@ turn_all_lights_off() {
 schlafen() {
     a
     ts schlafen
-    turn_all_lights_off
-    clear
-    sstop
-    xset dpms force off
+    #turn_all_lights_off
+    #clear
+    #sstop
+    #xset dpms force off
 }
 
 # Based on: https://github.com/junegunn/fzf/wiki/Examples  (cd())
@@ -1083,6 +1083,7 @@ toggle_workspace_99() {
 t() {
     if [[ $@ == "" ]]
     then
+        ts
         ~/git/taskwarrior-fzf/taskfzf report1
     else
         task $@
@@ -1154,7 +1155,7 @@ remaining_time() {
 }
 
 btime() {
-    remaining_time break 6
+    remaining_time break 4
 }
 
 vtime() {
