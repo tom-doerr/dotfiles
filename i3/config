@@ -369,8 +369,12 @@ bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 
 
-bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
+#bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
+bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png' && xclip -selection clipboard -t image/png -i $(ls -t /home/tom/Pictures/*.png | head -n 1)
 
+bindsym $mod+Shift+M exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png"
+bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro.sh"
+#bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro_buffer.sh"
 
 bar {
       status_command i3blocks
