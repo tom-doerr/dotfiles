@@ -650,9 +650,22 @@ pas() {
     rs
 }
 
+#tss() {
+    #ts ss $@
+#}
 tss() {
-    ts ss $@
+    # Get the ID of the active task(s)
+    local active_tasks=$(task +ACTIVE _ids)
+    
+    if [ -z "$active_tasks" ]; then
+        echo "No active tasks found."
+        return 1
+    fi
+    
+    # Stop the active task(s)
+    task $active_tasks stop
 }
+
 
 kb() {
     ~/git/dotfiles/keyboard_config/start.sh
