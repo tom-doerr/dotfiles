@@ -495,7 +495,7 @@ start_first_task() {
 
 rs() {
     ts
-    start_first_task report1
+    start_first_task report2
 }
 
 ds() {
