@@ -765,7 +765,7 @@ ta() {
     #fi
     project_tag_str=$(cat $PROJECT_TAG_PATH)
     trailing_number=$(extract_last_number "$@")
-    echo "trailing_number: $trailing_number"
+    #echo "trailing_number: $trailing_number"
     if [[ "$trailing_number" != "" ]]; then
         trailing_args=${@:1:$#-1}
         echo "trailing_args: $trailing_args"
