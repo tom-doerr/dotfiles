@@ -1,0 +1,7 @@
+model: sonnet
+editor: vim
+analytics: true
+analytics-log: analytics.log
+cache-prompts: true
+cache-keepalive-pings: 1
+max-chat-history-tokens: 10000
