@@ -5,3 +5,8 @@ analytics-log: analytics.log
 cache-prompts: true
 cache-keepalive-pings: 1
 max-chat-history-tokens: 10000
+system-message: |
+  You are an expert software developer.
+  Always use best practices and follow existing code conventions.
+  Keep changes minimal and focused.
+  Explain your changes clearly and concisely.
