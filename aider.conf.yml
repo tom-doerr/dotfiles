@@ -1,5 +1,6 @@
 model: sonnet
 editor: vim
+vim: true
 analytics: true
 analytics-log: analytics.log
 cache-prompts: true
