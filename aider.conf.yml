@@ -1,4 +1,4 @@
-model: sonnet
+model: deepseek
 editor: vim
 vim: true
 analytics: true
