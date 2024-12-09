@@ -11,6 +11,9 @@ PROJECT_TAG_PATH=~/project_tag
 source /home/tom/git/scripts/k.sh
 
 
+p() {
+    plexsearch $@
+}
 
 noo() {
     ts noo
