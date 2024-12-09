@@ -1,70 +1,64 @@
 {
-  "settingsVersion": "1.66",
+  "keyMappings": "# Insert your preferred key mappings here.\nmap <c-[> <esc>\nmap h previousTab\nmap l nextTab\nmap p goBack\nmap a LinkHints.activateModeToOpenInNewForegroundTab\nmap d removeTab\nmap H scrollLeft\nmap L scrollRight\nmap s LinkHints.activateModeToOpenInNewTab",
+  "grabBackFocus": true,
+  "searchUrl": "https://duckduckgo.com/?q=",
+  "settingsVersion": "2.1.2",
   "exclusionRules": [
     {
-      "pattern": "https?://mail.google.com/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://mail.google.com/*"
     },
     {
-      "pattern": "https?://duckduckgo.com/*",
-      "passKeys": "'jk"
+      "passKeys": "'jk",
+      "pattern": "https?://duckduckgo.com/*"
     },
     {
-      "pattern": "https?://calendar.google.com/*",
-      "passKeys": "jdkwmd"
+      "passKeys": "jdkwmd",
+      "pattern": "https?://calendar.google.com/*"
     },
     {
-      "pattern": "https?://v22016124111441558.luckysrv.de:444/*",
-      "passKeys": "jkcu"
+      "passKeys": "jkcu",
+      "pattern": "https?://v22016124111441558.luckysrv.de:444/*"
     },
     {
-      "pattern": "https?://localhost:8888/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:8888/*"
     },
     {
-      "pattern": "https?://localhost:8888/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:8888/*"
     },
     {
-      "pattern": "https?://localhost:8889/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:8889/*"
     },
     {
-      "pattern": "https?://localhost:8889/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:8889/*"
     },
     {
-      "pattern": "https?://localhost:8890/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:8890/*"
     },
     {
-      "pattern": "https?://localhost:9000/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://localhost:9000/*"
     },
     {
-      "pattern": "https?://www.overleaf.com/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://www.overleaf.com/*"
     },
     {
-      "pattern": "https?://www.overleaf.com/*",
-      "passKeys": ""
+      "passKeys": "",
+      "pattern": "https?://www.overleaf.com/*"
+    },
+    {
+      "passKeys": "",
+      "pattern": "https?://publish.buffer.com/*"
+    },
+    {
+      "passKeys": "n",
+      "pattern": "https?://x.com/*"
     }
-  ],
-  "filterLinkHints": false,
-  "waitForEnterForFilteredHints": true,
-  "hideHud": false,
-  "keyMappings": "# Insert your preferred key mappings here.\nmap h previousTab\nmap l nextTab\nmap p goBack\nmap a LinkHints.activateModeToOpenInNewForegroundTab\nmap d removeTab\nmap H scrollLeft\nmap L scrollRight\nmap s LinkHints.activateModeToOpenInNewTab",
-  "linkHintCharacters": "sadfjklewcmpgh",
-  "linkHintNumbers": "0123456789",
-  "newTabUrl": "about:newtab",
-  "nextPatterns": "next,more,newer,>,›,→,»,≫,>>",
-  "previousPatterns": "prev,previous,back,older,<,‹,←,«,≪,<<",
-  "regexFindMode": false,
-  "ignoreKeyboardLayout": false,
-  "scrollStepSize": 60,
-  "smoothScroll": true,
-  "grabBackFocus": true,
-  "searchEngines": "w: https://www.wikipedia.org/w/index.php?title=Special:Search&search=%s Wikipedia\n\n# More examples.\n#\n# (Vimium supports search completion Wikipedia, as\n# above, and for these.)\n#\n# g: https://www.google.com/search?q=%s Google\n# l: https://www.google.com/search?q=%s&btnI I'm feeling lucky...\n# y: https://www.youtube.com/results?search_query=%s Youtube\n# gm: https://www.google.com/maps?q=%s Google maps\n# b: https://www.bing.com/search?q=%s Bing\n# d: https://duckduckgo.com/?q=%s DuckDuckGo\n# az: https://www.amazon.com/s/?field-keywords=%s Amazon\n# qw: https://www.qwant.com/?q=%s Qwant",
-  "searchUrl": "https://duckduckgo.com/?q=",
-  "userDefinedLinkHintCss": "div > .vimiumHintMarker {\n/* linkhint boxes */\nbackground: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#FFF785),\n  color-stop(100%,#FFC542));\nborder: 1px solid #E3BE23;\n}\n\ndiv > .vimiumHintMarker span {\n/* linkhint text */\ncolor: black;\nfont-weight: bold;\nfont-size: 12px;\n}\n\ndiv > .vimiumHintMarker > .matchingCharacter {\n}"
+  ]
 }
