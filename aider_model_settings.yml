@@ -1,5 +1,5 @@
 - name: gemini/gemini-2.0-flash-exp
-  edit_format: diff
+  edit_format: whole
   extra_params:
     max_tokens: 2048
     temperature: 0.7
