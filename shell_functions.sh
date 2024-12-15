@@ -408,7 +408,18 @@ get_uuids_currently_active_tasks() {
 }
 
 td() {
-    execute_for_id_argument_else_fzf "task done" "$@"
+    # check if not number, run to number conversion
+    if [[ $1 =~ ^-?[0-9]+$ ]]
+    then
+        arguments="$@"
+    else
+        task_id=$(~/git/scripts/task_id_mapper.py $1)
+        arguments=$task_id
+    fi
+
+
+    #execute_for_id_argument_else_fzf "task done" "$@"
+    execute_for_id_argument_else_fzf "task done" "$arguments"
     #if [[ $1 == "" ]]
     #then
     #    current_task_tags=$(task _get $(task rc.context=none +ACTIVE _uuid).tags)
