@@ -1246,6 +1246,10 @@ pct() {
         $task_string $tag_to_add
 }
 
+
+
+
+
 del() {
     if [[ $1 =~ ^[0-9]+$ ]]
     then
@@ -1253,8 +1257,8 @@ del() {
         task delete $task_ids
     elif [[ "$1" != "" ]]
     then
-        tracking_tags=$1
-        ts $tracking_tags
+        task_id=$(~/git/scripts/task_id_mapper.py $1)
+        task delete $task_id
     else
         active_tasks=$(get_uuids_currently_active_tasks)
         execute_for_id_argument_else_fzf "task delete" "$active_tasks"
