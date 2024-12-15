@@ -229,3 +229,6 @@ fi
 ZSH_HIGHLIGHT_STYLES[comment]='none'
 
 bindkey '^X' create_completion
+
+#alias lf='*(om[1])'
+#lf() { echo *(om[1]) }
