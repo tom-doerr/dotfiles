@@ -293,6 +293,7 @@ current_task_limit_seconds() {
 
 
 ts() {
+    task_to_start_uuid=$(task $1 _uuid)
     end_taskwarrior_timewarrior
     if [[ $1 == "" ]] 
     then
@@ -301,21 +302,10 @@ ts() {
         trigger_commands_for_activity
     elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
-        uuid=$(task $1 _uuid)
+        #uuid=$(task $1 _uuid)
         #end_taskwarrior_timewarrior
-        task start $uuid
-    elif [[ $1 = "stop" ]]
-    then
-        uuids=$(task +ACTIVE _uuid)
-        task $uuids stop
-    elif [[ $1 = "ss" ]]
-    then
-        uuids=$(task +ACTIVE _uuid)
-        task $uuids stop
-        if [[ $2 != "" ]]
-        then
-            ts "${@:2}"
-        fi
+        #task start $uuid
+        task start $task_to_start_uuid
     else
         # check if the last argument is a number
         last_arg="${@: -1}"
