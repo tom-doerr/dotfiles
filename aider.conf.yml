@@ -1,5 +1,10 @@
-model: deepseek
+#model: deepseek
+model: gemini/gemini-2.0-flash-exp
+#weak-model: deepseek
 editor: vim
+#edit-format: dspy-search-replace
+#edit-format: whole
+edit-format: diff
 vim: true
 analytics: true
 analytics-log: analytics.log
@@ -8,3 +13,5 @@ cache-keepalive-pings: 1
 max-chat-history-tokens: 10000
 voice-language: de
 voice-format: mp3
+#voice-save-dir: /home/tom/aider_input_audio
+#auto-submit-transcript: true
