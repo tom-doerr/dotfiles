@@ -9,7 +9,7 @@ call vundle#begin()
 Plugin 'VundleVim/Vundle.vim'
 Plugin 'easymotion/vim-easymotion.git'
 "Plugin 'ivanov/vim-ipython'
-"Plugin 'scrooloose/nerdtree'
+Plugin 'scrooloose/nerdtree'
 "Plugin 'christoomey/vim-tmux-navigator'
 Plugin 'djoshea/vim-autoread'
 Plugin 'lumiliet/vim-twig'
