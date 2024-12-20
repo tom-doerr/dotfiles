@@ -1,10 +1,12 @@
 #model: deepseek
-model: gemini/gemini-2.0-flash-exp
+#model: gemini/gemini-2.0-flash-exp
+model: gemini/gemini-2.0-flash-thinking-exp
 #weak-model: deepseek
 editor: vim
 #edit-format: dspy-search-replace
 #edit-format: whole
-edit-format: diff
+#edit-format: diff
+edit-format: diff-fenced
 vim: true
 analytics: true
 analytics-log: analytics.log
