@@ -5,9 +5,6 @@ Use type hints whenever possible.
 
 Use descriptive, meaningful names for variables, functions, and classes
 
-Keep functions extrenly small and focused on a single task
-Keep functions under 5 lines, otherwise split up
-Keep files under 50 lines, otherwise split up  
 Group related code together
 Use consistent indentation (typically 2 or 4 spaces)
 Add spacing between logical sections
