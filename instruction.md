@@ -1,4 +1,7 @@
 Instructions for Aider an other LLM tools:
+When you finish editing, present me with a list of options of how we could continue. Indicate what you think should be the next step
+When I just send you the letter c, I mean continue
+Make scripts executable
 Don't add any docstrings or comments, unless they really are needed for explaining the why 
 When you see comments or docstrings that are not absolutely necessary remove them.
 Use type hints whenever possible.
