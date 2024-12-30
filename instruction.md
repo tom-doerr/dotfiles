@@ -1,4 +1,6 @@
 Instructions for Aider an other LLM tools:
+Keep it simple!
+Complexity is what kills you
 When you finish editing, present me with a list of options of how we could continue. Indicate what you think should be the next step
 When I just send you the letter c, I mean continue
 Make scripts executable
