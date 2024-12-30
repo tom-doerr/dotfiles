@@ -21,8 +21,6 @@ Return meaningful error messages
 Use consistent formatting
 Avoid deep nesting of conditionals
 
-Only work on fixing one test at a time
-
 Debugging software involves a systematic and 
 methodical approach to identify, isolate, and fix errors or 
 bugs in the code. Here are the key steps and techniques to help
