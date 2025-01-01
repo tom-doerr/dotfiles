@@ -317,10 +317,10 @@ ts() {
         fi
 
         stop_taskwarrior_timewarrior
-        if [[ "$(task _context)" == *$(printf "$1\n")* ]]
-        then
-            tc $1
-        fi
+        #if [[ "$(task _context)" == *$(printf "$1\n")* ]]
+        #then
+            #tc $1
+        #fi
         tags_to_add="$(~/git/scripts/timew_add_tags.py $@)"
         tags_to_add="$tags_to_add $(cat $PATH_TASK_CONTINUOUS_TAGS)"
         # remove newlines
