@@ -375,6 +375,9 @@ let g:copilot_filetypes = {
 
 imap <silent><script><expr> <C-J> copilot#Accept("")
 
+let g:python3_host_prog = '/usr/bin/python3'
+let g:loaded_python3_provider = 1
+
 "let g:deoplete#enable_at_startup = 1
 
 "let g:jedi#goto_command = "<leader>d"
