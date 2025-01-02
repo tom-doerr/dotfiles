@@ -6,7 +6,7 @@ editor: vim
 #edit-format: dspy-search-replace
 #edit-format: whole
 #edit-format: diff
-edit-format: diff-fenced
+#edit-format: diff-fenced
 vim: true
 analytics: true
 analytics-log: analytics.log
