@@ -187,3 +187,161 @@ interactions between components[2].
 suspected component. Modify the code if necessary to get more 
 information, such as adding debug logs. Ensure that any 
 modifications do not hide the bug[2][4].
+
+
+
+# Object-Oriented Programming Guidelines for Simple, Robust Code
+
+## Core Principles
+
+### 1. Single Responsibility Principle
+Each class should have one clear purpose and reason to change. Break complex classes into smaller, focused ones.
+
+Example:
+```python
+# Bad
+class UserManager:
+    def save_user(self, user): ...
+    def send_email(self, user): ...
+    def generate_report(self): ...
+
+# Good
+class UserRepository:
+    def save_user(self, user): ...
+
+class EmailService:
+    def send_email(self, user): ...
+
+class ReportGenerator:
+    def generate_report(self): ...
+```
+
+### 2. Encapsulation
+Hide internal details and provide a clean interface. Use private attributes and public methods judiciously.
+
+Example:
+```python
+class BankAccount:
+    def __init__(self):
+        self._balance = 0  # Protected attribute
+        
+    def deposit(self, amount):
+        if amount <= 0:
+            raise ValueError("Amount must be positive")
+        self._balance += amount
+        
+    def get_balance(self):
+        return self._balance
+```
+
+### 3. Clear Constructor Initialization
+Initialize all attributes in the constructor. Make the object's state clear from the start.
+
+Example:
+```python
+class Customer:
+    def __init__(self, name, email):
+        self.name = name
+        self.email = email
+        self.orders = []
+        self.total_spent = 0
+```
+
+### 4. Favor Composition Over Inheritance
+Use composition to build complex objects from simpler ones instead of deep inheritance hierarchies.
+
+Example:
+```python
+# Bad
+class SupermarketItem(ElectronicDevice, Perishable, Taxable):
+    pass
+
+# Good
+class SupermarketItem:
+    def __init__(self):
+        self.electronic = ElectronicProperties()
+        self.perishable = PerishableProperties()
+        self.tax = TaxProperties()
+```
+
+### 5. Make Dependencies Explicit
+Use dependency injection instead of creating dependencies inside methods.
+
+Example:
+```python
+# Bad
+class OrderService:
+    def process_order(self, order):
+        emailer = EmailService()  # Hidden dependency
+        emailer.send_confirmation(order)
+
+# Good
+class OrderService:
+    def __init__(self, email_service):
+        self.email_service = email_service  # Explicit dependency
+        
+    def process_order(self, order):
+        self.email_service.send_confirmation(order)
+```
+
+### 7. Use Strong Types and Interface Contracts
+Define clear interfaces and type hints to make code more maintainable and self-documenting.
+
+Example:
+```python
+from typing import List, Optional
+
+class ShoppingCart:
+    def __init__(self) -> None:
+        self.items: List[Item] = []
+        
+    def add_item(self, item: Item) -> None:
+        self.items.append(item)
+        
+    def get_total(self) -> float:
+        return sum(item.price for item in self.items)
+```
+
+### 8. Keep Methods Short and Focused
+Each method should do one thing well. Extract complex logic into helper methods.
+
+Example:
+```python
+# Bad
+def process_order(self, order):
+    # 100 lines of mixed logic
+
+# Good
+def process_order(self, order):
+    self.validate_order(order)
+    total = self.calculate_total(order)
+    self.apply_discounts(order)
+    self.update_inventory(order)
+    self.send_confirmation(order)
+```
+
+## Best Practices for Testing
+
+1. Write tests first (TDD) when possible
+2. Test public interfaces, not implementation details
+3. Use meaningful test names that describe the scenario
+4. Keep tests independent and isolated
+5. Test edge cases and error conditions
+
+Example:
+```python
+def test_withdraw_insufficient_funds():
+    account = BankAccount()
+    account.deposit(100)
+    
+    with pytest.raises(InsufficientFunds):
+        account.withdraw(150)
+```
+
+## Common Anti-Patterns to Avoid
+
+1. God Classes: Classes that do too much
+2. Feature Envy: Methods that use more features of other classes than their own
+3. Long Parameter Lists: Methods with too many parameters
+4. Tight Coupling: Classes that know too much about each other
+5. Premature Optimization: Making code complex for theoretical performance gains
