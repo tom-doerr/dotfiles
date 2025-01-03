@@ -1,13 +1,25 @@
-<h1 align="center">Dotfiles</h1>
-<p align="center">
-  <img src="https://img.shields.io/github/license/tom-doerr/dotfiles" alt="License">
-  <img src="https://img.shields.io/maintenance/yes/2025" alt="Maintenance">
-</p>
+<div align="center">
+  <h1>🚀 Dotfiles</h1>
+  <p>
+    <img src="https://img.shields.io/github/license/tom-doerr/dotfiles" alt="License">
+    <img src="https://img.shields.io/maintenance/yes/2025" alt="Maintenance">
+    <img src="https://img.shields.io/badge/platform-linux-blue" alt="Platform">
+    <img src="https://img.shields.io/badge/shell-bash%20%7C%20zsh-yellow" alt="Shell">
+  </p>
 
-<p align="center">
-  My personal configuration files for various tools and environments.<br>
-  These are optimized for a Linux development workflow.
-</p>
+  <p>
+    A carefully curated collection of configuration files for a powerful Linux development environment.<br>
+    Optimized for productivity, customizability, and ease of use.
+  </p>
+
+  <p>
+    <a href="#key-configurations">Configurations</a> •
+    <a href="#installation">Installation</a> •
+    <a href="#features">Features</a> •
+    <a href="#customization">Customize</a> •
+    <a href="#license">License</a>
+  </p>
+</div>
 
 ## Table of Contents
 
@@ -17,45 +29,98 @@
 4. [Customization](#customization)
 5. [License](#license)
 
-## Key Configurations
+## ⚙️ Key Configurations
 
-| Category         | Files                                                                 | Description                                                                 |
-|------------------|-----------------------------------------------------------------------|-----------------------------------------------------------------------------|
-| Shell            | `bashrc_custom.sh`, `zshrc_custom.sh`, `shell_functions.sh`, `shell_settings.sh` | Custom shell configurations, aliases, functions and environment variables  |
-| Terminal         | `kitty.conf`, `tmux/tmux.conf`                                        | Terminal emulator and multiplexer configurations                           |
-| Window Management| `i3/config`, `i3blocks.conf`, `picom.conf`                            | i3 window manager, status bar and compositor settings                      |
-| Text Editors     | `vimrc`, `inputrc`                                                   | Vim and readline configurations                                            |
+| Category | Files | Description | Key Features |
+|----------|-------|-------------|--------------|
+| 🐚 Shell | `bashrc_custom.sh`<br>`zshrc_custom.sh`<br>`shell_functions.sh`<br>`shell_settings.sh` | Shell configurations and utilities | • Custom aliases<br>• Productivity functions<br>• Environment setup |
+| 🖥️ Terminal | `kitty.conf`<br>`tmux/tmux.conf` | Terminal emulator & multiplexer | • Split panes<br>• Session management<br>• Custom keybindings |
+| 🪟 Window Management | `i3/config`<br>`i3blocks.conf`<br>`picom.conf` | i3wm & compositor settings | • Tiling layouts<br>• Workspace management<br>• Window effects |
+| ✏️ Text Editors | `vimrc`<br>`inputrc` | Editor configurations | • Vim plugins<br>• Custom mappings<br>• IDE features |
 
-## Installation
+## 🚀 Installation
 
+### Prerequisites
+```bash
+# Install required packages
+sudo apt install git vim tmux i3 kitty zsh
+```
+
+### Quick Start
 1. Clone this repository:
 ```bash
 git clone https://github.com/tom-doerr/dotfiles.git ~/.dotfiles
+cd ~/.dotfiles
 ```
 
-2. Create symlinks:
+2. Run the installation script:
 ```bash
-ln -s ~/.dotfiles/vimrc ~/.vimrc
-ln -s ~/.dotfiles/tmux/tmux.conf ~/.tmux.conf
-# Repeat for other config files...
+./setup.sh
 ```
 
-3. Install dependencies:
+### Manual Setup
+1. Create symlinks:
+```bash
+# Shell
+ln -s ~/.dotfiles/bashrc_custom.sh ~/.bashrc_custom
+ln -s ~/.dotfiles/zshrc_custom.sh ~/.zshrc_custom
+
+# Terminal
+ln -s ~/.dotfiles/kitty.conf ~/.config/kitty/kitty.conf
+ln -s ~/.dotfiles/tmux/tmux.conf ~/.tmux.conf
+
+# Window Manager
+ln -s ~/.dotfiles/i3/config ~/.config/i3/config
+ln -s ~/.dotfiles/i3blocks.conf ~/.config/i3blocks/config
+
+# Editors
+ln -s ~/.dotfiles/vimrc ~/.vimrc
+ln -s ~/.dotfiles/inputrc ~/.inputrc
+```
+
+2. Install plugins:
 ```bash
 # Vim plugins
+git clone https://github.com/VundleVim/Vundle.vim.git ~/.vim/bundle/Vundle.vim
 vim +PluginInstall +qall
 
 # Tmux plugins
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
 tmux source-file ~/.tmux.conf
 ```
 
-## Features
+## ✨ Features
 
-- **Productivity Focused** ![Productivity](https://img.shields.io/badge/-Productivity-blueviolet)
-- **Cross-Shell Compatibility** ![Shell](https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-blue)
-- **Custom Shell Functions** ![Functions](https://img.shields.io/badge/Functions-100%2B-yellowgreen)
-- **Theming** ![Theming](https://img.shields.io/badge/Theming-Consistent-orange)
-- **Window Management** ![i3wm](https://img.shields.io/badge/Window%20Manager-i3wm-9cf)
+### 🛠️ Development Tools
+- **Vim Configuration** ![Vim](https://img.shields.io/badge/Editor-Vim-brightgreen)
+  - Code completion
+  - Syntax highlighting
+  - Git integration
+  - File navigation
+
+### 🖥️ Terminal Experience
+- **Tmux Setup** ![Tmux](https://img.shields.io/badge/Terminal-Tmux-blue)
+  - Session persistence
+  - Split panes
+  - Status bar customization
+
+### 🎨 Window Management
+- **i3wm Configuration** ![i3wm](https://img.shields.io/badge/WM-i3wm-purple)
+  - Tiling layouts
+  - Workspace organization
+  - Custom keybindings
+
+### 🐚 Shell Environment
+- **Cross-Shell Support** ![Shell](https://img.shields.io/badge/Shell-Bash%20%7C%20Zsh-yellow)
+  - 100+ custom functions
+  - Productivity aliases
+  - Environment consistency
+
+### 🎯 Productivity
+- **Task Management** ![Tasks](https://img.shields.io/badge/Tasks-Automated-orange)
+  - Quick commands
+  - Custom scripts
+  - Workflow automation
 
 ## Customization
 
