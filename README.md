@@ -1,6 +1,13 @@
-# Dotfiles ![GitHub](https://img.shields.io/github/license/yourusername/dotfiles) ![Maintenance](https://img.shields.io/maintenance/yes/2025)
+<h1 align="center">Dotfiles</h1>
+<p align="center">
+  <img src="https://img.shields.io/github/license/tom-doerr/dotfiles" alt="License">
+  <img src="https://img.shields.io/maintenance/yes/2025" alt="Maintenance">
+</p>
 
-My personal configuration files for various tools and environments. These are optimized for a Linux development workflow.
+<p align="center">
+  My personal configuration files for various tools and environments.<br>
+  These are optimized for a Linux development workflow.
+</p>
 
 ## Table of Contents
 
