@@ -1,10 +1,9 @@
 <div align="center">
   <h1>🚀 Dotfiles</h1>
   <p>
-    <img src="https://img.shields.io/github/license/tom-doerr/dotfiles" alt="License">
-    <img src="https://img.shields.io/maintenance/yes/2025" alt="Maintenance">
-    <img src="https://img.shields.io/badge/platform-linux-blue" alt="Platform">
-    <img src="https://img.shields.io/badge/shell-bash%20%7C%20zsh-yellow" alt="Shell">
+    <img src="https://img.shields.io/maintenance/yes/2025?style=for-the-badge&logo=github" alt="Maintenance">
+    <img src="https://img.shields.io/badge/PLATFORM-LINUX-black?style=for-the-badge&logo=linux" alt="Platform">
+    <img src="https://img.shields.io/badge/SHELL-BASH%20|%20ZSH-black?style=for-the-badge&logo=gnu-bash" alt="Shell">
   </p>
 
   <p>
@@ -131,8 +130,4 @@ To customize these configurations:
 3. Create a new branch for your changes
 4. Commit and push your changes
 
-## License
-
-MIT License - Feel free to use and modify these configurations
-
-![GitHub stars](https://img.shields.io/github/stars/tom-doerr/dotfiles?style=social)
+![GitHub stars](https://img.shields.io/github/stars/tom-doerr/dotfiles?style=for-the-badge&logo=github)
