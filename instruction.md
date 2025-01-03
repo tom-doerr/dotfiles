@@ -1,4 +1,4 @@
-Instructions for Aider an other LLM tools:
+Instructions for Aider and other LLM tools:
 Keep it simple!
 
 1. Embrace Simplicity Over Cleverness
