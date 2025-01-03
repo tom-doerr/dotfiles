@@ -23,7 +23,7 @@ My personal configuration files for various tools and environments. These are op
 
 1. Clone this repository:
 ```bash
-git clone https://github.com/yourusername/dotfiles.git ~/.dotfiles
+git clone https://github.com/tom-doerr/dotfiles.git ~/.dotfiles
 ```
 
 2. Create symlinks:
@@ -63,4 +63,4 @@ To customize these configurations:
 
 MIT License - Feel free to use and modify these configurations
 
-![GitHub stars](https://img.shields.io/github/stars/yourusername/dotfiles?style=social)
+![GitHub stars](https://img.shields.io/github/stars/tom-doerr/dotfiles?style=social)
