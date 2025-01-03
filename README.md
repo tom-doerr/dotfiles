@@ -7,7 +7,7 @@
   </p>
 
   <p>
-    My collection of configuration files for my Linux development setup.  
+    My collection of configuration files for my Linux development setup.<br>
     Optimized for productivity, customizability, and ease of use.
   </p>
 
