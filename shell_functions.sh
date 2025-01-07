@@ -11,6 +11,20 @@ PROJECT_TAG_PATH=~/project_tag
 source /home/tom/git/scripts/k.sh
 
 
+plex_archive() {                                                   
+    # Create target dir if it doesn't exist                        
+    mkdir -p plex_mds_archive
+                                                                   
+    # Generate timestamped filename                                
+    local timestamp=$(date +"%Y%m%d_%H%M%S")                       
+    local new_name="plex_mds_archive/plex_${timestamp}.md"         
+                                                                   
+    # Move current plex.md and create new empty one                
+    mv plex.md "$new_name" && touch plex.md                        
+                                                                   
+    echo "Moved plex.md to $new_name and created new empty plex.md"
+}
+
 p() {
     plexsearch $@
 }
