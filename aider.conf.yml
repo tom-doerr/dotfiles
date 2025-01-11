@@ -1,5 +1,5 @@
-#model: deepseek
-model: openrouter/deepseek/deepseek-chat
+model: deepseek
+#model: openrouter/deepseek/deepseek-chat
 #model: gemini/gemini-2.0-flash-exp
 #model: gemini/gemini-2.0-flash-thinking-exp
 #weak-model: deepseek
