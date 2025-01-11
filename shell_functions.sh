@@ -1120,8 +1120,14 @@ t() {
     then
         ts
         ~/git/taskwarrior-fzf/taskfzf report1
-    else
+    elif [[ $@ =~ ^-?[0-9]+$ ]]
+    then
         task $@
+    elif [[ "$1" != "" ]]
+    then
+        task_id=$(~/git/scripts/task_id_mapper.py $1)
+        task $task_id ${@:2}
+
     fi
 }
 
@@ -1261,6 +1267,19 @@ pct() {
 }
 
 
+kn() {
+    if [[ $1 =~ ^[0-9]+$ ]]
+    then
+        task_ids="$1"
+        task_tag next $task_ids
+    elif [[ "$1" != "" ]]
+    then
+        task_id=$(~/git/scripts/task_id_mapper.py $1)
+        task_tag next $task_id
+    else
+        echo "No task id provided"
+    fi
+}
 
 
 
