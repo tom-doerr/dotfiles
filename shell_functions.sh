@@ -450,7 +450,7 @@ pa() {
     then
         description_string="$(echo $@ | awk '{split($0,a,"-"); print a[1]}')"
         modifications_string="$(echo $@ | awk '{split($0,a,"-"); print a[2]}')"
-        task $(t +ACTIVE _uuid) duplicate -clarify description:$description_string $modifications_string
+        task $(task +ACTIVE _uuid) duplicate -clarify description:$description_string $modifications_string
     else
         current_taskwarrior_context="$(get_current_taskwarrior_context)"
         task add $1 +"$current_taskwarrior_context"
