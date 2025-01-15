@@ -1120,14 +1120,18 @@ t() {
     then
         ts
         ~/git/taskwarrior-fzf/taskfzf report1
-    elif [[ $@ =~ ^-?[0-9]+$ ]]
+    elif [[ $1 =~ ^-?[0-9]+$ ]]
     then
         task $@
     elif [[ "$1" != "" ]]
     then
-        task_id=$(~/git/scripts/task_id_mapper.py $1)
-        task $task_id ${@:2}
-
+        if [[ $@ =~ ^-?[0-9]+$ ]]
+        then
+            task $@
+        else
+            task_id=$(~/git/scripts/task_id_mapper.py $1)
+            task $task_id ${@:2}
+        fi
     fi
 }
 
