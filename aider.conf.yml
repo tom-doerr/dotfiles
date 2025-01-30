@@ -7,7 +7,7 @@ model: openrouter/deepseek/deepseek-r1-distill-llama-70b
 #weak-model: deepseek
 editor: vim
 #edit-format: dspy-search-replace
-#edit-format: whole
+edit-format: whole
 #edit-format: diff
 #edit-format: diff-fenced
 vim: true
