@@ -1,5 +1,6 @@
 #model: deepseek
-model: deepseek/deepseek-reasoner
+#model: deepseek/deepseek-reasoner
+model: openrouter/deepseek/deepseek-r1-distill-llama-70b
 #model: openrouter/deepseek/deepseek-chat
 #model: gemini/gemini-2.0-flash-exp
 #model: gemini/gemini-2.0-flash-thinking-exp
