@@ -398,4 +398,4 @@ imap <silent><script><expr> <Tab> copilot#Accept("\<CR>")
 
 
 "mapping for inserting datetime
-nmap <leader>dt iDatetime <C-R>=strftime("%Y-%m-%d %H:%M:%S") <Esc>a
+nmap <leader>dt i<C-R>=strftime("%Y-%m-%d %H:%M:%S") <space>
