@@ -397,3 +397,5 @@ nmap <leader>p ggVGp
 imap <silent><script><expr> <Tab> copilot#Accept("\<CR>")
 
 
+"mapping for inserting datetime
+nmap <leader>dt "=strftime("%Y-%m-%d %H:%M:%S")<CR>P
