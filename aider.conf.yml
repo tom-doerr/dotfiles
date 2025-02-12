@@ -16,7 +16,7 @@ vim: true
 analytics: true
 analytics-log: analytics.log
 cache-prompts: true
-cache-keepalive-pings: 3
+#cache-keepalive-pings: 3
 max-chat-history-tokens: 10000
 voice-language: de
 voice-format: mp3
