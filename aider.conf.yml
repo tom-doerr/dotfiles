@@ -3,13 +3,15 @@
 #model: openrouter/deepseek/deepseek-r1-distill-llama-70b
 #model: openrouter/deepseek/deepseek-r1
 #model: openrouter/google/gemini-2.0-flash-001
-model: openrouter/openai/o3-mini
+#model: openrouter/openai/o3-mini
+model: openrouter/openai/o3-mini:search
 #model: openrouter/deepseek/deepseek-chat
 #model: gemini/gemini-2.0-flash-exp
 #model: gemini/gemini-2.0-flash-thinking-exp
 weak-model: openrouter/google/gemini-2.0-flash-001
 #weak-model: deepseek
 editor: vim
+test-cmd: pytest
 #edit-format: dspy-search-replace
 #edit-format: whole
 #edit-format: diff
