@@ -28,20 +28,22 @@
 
 
 
-if ! pgrep -u "$USER" ssh-agent > /dev/null; then
-    ssh-agent > ~/.ssh-agent-thing
-fi
-#if [[ ! "$SSH_AUTH_SOCK" ]]; then
-    #eval "$(<~/.ssh-agent-thing)"
-#fi
+# We're using passwordless SSH keys, so no SSH agent setup is needed.
+# Programs will directly use the key file when needed.
+# If you need agent forwarding or other SSH agent features, uncomment the section below.
 
-export SSH_AUTH_SOCK=$(find /tmp -name "agent.*" -user $(whoami) 2>/dev/null | head -n 1)
-# Check if your key is already added
-if ! ssh-add -l | grep -q "ED25519"; then
-    ssh-add /home/tom/.ssh/id_ed25519
-fi
+# Uncomment if you need SSH agent features:
+# if command -v keychain >/dev/null 2>&1; then
+#     eval $(keychain --quiet --agents ssh ~/.ssh/id_ed25519)
+# else
+#     if [ -z "$SSH_AUTH_SOCK" ]; then
+#         eval "$(ssh-agent -s)" > /dev/null
+#         ssh-add ~/.ssh/id_ed25519 2>/dev/null
+#     fi
+# fi
 
-
+# Uncomment if using SSH agent:
+# ssh-add -l | grep -q "$(ssh-keygen -lf ~/.ssh/id_ed25519.pub | awk '{print $2}')" || ssh-add ~/.ssh/id_ed25519 2>/dev/null
 
 export VISUAL=nvim
 export EDITOR="$VISUAL"
