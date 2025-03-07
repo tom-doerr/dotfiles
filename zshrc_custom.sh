@@ -215,7 +215,13 @@ export DISABLE_AUTO_UPDATE="true"
 #fi
 
 
-export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.8/site-packages"
+# Comment out the old PYTHONPATH export
+# export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.8/site-packages"
+# Instead, only add it if we're using Python 3.8
+if python3 -c "import sys; exit(0 if sys.version_info.major == 3 and sys.version_info.minor == 8 else 1)" 2>/dev/null; then
+    export PYTHONPATH="${PYTHONPATH}:/home/tom/.local/lib/python3.8/site-packages"
+fi
+
 [ -f ~/.zprofile ] || echo "No ~/.zprofile found. You might want to create a symlink using 'ln -s .profile .zprofile'."
 
 if [[ $1 == eval ]]
