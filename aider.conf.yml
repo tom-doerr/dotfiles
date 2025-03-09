@@ -12,7 +12,8 @@ model: openrouter/openai/o3-mini-high:online
 weak-model: openrouter/google/gemini-2.0-flash-001
 #weak-model: deepseek
 editor: vim
-test-cmd: pytest
+test-cmd: "pytest --tb=short"
+lint-cmd: "ruff check"
 #edit-format: dspy-search-replace
 #edit-format: whole
 #edit-format: diff
@@ -28,3 +29,5 @@ voice-format: mp3
 #voice-save-dir: /home/tom/aider_input_audio
 #auto-submit-transcript: true
 test-cmd: pytest
+read: ~/git/dotfiles/instruction.md 
+read: plex.md
