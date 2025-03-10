@@ -51,3 +51,4 @@ export PYTHONBREAKPOINT=ipdb.set_trace
 export SPOTIFY_DBUS_CLIENT=spotifyd
 export PATH="$PATH":"$HOME"/.cargo/bin
 export PATH="$PATH":"$HOME"/go/bin
+export PATH="$HOME/git/scripts_path:$PATH"
