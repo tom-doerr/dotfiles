@@ -16,13 +16,13 @@ weak-model: openrouter/google/gemini-2.0-flash-001
 #weak-model: openrouter/google/gemini-2.0-flash-001
 editor: vim
 test-cmd: "pytest --random-order --tb=short --timeout=1 2>&1 | tail -n50"
-lint-cmd: "pylint 2>&1 | tail -n50"
+lint-cmd: "pylint"
 #edit-format: dspy-search-replace
 #edit-format: whole
 #edit-format: diff
 #edit-format: diff-fenced
-auto-lint: True
-auto-test: True
+#auto-lint: True
+#auto-test: True
 vim: true
 analytics: true
 analytics-log: analytics.log
