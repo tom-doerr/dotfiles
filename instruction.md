@@ -111,3 +111,5 @@ Don't just disable linting to avoid the issue, fix it
 Don't try to create workarounds, fix the actual issues
 
 Use pytest for writing tests
+
+To add files to the chat, write them in markdown code quotes and I might add them 
