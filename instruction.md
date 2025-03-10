@@ -101,3 +101,13 @@ You can edit many files and also add tests and also remove old code or delete ol
 
 When working, think about:
 how should we continue? what are issues? do you see bugs? should we add more tests? would more tests help narrow down the issues? if so add as many tests as you think help. do we need to refactor? should we switch approaches? how can we simplify? is there code or tests we should delete? are there tests we need to update? continue with what you think is most important. please do many edits, it's good if you fix many issues at the same time. try to fix all issues at the same time  
+
+To run shell commands, just print them in markdown `code` quotes then i can run them. 
+
+In DSPy, you can do lm = dspy.LM('openrouter/google/gemini-2.0-flash-001') to load a model
+Don't use docstrings, use comments instead if explanation is required
+Don't just disable linting to avoid the issue, fix it
+
+Don't try to create workarounds, fix the actual issues
+
+Use pytest for writing tests
