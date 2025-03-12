@@ -1,6 +1,6 @@
 # If you come from bash you might have to change your $PATH.
-# Simplified startup timing
-typeset -F SECONDS=0
+# Startup timing with sections
+typeset -F START_TIME=$SECONDS
 
 # Path to your oh-my-zsh installation.
 export ZSH=$HOME/.oh-my-zsh
@@ -71,7 +71,9 @@ plugins=(
   zsh_codex
 )
 
+typeset -F OMZ_START=$SECONDS
 source $ZSH/oh-my-zsh.sh
+echo "oh-my-zsh loaded in $(($SECONDS - $OMZ_START))s"
 
 # User configuration
 
@@ -239,5 +241,6 @@ bindkey '^X' create_completion
 
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }
-# Show total load time using zsh's built-in timer
-echo "zshrc loaded in ${(l.$COLUMNS..-.)SECONDS}s"
+# Show detailed load times
+echo "${(l.$COLUMNS..-.)}"
+echo "Total zshrc load time: $(($SECONDS - $START_TIME))s"
