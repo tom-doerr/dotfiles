@@ -1,4 +1,5 @@
 # If you come from bash you might have to change your $PATH.
+START_TIME=$(date +%s.%N)
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 
 # Path to your oh-my-zsh installation.
@@ -238,3 +239,5 @@ bindkey '^X' create_completion
 
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }
+END_TIME=$(date +%s.%N)
+echo "zshrc_custom.sh executed in $(echo \"$END_TIME - $START_TIME\" | bc) seconds"
