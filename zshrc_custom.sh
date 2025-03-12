@@ -1,6 +1,6 @@
 # If you come from bash you might have to change your $PATH.
-START_TIME=$(date +%s.%N)
-# export PATH=$HOME/bin:/usr/local/bin:$PATH
+# Simplified startup timing
+typeset -F SECONDS=0
 
 # Path to your oh-my-zsh installation.
 export ZSH=$HOME/.oh-my-zsh
@@ -239,6 +239,5 @@ bindkey '^X' create_completion
 
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }
-END_TIME=$(date +%s.%N)
-ELAPSED=$(python3 -c "print(${END_TIME} - ${START_TIME})")
-echo "zshrc_custom.sh executed in ${ELAPSED} seconds"
+# Show total load time using zsh's built-in timer
+echo "zshrc loaded in ${(l.$COLUMNS..-.)SECONDS}s"
