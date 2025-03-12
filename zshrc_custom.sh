@@ -240,4 +240,5 @@ bindkey '^X' create_completion
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }
 END_TIME=$(date +%s.%N)
-echo "zshrc_custom.sh executed in $(echo \"$END_TIME - $START_TIME\" | bc) seconds"
+ELAPSED=$(python3 -c "print(${END_TIME} - ${START_TIME})")
+echo "zshrc_custom.sh executed in ${ELAPSED} seconds"
