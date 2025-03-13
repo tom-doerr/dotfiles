@@ -320,9 +320,9 @@ focus_follows_mouse no
 # Screen power management with DPMS:
 # Format: exec xset dpms [standby] [suspend] [off] (time in seconds)
 # - standby: Screen dims (600 = 10 minutes)
-# - suspend: Most display circuits off but quick to resume (0 = disabled)
+# - suspend: Most display circuits off but quick to resume (3600 = 1 hour)
 # - off: Screen completely off (10800 = 3 hours)
-exec xset dpms 600 0 10800
+exec xset dpms 600 3600 10800
 
 for_window [class="Brave"] border normal
 
