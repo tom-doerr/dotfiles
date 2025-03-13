@@ -83,7 +83,7 @@ bindsym $mod+Shift+space floating toggle
 bindsym $mod+space focus mode_toggle
 
 # toggle sticky
-#bindsym $mod+Shift+s sticky toggle
+bindsym $mod+Shift+s sticky toggle
 
 # focus the parent container
 bindsym $mod+a focus parent
@@ -371,6 +371,9 @@ bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 
 #bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png'
 bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png' && xclip -selection clipboard -t image/png -i $(ls -t /home/tom/Pictures/*.png | head -n 1)
+
+# Make focused window sticky (visible on all workspaces)
+bindsym $mod+o sticky toggle
 
 bindsym $mod+Shift+M exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png"
 bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro.sh"
