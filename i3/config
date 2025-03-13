@@ -317,7 +317,7 @@ bindsym Mod1+Ctrl+k exec ~/git/scripts/switch_keyboard_layout.sh
 exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f $layout_file ] && $layout_file'
 focus_follows_mouse no
 
-exec xset dpms 0 0 720
+exec xset dpms 0 0 300
 
 for_window [class="Brave"] border normal
 
