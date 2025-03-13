@@ -317,7 +317,11 @@ bindsym Mod1+Ctrl+k exec ~/git/scripts/switch_keyboard_layout.sh
 exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f $layout_file ] && $layout_file'
 focus_follows_mouse no
 
-# Screen power management: dim after 10 minutes, turn off after 3 hours
+# Screen power management with DPMS:
+# Format: exec xset dpms [standby] [suspend] [off] (time in seconds)
+# - standby: Screen dims (600 = 10 minutes)
+# - suspend: Most display circuits off but quick to resume (0 = disabled)
+# - off: Screen completely off (10800 = 3 hours)
 exec xset dpms 600 0 10800
 
 for_window [class="Brave"] border normal
