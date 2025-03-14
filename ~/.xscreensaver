@@ -1,0 +1,44 @@
+# XScreenSaver Preferences File
+timeout:	0:10:00
+cycle:		0:10:00
+lock:		False
+lockTimeout:	0:00:00
+passwdTimeout:	0:00:30
+visualID:	default
+installColormap:    True
+verbose:	False
+timestamp:	True
+splash:		True
+splashDuration:	0:00:05
+demoCommand:	xscreensaver-demo
+prefsCommand:	xscreensaver-demo -prefs
+nice:		10
+memoryLimit:	0
+fade:		True
+unfade:		False
+fadeSeconds:	0:00:03
+fadeTicks:	20
+captureStderr:	True
+ignoreUninstalledPrograms:False
+font:		*-medium-r-*-140-*-m-*
+dpmsEnabled:	True
+dpmsQuickOff:	False
+dpmsStandby:	0:10:00
+dpmsSuspend:	1:00:00
+dpmsOff:	3:00:00
+grabDesktopImages:  True
+grabVideoFrames:    False
+chooseRandomImages: False
+imageDirectory:	
+
+mode:		one
+selected:	0
+
+textMode:	file
+textLiteral:	XScreenSaver
+textFile:	
+textProgram:	fortune
+textURL:	https://en.wikipedia.org/wiki/Special:Random
+
+programs:								      \
+				binaryring -root			    \n\

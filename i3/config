@@ -385,6 +385,9 @@ bindsym $mod+Shift+o sticky enable; exec --no-startup-id notify-send "Sticky win
 # Open xscreensaver settings
 bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
 
+# Open xscreensaver settings
+bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
+
 bar {
       status_command i3blocks
 }
