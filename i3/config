@@ -319,6 +319,8 @@ focus_follows_mouse no
 
 # Screen power management with xscreensaver
 exec --no-startup-id xscreensaver -no-splash
+# Set display to turn off after 1 hour of inactivity
+exec --no-startup-id xset dpms 0 0 3600
 
 for_window [class="Brave"] border normal
 
