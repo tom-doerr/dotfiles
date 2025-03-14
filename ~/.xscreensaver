@@ -31,8 +31,8 @@ grabVideoFrames:    False
 chooseRandomImages: False
 imageDirectory:	
 
-mode:		one
-selected:	0
+mode:		random
+selected:	-1
 
 textMode:	file
 textLiteral:	XScreenSaver
@@ -41,4 +41,39 @@ textProgram:	fortune
 textURL:	https://en.wikipedia.org/wiki/Special:Random
 
 programs:								      \
-				binaryring -root			    \n\
+  GL:				gears -root				    \n\
+  GL:				glmatrix -root				    \n\
+  GL:				flurry -root				    \n\
+  GL:				pulsar -root				    \n\
+  GL:				cityflow -root				    \n\
+  GL:				glblur -root				    \n\
+  GL:				hyperspace -root			    \n\
+  GL:				skyrocket -root				    \n\
+  GL:				fireflies -root				    \n\
+  GL:				antspotlight -root			    \n\
+  GL:				atunnel -root				    \n\
+  GL:				photopile -root				    \n\
+  GL:				providence -root			    \n\
+  GL:				substrate -root				    \n\
+  GL:				boxfit -root				    \n\
+  GL:				cubestack -root				    \n\
+  GL:				cubicgrid -root				    \n\
+  GL:				lockward -root				    \n\
+  GL:				voronoi -root				    \n\
+  GL:				dnalogo -root				    \n\
+  GL:				esper -root				    \n\
+  GL:				vigilance -root				    \n\
+  GL:				crumbler -root				    \n\
+  GL:				kaleidocycle -root			    \n\
+  GL:				quasicrystal -root			    \n\
+  GL:				unknownpleasures -root			    \n\
+  GL:				projectiveplane -root			    \n\
+  GL:				binaryring -root			    \n\
+  GL:				spheremonics -root			    \n\
+  GL:				gleidescope -root			    \n\
+  GL:				lavalite -root				    \n\
+  GL:				queens -root				    \n\
+  GL:				endgame -root				    \n\
+  GL:				blinkbox -root				    \n\
+  GL:				stonerview -root			    \n\
+  GL:				unicrud -root				    \n\
