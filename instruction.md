@@ -74,23 +74,8 @@ Use type hints when possible.
 Use descriptive, meaningful names for variables, functions, and classes
 
 Group related code together
-Use consistent indentation (typically 2 or 4 spaces)
-Add spacing between logical sections
-
-Handle potential errors explicitly
 Validate input data
-Return meaningful error messages
-
-Use consistent formatting
 Avoid deep nesting of conditionals
-
-## Common Anti-Patterns to Avoid
-
-1. God Classes: Classes that do too much
-2. Feature Envy: Methods that use more features of other classes than their own
-3. Long Parameter Lists: Methods with too many parameters
-4. Tight Coupling: Classes that know too much about each other
-5. Premature Optimization: Making code complex for theoretical performance gains
 
 Only provide the filename/filepath above a code block when performing an edit.
 Do NOT include 'New file: ' or (apply to main.py) or similar.
@@ -109,7 +94,11 @@ Don't use docstrings, use comments instead if explanation is required
 Don't just disable linting to avoid the issue, fix it
 
 Don't try to create workarounds, fix the actual issues
-
-Use pytest for writing tests
-
+Use pytest for writing python tests 
 To add files to the chat, write them in markdown code quotes and I might add them 
+I might type without spaces, punctuation and use shorthand and often make typos. please just tell me what you think i typed before proceeding to process my input. please repeat what i wrote word for word before working on my request.
+don't start streamlit apps for me, I'll do that myself
+also don't show me the commands for starting streamlit apps unprompted since Aider then asks me if I want to run it each time
+when i add a task.md to the chat please do the tasks and note what you did
+
+when removing or moving files, use git rm and git mv
