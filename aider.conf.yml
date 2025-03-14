@@ -1,7 +1,7 @@
-#model: deepseek
+model: deepseek
 #weak-model: deepseek
 #model: openrouter/google/gemini-2.0-flash-001
-model: openrouter/deepseek/deepseek-r1-distill-qwen-32b
+#model: openrouter/deepseek/deepseek-r1-distill-qwen-32b
 weak-model: openrouter/google/gemini-2.0-flash-001
 #model: deepseek/deepseek-reasoner
 #model: openrouter/deepseek/deepseek-r1-distill-llama-70b
@@ -15,8 +15,8 @@ weak-model: openrouter/google/gemini-2.0-flash-001
 #model: gemini/gemini-2.0-flash-thinking-exp
 #weak-model: openrouter/google/gemini-2.0-flash-001
 editor: vim
-test-cmd: "pytest --random-order --tb=short --timeout=1 2>&1 | tail -n50"
-lint-cmd: "pylint"
+test-cmd: "pytest -n auto --random-order --tb=short --timeout=1 2>&1 | tail -n50"
+#lint-cmd: "pylint"
 #edit-format: dspy-search-replace
 #edit-format: whole
 #edit-format: diff
@@ -28,7 +28,7 @@ analytics: true
 analytics-log: analytics.log
 cache-prompts: true
 #cache-keepalive-pings: 3
-max-chat-history-tokens: 10000
+max-chat-history-tokens: 1000
 voice-language: de
 voice-format: mp3
 #voice-save-dir: /home/tom/aider_input_audio
@@ -36,3 +36,4 @@ voice-format: mp3
 test-cmd: pytest
 read: ~/git/dotfiles/instruction.md 
 read: plex.md
+#subtree-only: true
