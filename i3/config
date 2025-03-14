@@ -317,12 +317,8 @@ bindsym Mod1+Ctrl+k exec ~/git/scripts/switch_keyboard_layout.sh
 exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f $layout_file ] && $layout_file'
 focus_follows_mouse no
 
-# Screen power management with DPMS:
-# Format: exec xset dpms [standby] [suspend] [off] (time in seconds)
-# - standby: Screen dims (600 = 10 minutes)
-# - suspend: Most display circuits off but quick to resume (3600 = 1 hour)
-# - off: Screen completely off (10800 = 3 hours)
-exec xset dpms 600 3600 10800
+# Screen power management with xscreensaver
+exec --no-startup-id xscreensaver -no-splash
 
 for_window [class="Brave"] border normal
 
@@ -385,6 +381,9 @@ bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard
 # Explicitly make window sticky (test)
 bindsym $mod+Shift+o sticky enable; exec --no-startup-id notify-send "Sticky window enabled"
 #bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro_buffer.sh"
+
+# Open xscreensaver settings
+bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
 
 bar {
       status_command i3blocks
