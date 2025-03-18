@@ -259,13 +259,18 @@ exec --no-startup-id i3-msg 'workspace 9, move workspace to output DP-0'
 
 # Theme colors
 client.focused #859900 #859900 #fdf6e3 #859900
+# Constrain windows to stay within safe margins
 for_window [class=".*"] border pixel 2
+for_window [floating] resize set 80 ppt 80 ppt, move position center
 
 # Gaps
 gaps inner 40
-gaps outer 0
+gaps outer 20
 
+# Add margins to avoid screen edges due to OLED pixel shifting
 smart_gaps on
+smart_borders on
+workspace_min_size 800x600
 
 # Press $mod+Shift+g to enter the gap mode. Choose o or i for modifying outer/inner gaps. Press one of + / - (in-/decrement for current workspace) or 0 (remove gaps for current workspace). If you also press Shift with these keys, the change will be global for all workspaces.
 set $mode_gaps Gaps: (o) outer, (i) inner
@@ -388,5 +393,8 @@ bindsym $mod+Shift+o sticky enable; exec --no-startup-id notify-send "Sticky win
 bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
 
 bar {
-      status_command i3blocks
+    position top
+    status_command i3blocks
+    tray_padding 2
+    margin 20
 }
