@@ -395,7 +395,7 @@ bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
 bar {
     position top
     status_command i3blocks
-    tray_padding 30
+    tray_padding 60
     margin 0
     padding 8 0
 }
