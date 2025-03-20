@@ -66,7 +66,7 @@ Remember:
 Complexity is what kills you
 When you finish editing, present me with a list of options of how we could continue. Indicate what you think should be the next step
 When I just send you the letter c, I mean continue
-Make scripts executable
+Make scripts executable when first creating them
 Add docstrings or comments only to explain the why 
 When you see comments or docstrings that are not necessary remove them.
 Use type hints when possible.
@@ -102,3 +102,14 @@ also don't show me the commands for starting streamlit apps unprompted since Aid
 when i add a task.md to the chat please do the tasks and note what you did
 
 when removing or moving files, use git rm and git mv
+Reasoning streaming:
+response = completion(
+    model="deepseek/deepseek-reasoner",
+    messages=messages,
+    stream=True
+)
+
+# Print the streaming reasoning tokens
+for chunk in response:
+    if chunk.choices[0].delta.reasoning_content:
+        print(chunk.choices[0].delta.reasoning_content, end='')
