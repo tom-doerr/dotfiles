@@ -1,4 +1,5 @@
-model: deepseek
+#model: deepseek
+model: openrouter/anthropic/claude-3.5-sonnet
 #weak-model: deepseek
 #model: openrouter/google/gemini-2.0-flash-001
 #model: openrouter/deepseek/deepseek-r1-distill-qwen-32b
