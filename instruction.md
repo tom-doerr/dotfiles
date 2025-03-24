@@ -113,3 +113,49 @@ response = completion(
 for chunk in response:
     if chunk.choices[0].delta.reasoning_content:
         print(chunk.choices[0].delta.reasoning_content, end='')
+
+Use many asserts so we can recognize issues with our mental model early
+LLMs I use with Aider/DSPy/LiteLLM:
+deepseek/deepseek-reasoner
+deepseek/deepseek-chat
+openrouter/google/gemini-2.0-flash-001
+openrouter/deepseek/deepseek-r1
+openrouter/deepseek/deepseek-r1-distill-qwen-32b
+openrouter/deepseek/deepseek-chat
+gemini/gemini-2.0-flash-exp
+
+# DSPy info
+# BootstrapFewShotWithRandomSearch:
+fewshot_optimizer = BootstrapFewShotWithRandomSearch(metric=your_defined_metric, max_bootstrapped_demos=2, num_candidate_programs=8, num_threads=NUM_THREADS)
+your_dspy_program_compiled = fewshot_optimizer.compile(student = your_dspy_program, trainset=trainset, valset=devset)
+
+# MIPROv2:
+# Import the optimizer
+from dspy.teleprompt import MIPROv2
+
+# Initialize optimizer
+teleprompter = MIPROv2(
+    metric=gsm8k_metric,
+    auto="light", # Can choose between light, medium, and heavy optimization runs
+)
+
+# Optimize program
+print(f"Optimizing program with MIPRO...")
+optimized_program = teleprompter.compile(
+    program.deepcopy(),
+    trainset=trainset,
+    max_bootstrapped_demos=3,
+    max_labeled_demos=4,
+    requires_permission_to_run=False,
+)
+
+# Save optimize program for future use
+optimized_program.save(f"mipro_optimized")
+
+# Evaluate optimized program
+print(f"Evaluate optimized program...")
+evaluate(optimized_program, devset=devset[:])
+
+# SIMBA
+simba = dspy.SIMBA(metric=metric, max_steps=12, max_demos=10)
+optimized_agent = simba.compile(agent, trainset=trainset, seed=6793115)
