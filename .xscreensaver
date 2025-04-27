@@ -1,6 +1,6 @@
 timeout:    0:05:00
 dpmsEnabled:	False
 programs:        \
-  cloudlife -root \n
+  binaryring -root \n
 mode:           one
 selected:	0
