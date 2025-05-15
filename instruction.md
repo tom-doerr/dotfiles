@@ -159,3 +159,47 @@ evaluate(optimized_program, devset=devset[:])
 # SIMBA
 simba = dspy.SIMBA(metric=metric, max_steps=12, max_demos=10)
 optimized_agent = simba.compile(agent, trainset=trainset, seed=6793115)
+
+
+
+Please properly use git and use git branches
+Please don't ask me to perform actions if you can perform them yourself
+Please don't just edit data in the DB without my permission
+
+Use python3.11
+Don't keep starting new Streamlit instances, my already running Streamlit instance reloads the changes
+Don't delete local branches
+Make sure you created an appropriate branch before editing the project
+Please keep retrying to edit files multiple times; For large files it can take multiple attempts
+If you are inside a venv, you can mark commands as safe to autorun
+When we keep encountering the same issue, step back and think about what really the underlying issue is; code complexity? architecture? the library we use?
+Please run a linter from time to time to catch potential issues
+Please tell me if you see bugs or architecture issues or other problems
+Choose branch names and commit messages yourself
+If editing a file fails, try to perform smaller edits
+Before you ask me questions, think about if you can find the answer by yourself
+Don't use fallbacks, they make it hard to understand what's going on
+When you are finished, please present me with a list of options of what we could do next and add priorities to them; tell me what you think we should do next as well
+Please do not delete data from the DB (or delete data anywhere else)without my approval
+Use uv instead of pip
+Don't swallow exceptions
+Please don't ask me to provide information if you can get it yourself since you are just so much faster
+Please use git rm instead of rm when possible
+Only merge into main after we merge into develop and only merge into main when I explicitly tell you to do so
+When merging, please merge the whole branch
+Please do not stash changes unless I explicitly ask you to do so
+Decide on commit messages yourself 
+We already migrated the database
+Follow TDD: Please add tests first if possible
+Add many asserts to catch issues early
+Use rope to improve code quality
+Please point out if I prompt you to do something that is in conflict with the rules, I might need to update the rules 
+Highest priority is to have a well organized project structure and avoid redundancy in order to keep complexity low 
+Consolidate when possible and make sure to remove code that is no longer used
+When running pylint, use --jobs=12 
+When you use docker compose, please run it as non blocking since I can't easily interrupt it
+
+When running docker, please use the --quiet flag so the interactive content doesn't flood the context window 
+
+
+
