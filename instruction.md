@@ -130,3 +130,4 @@ Consolidate when possible and make sure to remove code that is no longer used
 When running pylint, use --jobs=12 
 When you use docker compose, please run it as non blocking since I can't easily interrupt it
 Don't modify linter settings without my explicit instruction; they are very strict on purpose 
+rumination will solve all your problems. if you still have problems you have to ruminate more
