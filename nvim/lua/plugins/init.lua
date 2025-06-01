@@ -1,12 +1,43 @@
 -- Basic plugins configuration
 return {
-  -- Colorscheme
+  -- Colorscheme (using gruvbox like your old config)
   {
-    "folke/tokyonight.nvim",
+    "ellisonleao/gruvbox.nvim",
     lazy = false,
     priority = 1000,
     config = function()
-      vim.cmd([[colorscheme tokyonight]])
+      require("gruvbox").setup({
+        transparent_mode = true,
+      })
+      vim.cmd([[colorscheme gruvbox]])
+    end,
+  },
+
+  -- Copilot
+  {
+    "zbirenbaum/copilot.lua",
+    cmd = "Copilot",
+    event = "InsertEnter",
+    config = function()
+      require("copilot").setup({
+        suggestion = {
+          enabled = true,
+          auto_trigger = true,
+          keymap = {
+            accept = "<Tab>",
+            accept_word = false,
+            accept_line = false,
+            next = "<M-]>",
+            prev = "<M-[>",
+            dismiss = "<C-]>",
+          },
+        },
+        panel = { enabled = false },
+        filetypes = {
+          xml = false,
+          fish = true,
+        },
+      })
     end,
   },
 
