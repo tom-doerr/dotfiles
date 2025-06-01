@@ -1,5 +1,9 @@
 -- Disable loading of vimrc and vim plugins to prevent conflicts
 vim.opt.loadplugins = false
+vim.g.loaded_vimrc = 1
+vim.g.loaded_gvimrc = 1
+vim.opt.runtimepath:remove(vim.fn.expand('~/.vim'))
+vim.opt.runtimepath:remove('/usr/share/vim/vimfiles')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
