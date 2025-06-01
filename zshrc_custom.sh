@@ -207,7 +207,7 @@ zle -N t
 bindkey '^t' t
 
 export DISABLE_AUTO_UPDATE="true"
-
+export MLFLOW_TRACKING_URI="http://127.0.0.1:5000"
 #if [[ -n $TMUX ]]
 #then
 #    add-zsh-hook precmd update_display_variable
