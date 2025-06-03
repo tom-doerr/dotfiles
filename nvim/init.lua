@@ -34,6 +34,9 @@ end
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
+-- Vimwiki configuration
+vim.g.vimwiki_list = {{path = '~/vimwiki/', syntax = 'markdown', ext = '.md'}}
+
 -- Setup lazy.nvim
 require("lazy").setup({
   spec = {
@@ -77,6 +80,10 @@ vim.opt.clipboard = "unnamedplus"
 
 -- Key mappings
 vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
+vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
+vim.keymap.set('i', '<Tab>', function() 
+    return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
+end, { expr = true })
 
 -- Remove all possible conflicting mappings
 local modes = {'n', 'i', 'v', 'c'}
