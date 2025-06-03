@@ -88,13 +88,6 @@ vim.keymap.set('i', '<Tab>', function()
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
 
--- Remove all possible conflicting mappings
-local modes = {'n', 'i', 'v', 'c'}
-for _, mode in ipairs(modes) do
-    pcall(vim.api.nvim_del_keymap, mode, '<C-s>')
-    pcall(vim.api.nvim_del_keymap, mode, '<leader>f')
-end
-
 -- Ignore terminal codes that might be misinterpreted
 vim.cmd([[
     set ttimeout
@@ -105,6 +98,7 @@ vim.cmd([[
 -- Telescope mappings
 local status_ok, builtin = pcall(require, 'telescope.builtin')
 if status_ok then
+  vim.keymap.set('n', '<C-s>', builtin.find_files, { desc = 'Telescope find files' })
   vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
   vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
