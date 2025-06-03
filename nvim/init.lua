@@ -85,6 +85,13 @@ for _, mode in ipairs(modes) do
     pcall(vim.api.nvim_del_keymap, mode, '<leader>f')
 end
 
+-- Ignore terminal codes that might be misinterpreted
+vim.cmd([[
+    set ttimeout
+    set ttimeoutlen=50
+    set t_RV=
+]])
+
 -- Telescope mappings
 local status_ok, builtin = pcall(require, 'telescope.builtin')
 if status_ok then
