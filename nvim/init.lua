@@ -56,7 +56,7 @@ vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
 -- Key mappings
-vim.keymap.set('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
+vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
 
 -- Improved autosave on leaving insert mode
 vim.api.nvim_create_autocmd("InsertLeave", {
