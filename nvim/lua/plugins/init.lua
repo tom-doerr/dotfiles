@@ -77,6 +77,7 @@ return {
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       local builtin = require('telescope.builtin')
+      vim.keymap.set('n', '<C-s>', builtin.find_files, { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
       vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
@@ -91,7 +92,11 @@ vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope co
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline" },
+        ensure_installed = { 
+          "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline",
+          "python", "javascript", "typescript", "html", "css", "json", "yaml", "bash"
+        },
+        auto_install = true,
         sync_install = false,
         highlight = { enable = true },
         indent = { enable = true },
