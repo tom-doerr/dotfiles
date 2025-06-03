@@ -29,6 +29,7 @@ Aliases:
 'rope': use rope to analyze the code organization and improve it
 'con': consolidate
 'ra': run radon (exclude venv;  --exclude "*/venv/*") to find where we need to improve code quality and fix it
+'report': write an in depth report about the state of the project
 
 - Please make suggestions of how we should continue
 - Point out bugs or architecture issues
@@ -131,3 +132,5 @@ When running pylint, use --jobs=12
 When you use docker compose, please run it as non blocking since I can't easily interrupt it
 Don't modify linter settings without my explicit instruction; they are very strict on purpose 
 rumination will solve all your problems. if you still have problems you have to ruminate more
+When removing files, please use git rm
+When you create new files, only use the filename/path without additional text in paranthesis 

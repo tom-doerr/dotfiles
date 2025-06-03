@@ -41,6 +41,22 @@ return {
     end,
   },
 
+  -- Windsurf (Codeium) AI code completion
+  {
+    "Exafunction/windsurf.nvim",
+    enabled = false, -- Set to true to enable, false to disable
+    event = "VeryLazy", -- Or "BufReadPre", "BufNewFile"
+    config = function()
+      -- Placeholder for Windsurf/Codeium setup
+      -- You will likely need to run an authentication command provided by the plugin
+      -- e.g., :WindsurfAuth or :CodeiumAuth
+      -- require("windsurf").setup({
+      --   -- any specific config options from the plugin's documentation
+      -- })
+      vim.notify("Windsurf (Codeium) plugin added. Set 'enabled = true' and run authentication if needed.", vim.log.levels.INFO)
+    end,
+  },
+
   -- File explorer
   {
     "nvim-tree/nvim-tree.lua",
@@ -65,6 +81,7 @@ return {
       vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
       vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
       vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
     end,
   },
 
@@ -87,25 +104,90 @@ return {
     "neovim/nvim-lspconfig",
     dependencies = {
       "williamboman/mason.nvim",
-      "williamboman/mason-lspconfig.nvim",
+      -- "williamboman/mason-lspconfig.nvim",
     },
     config = function()
       require("mason").setup()
-      require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls" },
-        automatic_installation = false,
-      })
+      local lspconfig = require("lspconfig") -- Define lspconfig before mason-lspconfig setup uses it in handler
+
+      -- require("mason-lspconfig").setup({
+        -- ensure_installed = { "lua_ls" },
+        -- automatic_installation = false,
+        -- handlers = {
+          -- Generic fallback handler for any server not explicitly handled.
+          -- This will be called for servers found by mason-lspconfig that don't have a specific handler below.
+          -- function(server_name)
+            -- local server_ok, server_config = pcall(require, "lspconfig." .. server_name)
+            -- if server_ok and server_config and server_config.setup then
+            --   require("lspconfig")[server_name].setup({})
+            --   vim.notify("Mason-lspconfig: Automatically configured " .. server_name, vim.log.levels.INFO)
+            -- else
+            --   vim.notify("Mason-lspconfig: Skipping automatic configuration for " .. server_name .. ". No default lspconfig found or setup function missing.", vim.log.levels.WARN)
+            -- end
+          -- end,
+
+          -- Default handler (if you want to see it explicitly) -- This comment can be kept or removed
+          -- -- function(server_name) 
+          -- --   lspconfig[server_name].setup({})
+          -- -- end,
+
+          -- Custom handler for lua_ls
+          -- ["lua_ls"] = function()
+            -- lspconfig.lua_ls.setup({
+            --   settings = {
+            --     Lua = {
+            --       diagnostics = {
+            --         globals = { "vim" },
+            --       },
+            --     },
+            --   },
+            -- })
+          -- end,
+        -- },
+      -- })
       
-      local lspconfig = require("lspconfig")
+      -- Manual setup for lua_ls
       lspconfig.lua_ls.setup({
-        settings = {
-          Lua = {
-            diagnostics = {
-              globals = { "vim" },
-            },
-          },
-        },
+      --   settings = {
+      --     Lua = {
+      --       diagnostics = {
+      --         globals = { "vim" },
+      --       },
+      --     },
+      --   },
       })
+    end,
+  },
+
+  -- Hop for motions (replaces EasyMotion)
+  {
+    "phaazon/hop.nvim",
+    branch = "v2", -- Recommended for latest features
+    event = "VeryLazy", -- Load when idle, or you could use `keys` to load on first use
+    config = function()
+      require("hop").setup() -- Initialize hop with default settings
+
+      -- Store hop module for easier access
+      local hop = require("hop")
+
+      -- Normal mode: H then HopWord
+      -- This function first moves the cursor to the top of the window (H)
+      -- then initiates a word hop.
+      local function h_then_hop_words_normal()
+        vim.cmd('normal! H') -- Execute H in normal mode, non-recursively and silently
+        hop.hint_words()     -- Trigger hop for words
+      end
+      vim.keymap.set('n', ';', h_then_hop_words_normal, { noremap = true, silent = true, desc = "Hop: H + Word (Normal)" })
+
+      -- Visual and Operator-pending modes: HopWord
+      -- In these modes, we just want to hop to a word directly.
+      vim.keymap.set({'v', 'o'}, ';', function() hop.hint_words() end, { noremap = true, silent = true, desc = "Hop: Word (Visual/Operator)" })
+
+      -- You can add more hop mappings here if you like. For example:
+      -- To hop to any line:
+      -- vim.keymap.set('n', '<leader>hl', function() hop.hint_lines() end, { noremap = true, silent = true, desc = "Hop: Line" })
+      -- To hop to words after the cursor:
+      -- vim.keymap.set('n', '<leader>hw', function() hop.hint_words({ direction = require('hop.hint').HintDirection.AFTER_CURSOR }) end, { noremap = true, silent = true, desc = "Hop: Word After Cursor" })
     end,
   },
 

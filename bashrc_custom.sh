@@ -42,3 +42,14 @@ fi
 unset __conda_setup
 # <<< conda initialize <<<
 
+export PATH=/home/tom/bin:$PATH
+export DOCKER_HOST=unix:///var/run/docker.sock
+eval "$(rbenv init -)"
+export OPENROUTER_API_KEY="your-api-key-here"
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+# Load API keys
+[ -f ~/.env_api_keys ] && source ~/.env_api_keys
+. "$HOME/.cargo/env"

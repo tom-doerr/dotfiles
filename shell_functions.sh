@@ -172,13 +172,15 @@ wait_if_process_running() {
 }
 
 stop_taskwarrior_timewarrior() {
-        if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
-        then
-            timew stop
-        else
-            timew stop
-            task +ACTIVE done
-        fi
+        #if [[ "$(task +ACTIVE 2>&1)" = *"No matches."* ]] 
+        #then
+            #timew stop
+        #else
+            #timew stop
+            #task +ACTIVE done
+        #fi
+        task +ACTIVE done
+        timew stop
 }
 
 end_taskwarrior_timewarrior() {
@@ -1266,8 +1268,11 @@ pct() {
         tag_to_add="+$current_taskwarrior_context"
         project_prefix="$current_taskwarrior_context."
     fi
-    eval "task add pro:""$project_prefix"$project\
-        $task_string $tag_to_add
+    project_str="$prefix""$project"
+    # all words in project_str are separated by " +"
+    project_str_split_tags="+"$(echo $project_str | sed 's/\./ \+/g')
+    task context define $new_project_name "pro:$project_str" $project_str_split_tags
+
 }
 
 
@@ -1825,3 +1830,7 @@ done
 prod() { 
     ~/git/private/prod.py
 } 
+
+ai_sandbox() {
+    "$HOME/git/dotfiles/docker/ai_sandbox/ai_sandbox.sh" "$@"
+}

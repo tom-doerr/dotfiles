@@ -1,4 +1,4 @@
-timeout:    0:05:00
+timeout:    0:20:00
 dpmsEnabled:	False
 programs:        \
   binaryring -root \n

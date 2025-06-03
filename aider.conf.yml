@@ -1,9 +1,10 @@
 #model: deepseek
-model: openrouter/anthropic/claude-3.5-sonnet
+#model: openrouter/anthropic/claude-3.5-sonnet
+model: openrouter/google/gemini-2.5-pro-preview 
 #weak-model: deepseek
 #model: openrouter/google/gemini-2.0-flash-001
 #model: openrouter/deepseek/deepseek-r1-distill-qwen-32b
-weak-model: openrouter/google/gemini-2.0-flash-001
+#weak-model: openrouter/google/gemini-2.0-flash-001
 #model: deepseek/deepseek-reasoner
 #model: openrouter/deepseek/deepseek-r1-distill-llama-70b
 #model: openrouter/deepseek/deepseek-r1
@@ -37,4 +38,5 @@ voice-format: mp3
 test-cmd: pytest
 read: ~/git/dotfiles/instruction.md 
 read: plex.md
-#subtree-only: true
+#subtree-only: True
+map-tokens: 32000
