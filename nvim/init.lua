@@ -35,6 +35,16 @@ require("lazy").setup({
   install = { colorscheme = { "habamax" } },
   -- automatically check for plugin updates
   checker = { enabled = true },
+  performance = {
+    rtp = {
+      disabled_plugins = {
+        "netrw",
+        "netrwPlugin",
+        "netrwSettings",
+        "netrwFileHandlers"
+      },
+    },
+  },
 })
 
 -- Basic Neovim settings
@@ -57,6 +67,10 @@ vim.opt.clipboard = "unnamedplus"
 
 -- Key mappings
 vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
+
+-- Telescope mappings
+local builtin = require('telescope.builtin')
+vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
 
 -- Improved autosave on leaving insert mode
 vim.api.nvim_create_autocmd("InsertLeave", {
