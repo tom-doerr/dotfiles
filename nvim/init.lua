@@ -8,18 +8,16 @@ vim.g.loaded_gvimrc = 1
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
   local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-  local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
-  if vim.v.shell_error ~= 0 then
-    vim.api.nvim_echo({
-      { "Failed to clone lazy.nvim:\n", "ErrorMsg" },
-      { out, "WarningMsg" },
-      { "\nPress any key to exit..." },
-    }, true, {})
-    vim.fn.getchar()
-    os.exit(1)
-  end
+  vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
 end
 vim.opt.rtp:prepend(lazypath)
+
+-- Safely require lazy and handle any errors
+local status_ok, lazy = pcall(require, "lazy")
+if not status_ok then
+  vim.notify("Failed to load lazy.nvim. Please run :Lazy sync", vim.log.levels.ERROR)
+  return
+end
 
 -- Make sure to setup `mapleader` and `maplocalleader` before
 -- loading lazy.nvim so that mappings are correct.
@@ -57,16 +55,31 @@ vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
--- Autosave on leaving insert mode
+-- Improved autosave on leaving insert mode
 vim.api.nvim_create_autocmd("InsertLeave", {
-  pattern = "*", -- Apply to all file types
-  command = "silent! write", -- Silently write the current buffer
+  pattern = "*",
+  callback = function()
+    if vim.bo.modifiable and vim.bo.modified then
+      vim.cmd("silent! write")
+    end
+  end,
   desc = "Autosave on leaving insert mode"
 })
 
--- Autosave all modified buffers when Neovim loses focus
+-- Improved autosave when Neovim loses focus
 vim.api.nvim_create_autocmd("FocusLost", {
-  pattern = "*", -- Apply to all file types
-  command = "silent! wall", -- 'wall' saves ALL modified buffers
-  desc = "Autosave all modified buffers when Neovim loses focus"
+  pattern = "*",
+  callback = function()
+    -- Save only modifiable and modified buffers
+    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_loaded(buf) 
+         and vim.api.nvim_buf_get_option(buf, "modifiable")
+         and vim.api.nvim_buf_get_option(buf, "modified") then
+        vim.api.nvim_buf_call(buf, function()
+          vim.cmd("silent! write")
+        end)
+      end
+    end
+  end,
+  desc = "Autosave modified buffers when Neovim loses focus"
 })
