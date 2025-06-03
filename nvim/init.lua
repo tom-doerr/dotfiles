@@ -69,8 +69,12 @@ vim.opt.clipboard = "unnamedplus"
 vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
 
 -- Telescope mappings
-local builtin = require('telescope.builtin')
-vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
+local status_ok, builtin = pcall(require, 'telescope.builtin')
+if status_ok then
+  vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
+else
+  vim.notify("Telescope not available for command history mapping", vim.log.levels.WARN)
+end
 
 -- Improved autosave on leaving insert mode
 vim.api.nvim_create_autocmd("InsertLeave", {
