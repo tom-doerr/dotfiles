@@ -60,6 +60,9 @@ require("lazy").setup({
   },
 })
 
+-- Key mapping for Lazy plugin updates
+vim.keymap.set('n', '<Leader>u', '<cmd>Lazy update<cr>', { desc = 'Update plugins' })
+
 -- Basic Neovim settings
 vim.opt.number = true
 vim.opt.relativenumber = true
