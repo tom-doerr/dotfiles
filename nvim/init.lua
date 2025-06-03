@@ -83,6 +83,7 @@ local modes = {'n', 'i', 'v', 'c'}
 for _, mode in ipairs(modes) do
     pcall(vim.api.nvim_del_keymap, mode, '<C-s>')
     pcall(vim.api.nvim_del_keymap, mode, '<leader>f')
+    pcall(vim.api.nvim_del_keymap, mode, ':History<CR>')
 end
 
 -- Telescope mappings
@@ -93,6 +94,9 @@ if status_ok then
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+  
+  -- Remove any residual History command
+  vim.cmd('silent! delcommand History')
 end
 
 -- Improved autosave on leaving insert mode
