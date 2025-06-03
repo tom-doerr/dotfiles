@@ -154,7 +154,7 @@ clear2(){
 }
 
 vim_history(){
-    nvim -c ':History<CR>'
+    nvim -c ':lua require("telescope.builtin").command_history()<CR>'
 }
 
 update_display_variable(){
