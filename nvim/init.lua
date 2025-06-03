@@ -55,3 +55,18 @@ vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 50
+vim.opt.clipboard = "unnamedplus"
+
+-- Autosave on leaving insert mode
+vim.api.nvim_create_autocmd("InsertLeave", {
+  pattern = "*", -- Apply to all file types
+  command = "silent! write", -- Silently write the current buffer
+  desc = "Autosave on leaving insert mode"
+})
+
+-- Autosave all modified buffers when Neovim loses focus
+vim.api.nvim_create_autocmd("FocusLost", {
+  pattern = "*", -- Apply to all file types
+  command = "silent! wall", -- 'wall' saves ALL modified buffers
+  desc = "Autosave all modified buffers when Neovim loses focus"
+})
