@@ -147,13 +147,13 @@ vim.api.nvim_create_autocmd("FocusLost", {
 -- Set colorscheme after all plugins are loaded
 vim.cmd("colorscheme gruvbox")
 
--- Verify tree-sitter highlighting
+-- Debug message for treesitter status
 vim.api.nvim_create_autocmd("VimEnter", {
   callback = function()
-    local ts_ok, _ = pcall(require, "nvim-treesitter.configs")
+    local ts_ok, ts_config = pcall(require, "nvim-treesitter.configs")
     if ts_ok then
-      vim.cmd("TSEnable highlight")
-      vim.notify("Tree-sitter highlighting enabled", vim.log.levels.INFO)
+      local status = ts_config.is_enabled("highlight") and "enabled" or "disabled"
+      vim.notify("Tree-sitter status: " .. status, vim.log.levels.INFO)
     else
       vim.notify("Tree-sitter not available", vim.log.levels.ERROR)
     end
