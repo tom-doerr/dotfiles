@@ -69,8 +69,9 @@ vim.opt.clipboard = "unnamedplus"
 vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
 
 -- Remove any old mappings that might conflict with Telescope
-vim.api.nvim_del_keymap('n', '<C-s>')
-vim.api.nvim_del_keymap('n', '<leader>f')
+-- Use pcall to safely remove mappings that may not exist
+pcall(vim.api.nvim_del_keymap, 'n', '<C-s>')
+pcall(vim.api.nvim_del_keymap, 'n', '<leader>f')
 
 -- Telescope mappings
 local status_ok, builtin = pcall(require, 'telescope.builtin')
@@ -80,6 +81,9 @@ if status_ok then
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+  
+  -- Remove the problematic :History mapping if it exists
+  pcall(vim.api.nvim_del_keymap, 'n', '<C-s>')
 else
   vim.notify("Telescope not available for mappings", vim.log.levels.WARN)
 end
