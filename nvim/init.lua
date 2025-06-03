@@ -83,7 +83,6 @@ local modes = {'n', 'i', 'v', 'c'}
 for _, mode in ipairs(modes) do
     pcall(vim.api.nvim_del_keymap, mode, '<C-s>')
     pcall(vim.api.nvim_del_keymap, mode, '<leader>f')
-    pcall(vim.api.nvim_del_keymap, mode, ':History<CR>')
 end
 
 -- Telescope mappings
