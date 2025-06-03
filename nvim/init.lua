@@ -1,8 +1,18 @@
--- Disable loading of old vim plugins and config to prevent conflicts
-vim.opt.runtimepath:remove(vim.fn.expand('~/.vim'))
-vim.opt.runtimepath:remove('/usr/share/vim/vimfiles')
+-- Completely disable old vim configs
 vim.g.loaded_vimrc = 1
 vim.g.loaded_gvimrc = 1
+vim.g.did_load_filetypes = 1
+vim.g.did_indent_on = 1
+vim.g.skip_loading_mswin = 1
+
+-- Remove all old vim paths from runtimepath
+local new_rtp = {}
+for _, path in ipairs(vim.opt.runtimepath:get()) do
+    if not path:match('%.vim') and not path:match('vimfiles') then
+        table.insert(new_rtp, path)
+    end
+end
+vim.opt.runtimepath = new_rtp
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -68,10 +78,12 @@ vim.opt.clipboard = "unnamedplus"
 -- Key mappings
 vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
 
--- Remove any old mappings that might conflict with Telescope
--- Use pcall to safely remove mappings that may not exist
-pcall(vim.api.nvim_del_keymap, 'n', '<C-s>')
-pcall(vim.api.nvim_del_keymap, 'n', '<leader>f')
+-- Remove all possible conflicting mappings
+local modes = {'n', 'i', 'v', 'c'}
+for _, mode in ipairs(modes) do
+    pcall(vim.api.nvim_del_keymap, mode, '<C-s>')
+    pcall(vim.api.nvim_del_keymap, mode, '<leader>f')
+end
 
 -- Telescope mappings
 local status_ok, builtin = pcall(require, 'telescope.builtin')
@@ -81,11 +93,6 @@ if status_ok then
   vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
   vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
   vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
-  
-  -- Remove the problematic :History mapping if it exists
-  pcall(vim.api.nvim_del_keymap, 'n', '<C-s>')
-else
-  vim.notify("Telescope not available for mappings", vim.log.levels.WARN)
 end
 
 -- Improved autosave on leaving insert mode
