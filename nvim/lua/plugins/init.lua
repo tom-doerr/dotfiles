@@ -107,15 +107,15 @@ return {
         }
       })
 
-      vim.keymap.set('n', '<C-s>', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>s', function() require('telescope.builtin').live_grep() end, { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>f', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<Space>', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>ff', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>fg', function() require('telescope.builtin').live_grep() end, { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>fb', function() require('telescope.builtin').buffers() end, { desc = 'Telescope buffers' })
-      vim.keymap.set('n', '<leader>fh', function() require('telescope.builtin').help_tags() end, { desc = 'Telescope help tags' })
-      vim.keymap.set('n', '<leader>:', function() require('telescope.builtin').command_history() end, { desc = 'Telescope command history' })
+      vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>s', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<Space>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Telescope buffers' })
+      vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Telescope help tags' })
+      vim.keymap.set('n', '<leader>:', '<cmd>Telescope command_history<cr>', { desc = 'Telescope command history' })
     end,
   },
 
