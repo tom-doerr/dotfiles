@@ -92,19 +92,8 @@ vim.cmd([[
     set t_RV=
 ]])
 
--- Telescope mappings
-local status_ok, builtin = pcall(require, 'telescope.builtin')
-if status_ok then
-  vim.keymap.set('n', '<C-s>', builtin.find_files, { desc = 'Telescope find files' })
-  vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
-  vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
-  vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
-  vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
-  vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
-  
-  -- Remove any residual History command
-  vim.cmd('silent! delcommand History')
-end
+-- Remove any residual History command
+vim.cmd('silent! delcommand History')
 
 -- Improved autosave on leaving insert mode
 vim.api.nvim_create_autocmd("InsertLeave", {
