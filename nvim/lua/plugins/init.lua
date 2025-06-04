@@ -85,9 +85,11 @@ vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope co
     end,
   },
 
-  -- Treesitter for syntax highlighting
+  -- Treesitter for syntax highlighting (must load at startup)
   {
     "nvim-treesitter/nvim-treesitter",
+    lazy = false,
+    priority = 900,
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
