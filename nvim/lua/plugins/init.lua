@@ -107,15 +107,24 @@ return {
         }
       })
 
-      vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>s', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<Space>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Telescope buffers' })
-      vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Telescope help tags' })
-      vim.keymap.set('n', '<leader>:', '<cmd>Telescope command_history<cr>', { desc = 'Telescope command history' })
+      -- Smart file search with git_files fallback
+      local builtin = require('telescope.builtin')
+      vim.keymap.set('n', '<C-s>', function()
+        if vim.fn.isdirectory('.git') == 1 then
+          builtin.git_files()
+        else
+          builtin.find_files()
+        end
+      end, { desc = 'Telescope find files' })
+      
+      vim.keymap.set('n', '<leader>s', builtin.live_grep, { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<Space>', builtin.find_files, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
+      vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
+      vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
     end,
   },
 
