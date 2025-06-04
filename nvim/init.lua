@@ -155,3 +155,17 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
 -- Debug mappings
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
 vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
+
+-- Reload configuration without restart
+function _G.reload_config()
+  -- Clear package cache for our config files
+  package.loaded['plugins'] = nil
+  package.loaded['init'] = nil
+
+  -- Reload main config
+  dofile(vim.fn.stdpath('config') .. '/init.lua')
+  
+  vim.notify("Configuration reloaded!", vim.log.levels.INFO)
+end
+
+vim.keymap.set('n', '<leader>r', '<cmd>lua reload_config()<cr>', { desc = 'Reload configuration' })
