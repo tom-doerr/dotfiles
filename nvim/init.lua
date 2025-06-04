@@ -175,12 +175,10 @@ vim.cmd("TSEnable highlight")
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
 vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
 
--- Config reload
+-- Config reload using lazy.nvim's method
 function _G.reload_config()
-  package.loaded['plugins'] = nil
-  package.loaded['init'] = nil
-  dofile(vim.fn.stdpath('config') .. '/init.lua')
-  vim.notify("Configuration reloaded!", vim.log.levels.INFO)
+  require("lazy").reload()
+  vim.notify("Plugins reloaded!", vim.log.levels.INFO)
 end
 
-vim.keymap.set('n', '<leader>r', '<cmd>lua reload_config()<cr>', { desc = 'Reload configuration' })
+vim.keymap.set('n', '<leader>r', '<cmd>lua reload_config()<cr>', { desc = 'Reload plugins' })
