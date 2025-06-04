@@ -97,7 +97,7 @@ vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.c
   { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 function _G.safe_git_commit()
-  if vim.fn.empty(vim.fn.glob('.git/')) == 0 then
+  if vim.fn.isdirectory('.git') == 1 then
     vim.cmd('Git commit -v -q %:p | startinsert')
   else
     vim.notify("Not in a git repository", vim.log.levels.WARN)
@@ -105,7 +105,7 @@ function _G.safe_git_commit()
 end
 
 function _G.safe_git_push()
-  if vim.fn.empty(vim.fn.glob('.git/')) == 0 then
+  if vim.fn.isdirectory('.git') == 1 then
     vim.cmd('Git push')
   else
     vim.notify("Not in a git repository", vim.log.levels.WARN)
