@@ -81,6 +81,8 @@ vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
+vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
+  { noremap = true, silent = true, desc = 'Toggle comment' })
 
 -- Debug: Show leader key value
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
