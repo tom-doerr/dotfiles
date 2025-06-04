@@ -1,18 +1,10 @@
--- Completely disable old vim configs
+-- Disable loading system vimrc files
 vim.g.loaded_vimrc = 1
 vim.g.loaded_gvimrc = 1
-vim.g.did_load_filetypes = 1
-vim.g.did_indent_on = 1
 vim.g.skip_loading_mswin = 1
 
--- Remove all old vim paths from runtimepath
-local new_rtp = {}
-for _, path in ipairs(vim.opt.runtimepath:get()) do
-    if not path:match('%.vim') and not path:match('vimfiles') then
-        table.insert(new_rtp, path)
-    end
-end
-vim.opt.runtimepath = new_rtp
+-- Keep filetype detection enabled
+vim.cmd('filetype plugin indent on')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -88,6 +80,9 @@ vim.keymap.set('i', '<Tab>', function()
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
 
+-- Debug: Show leader key value
+vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
+
 -- Ignore terminal codes that might be misinterpreted
 vim.cmd([[
     set ttimeout
@@ -144,6 +139,16 @@ vim.cmd("colorscheme gruvbox")
 -- Manually enable tree-sitter highlighting after colorscheme
 vim.cmd("TSEnable highlight")
 vim.notify("Tree-sitter highlighting enabled", vim.log.levels.INFO)
+
+-- Force filetype detection for all buffers
+vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
+  pattern = "*",
+  callback = function()
+    if vim.bo.filetype == "" then
+      vim.cmd("filetype detect")
+    end
+  end
+})
 
 -- Debug mappings
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
