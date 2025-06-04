@@ -84,6 +84,8 @@ end, { expr = true })
 vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
+vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q %:p<cr>i', { desc = 'Git commit current file' })
+vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
 
 -- Debug: Show leader key value
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
