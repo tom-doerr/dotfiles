@@ -108,8 +108,8 @@ return {
       })
 
       -- Smart file search with git_files fallback
-      local builtin = require('telescope.builtin')
       vim.keymap.set('n', '<C-s>', function()
+        local builtin = require('telescope.builtin')
         if vim.fn.isdirectory('.git') == 1 then
           builtin.git_files()
         else
@@ -117,14 +117,14 @@ return {
         end
       end, { desc = 'Telescope find files' })
       
-      vim.keymap.set('n', '<leader>s', builtin.live_grep, { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>f', builtin.find_files, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<Space>', builtin.find_files, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
-      vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
-      vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Telescope help tags' })
-      vim.keymap.set('n', '<leader>:', builtin.command_history, { desc = 'Telescope command history' })
+      vim.keymap.set('n', '<leader>s', function() require('telescope.builtin').live_grep() end, { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>f', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<Space>', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>ff', function() require('telescope.builtin').find_files() end, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>fg', function() require('telescope.builtin').live_grep() end, { desc = 'Telescope live grep' })
+      vim.keymap.set('n', '<leader>fb', function() require('telescope.builtin').buffers() end, { desc = 'Telescope buffers' })
+      vim.keymap.set('n', '<leader>fh', function() require('telescope.builtin').help_tags() end, { desc = 'Telescope help tags' })
+      vim.keymap.set('n', '<leader>:', function() require('telescope.builtin').command_history() end, { desc = 'Telescope command history' })
     end,
   },
 
