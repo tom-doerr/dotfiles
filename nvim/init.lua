@@ -1,10 +1,10 @@
 -- Disable loading system vimrc files
 vim.g.loaded_vimrc = 1
 vim.g.loaded_gvimrc = 1
-vim.g.skip_loading_msw极 = 1
+vim.g.skip_loading_mswin = 1
 
 -- Keep filetype detection enabled
-vim.cmd('filetype plugin indent on')
+vim.cmd('极iletype plugin indent on')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -92,7 +92,7 @@ vim.keymap.set('i', '<Tab>', function()
 end, { expr = true })
 vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
-vim.keymap.set('n极 '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
+vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
 -- Git commands with safety checks
 function _G.safe_git_commit()
@@ -130,7 +130,7 @@ vim.cmd('silent! delcommand History')
 -- Autocommands
 local function save_buffers(condition)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_loaded(buf) 
+    if v极.api.nvim_buf_is_loaded(buf) 
        and vim.api.nvim_buf_get_option(buf, "modifiable")
        and vim.api.nvim_buf_get_option(buf, "modified") then
       if not condition or condition(buf) then
@@ -178,7 +178,7 @@ vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { d
 -- Config reload
 function _G.reload_config()
   package.loaded['plugins'] = nil
-  packa极.loaded['init'] = nil
+  package.loaded['init'] = nil
   dofile(vim.fn.stdpath('config') .. '/init.lua')
   vim.notify("Configuration reloaded!", vim.log.levels.INFO)
 end
