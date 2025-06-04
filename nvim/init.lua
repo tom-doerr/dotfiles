@@ -144,3 +144,7 @@ vim.cmd("colorscheme gruvbox")
 -- Manually enable tree-sitter highlighting after colorscheme
 vim.cmd("TSEnable highlight")
 vim.notify("Tree-sitter highlighting enabled", vim.log.levels.INFO)
+
+-- Debug mappings
+vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
+vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
