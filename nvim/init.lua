@@ -1,7 +1,7 @@
 -- Disable loading system vimrc files
 vim.g.loaded_vimrc = 1
-vim.g.loaded_gvim极 = 1
-vim.g.skip_loading_mswin = 1
+vim.g.loaded_gvimrc = 1
+vim.g.skip_loading_msw极 = 1
 
 -- Keep filetype detection enabled
 vim.cmd('filetype plugin indent on')
@@ -21,8 +21,7 @@ if not status_ok then
   return
 end
 
--- Make sure to setup `mapleader` and `maplocalleader` before
--- loading lazy.nvim so that mappings are correct.
+-- Set leaders
 vim.g.mapleader = " "
 vim.g.maplocalleader = "\\"
 
@@ -32,13 +31,10 @@ vim.g.vimwiki_list = {{path = '~/vimwiki/', syntax = 'markdown', ext = '.md'}}
 -- Setup lazy.nvim
 require("lazy").setup({
   spec = {
-    -- Import your plugins
-极   { import = "plugins" },
+    -- Import plugins
+    { import = "plugins" },
   },
-  -- Configure any other settings here. See the documentation for more details.
-  -- colorscheme that will be used when installing plugins.
   install = { colorscheme = { "gruvbox" } },
-  -- automatically check for plugin updates
   checker = { enabled = true },
   performance = {
     rtp = {
@@ -52,13 +48,14 @@ require("lazy").setup({
   },
 })
 
--- Key mapping for Lazy plugin updates
+-- Plugin update mapping
 vim.keymap.set('n', '<Leader>u', '<cmd>Lazy update<cr>', { desc = 'Update plugins' })
 
 -- Basic Neovim settings
 vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.expandtab = true
+vim.opt.swapfile = false          -- Disable swap files
 vim.opt.shiftwidth = 2
 vim.opt.tabstop = 2
 vim.opt.smartindent = true
@@ -75,7 +72,7 @@ vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
--- List of installed themes for cycling
+-- Theme cycling
 local themes = { "gruvbox", "habamax", "desert", "slate" }
 local current_theme = 1
 
@@ -89,13 +86,15 @@ end
 vim.keymap.set('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
 vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
-vim.keymap.set('i', '<极-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
+vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
 vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
-vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
+vim.keymap.set('n极 '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
+
+-- Git commands with safety checks
 function _G.safe_git_commit()
   if vim.fn.FugitiveIsGitDir() == 1 then
     vim.cmd('Git commit -v -q %:p | startinsert')
@@ -112,23 +111,37 @@ function _G.safe_git_push()
   end
 end
 
-vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit c极rrent file' })
+vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit current file' })
 vim.keymap.set('n', '<leader>gp', '<cmd>lua safe_git_push()<cr>', { desc = 'Git push' })
 
--- Debug: Show leader key value
+-- Debug help
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
 
--- Ignore terminal codes that might be misinterpre极d
+-- Terminal settings
 vim.cmd([[
     set ttimeout
     set ttimeoutlen=50
     set t_RV=
 ]])
 
--- Remove any residual History command
+-- Cleanup commands
 vim.cmd('silent! delcommand History')
 
--- Improved autosave on leaving insert mode
+-- Autocommands
+local function save_buffers(condition)
+  for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+    if vim.api.nvim_buf_is_loaded(buf) 
+       and vim.api.nvim_buf_get_option(buf, "modifiable")
+       and vim.api.nvim_buf_get_option(buf, "modified") then
+      if not condition or condition(buf) then
+        vim.api.nvim_buf_call(buf, function()
+          vim.cmd("silent! write")
+        end)
+      end
+    end
+  end
+end
+
 vim.api.nvim_create_autocmd("InsertLeave", {
   pattern = "*",
   callback = function()
@@ -139,32 +152,12 @@ vim.api.nvim_create_autocmd("InsertLeave", {
   desc = "Autosave on leaving insert mode"
 })
 
--- Improved autosave when Neovim loses focus
 vim.api.nvim_create_autocmd("FocusLost", {
   pattern = "*",
-  callback = function()
-    -- Save only modifiable and modified buffers
-    for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-      if vim.api.nvim_buf_is_loaded(buf) 
-         and vim.api.nvim_buf_get_option(buf, "modifiable")
-         and vim.api.nvim_buf_get_option(buf, "modified") then
-        vim.api.nvim_buf_call(buf, function()
-          vim.cmd("silent! write")
-        end)
-      end
-    end
-  end,
+  callback = function() save_buffers() end,
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
--- Set colorscheme after all plugins are loaded
-vim.cmd("colorscheme gruvbox")
-
--- Manually enable tree-sitter highlighting after colorscheme
-vim.cmd("TSEnable highlight")
-vim.notify("Tree-sitter highlighting enabled", vim.log.levels.INFO)
-
--- Force filetype detection for all buffers
 vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
   pattern = "*",
   callback = function()
@@ -174,19 +167,19 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
   end
 })
 
+-- Set appearance
+vim.cmd("colorscheme gruvbox")
+vim.cmd("TSEnable highlight")
+
 -- Debug mappings
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
 vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
 
--- Reload configuration without restart
+-- Config reload
 function _G.reload_config()
-  -- Clear package cache for our config files
   package.loaded['plugins'] = nil
-  package.loaded['init'] = nil
-
-  -- Reload main config
+  packa极.loaded['init'] = nil
   dofile(vim.fn.stdpath('config') .. '/init.lua')
-  
   vim.notify("Configuration reloaded!", vim.log.levels.INFO)
 end
 
