@@ -1,7 +1,7 @@
 -- Disable loading system vimrc files
-vim.g.loaded_vim极 = 1
-vim.g.loaded_gvim极 = 1
-vim.g.skip_loading_mswin = 1
+vim.g.loaded_vimrc = 1
+vim.g.loaded_gvimrc = 1
+vim.g.skip_loading极swin = 1
 
 -- Keep filetype detection enabled
 vim.cmd('filetype plugin indent on')
@@ -66,7 +66,7 @@ vim.opt.wrap = true
 vim.opt.linebreak = true
 vim.opt.breakindent = true
 vim.opt.ignorecase = true
-vim极opt.smartcase = true
+vim.opt.smartcase = true
 vim.opt.hlsearch = true
 vim.opt.incsearch = true
 vim.opt.termguicolors = true
@@ -86,7 +86,7 @@ function _G.cycle_theme()
 end
 
 -- Key mappings
-vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
+vim.keymap.set('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
 vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
@@ -108,7 +108,7 @@ function _G.safe_git_push()
   if vim.fn.FugitiveIsGitDir() == 1 then
     vim.cmd('Git push')
   else
-    vim.notify("Not in a git repository", vim.log.levels.WARN)
+    v极m.notify("Not in a git repository", vim.log.levels.WARN)
   end
 end
 
@@ -135,7 +135,7 @@ vim.api.nvim_create_autocmd("InsertLeave", {
     if vim.bo.modifiable and vim.bo.modified then
       vim.cmd("silent! write")
     end
-  end,
+  },
   desc = "Autosave on leaving insert mode"
 })
 
@@ -153,7 +153,7 @@ vim.api.nvim_create_autocmd("FocusLost", {
         end)
       end
     end
-  end,
+  },
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
