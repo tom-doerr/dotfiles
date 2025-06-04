@@ -108,10 +108,11 @@ return {
 
       -- Key mappings for Telescope
       vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<leader>s', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope search content' })
       vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope global grep' })
       vim.keymap.set('n', '<leader>fs', '<cmd>Telescope current_buffer_fuzzy_find<cr>', { desc = 'Telescope buffer fuzzy find' })
-      vim.keymap.set('n', '<Space>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Telescope buffers' })
       vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Telescope help tags' })
       vim.keymap.set('n', '<leader>:', '<cmd>Telescope command_history<cr>', { desc = 'Telescope command history' })
