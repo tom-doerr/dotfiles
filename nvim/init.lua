@@ -72,14 +72,18 @@ vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
--- Theme cycling
+-- Theme cycling with fallback
 local themes = { "gruvbox", "habamax", "desert", "slate" }
 local current_theme = 1
 
 function _G.cycle_theme()
   current_theme = current_theme % #themes + 1
-  vim.cmd("colorscheme " .. themes[current_theme])
-  vim.notify("Colorscheme: " .. themes[current_theme], vim.log.levels.INFO)
+  local ok, _ = pcall(vim.cmd, "colorscheme " .. themes[current_theme])
+  if ok then
+    vim.notify("Colorscheme: " .. themes[current_theme], vim.log.levels.INFO)
+  else
+    vim.notify("Failed to load colorscheme: " .. themes[current_theme], vim.log.levels.ERROR)
+  end
 end
 
 -- Key mappings
@@ -167,9 +171,12 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
   end
 })
 
--- Set appearance
-vim.cmd("colorscheme gruvbox")
-vim.cmd("TSEnable highlight")
+-- Set appearance with error handling
+local colorscheme_ok, _ = pcall(vim.cmd, "colorscheme gruvbox")
+if not colorscheme_ok then
+  vim.cmd("colorscheme desert")
+  vim.notify("Fallback to desert colorscheme", vim.log.levels.WARN)
+end
 
 -- Debug mappings
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
