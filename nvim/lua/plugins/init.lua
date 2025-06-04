@@ -96,13 +96,13 @@ return {
         },
         pickers = {
           find_files = {
-            theme = "dropdown",
+            theme = "gruvbox_dark",
           },
           live_grep = {
-            theme = "dropdown",
+            theme = "gruvbox_dark",
           },
           buffers = {
-            theme = "dropdown",
+            theme = "gruvbox_dark",
           },
         }
       })
@@ -110,6 +110,7 @@ return {
       local builtin = require('telescope.builtin')
       vim.keymap.set('n', '<C-s>', builtin.find_files, { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>s', builtin.find_files, { desc = 'Telescope find files' })
+      vim.keymap.set('n', '<Space>', builtin.find_files, { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Telescope live grep' })
       vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Telescope buffers' })
@@ -267,5 +268,25 @@ return {
         })
       })
     end,
+  },
+
+  -- Which-key shows available keymaps
+  {
+    "folke/which-key.nvim",
+    event = "VeryLazy",
+    init = function()
+      vim.o.timeout = true
+      vim.o.timeoutlen = 300
+    end,
+    opts = {}
+  },
+
+  -- Commenting support
+  {
+    "numToStr/Comment.nvim",
+    event = "VeryLazy",
+    config = function()
+      require('Comment').setup()
+    end
   },
 }
