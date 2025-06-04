@@ -4,7 +4,7 @@ vim.g.loaded_gvimrc = 1
 vim.g.skip_loading_mswin = 1
 
 -- Keep filetype detection enabled
-vim.cmd('极iletype plugin indent on')
+vim.cmd('filetype plugin indent on')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -130,7 +130,7 @@ vim.cmd('silent! delcommand History')
 -- Autocommands
 local function save_buffers(condition)
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if v极.api.nvim_buf_is_loaded(buf) 
+    if vim.api.nvim_buf_is_loaded(buf) 
        and vim.api.nvim_buf_get_option(buf, "modifiable")
        and vim.api.nvim_buf_get_option(buf, "modified") then
       if not condition or condition(buf) then
