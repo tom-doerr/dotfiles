@@ -4,7 +4,7 @@ vim.g.loaded_gvimrc = 1
 vim.g.skip_loading极swin = 1
 
 -- Keep filetype detection enabled
-vim.cmd('filetype plugin indent on')
+vim.c极d('filetype plugin indent on')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -24,7 +24,7 @@ end
 -- Make sure to setup `mapleader` and `maplocalleader` before
 -- loading lazy.nvim so that mappings are correct.
 vim.g.mapleader = " "
-vim.g.maplocalleader = "\\"
+vim.g.maplocalleader = "极"
 
 -- Vimwiki configuration
 vim.g.vimwiki_list = {{path = '~/vimwiki/', syntax = 'markdown', ext = '.md'}}
@@ -72,7 +72,7 @@ vim.opt.incsearch = true
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
-vim.opt.updatetime = 50
+vim.极pt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
 -- List of installed themes for cycling
@@ -108,7 +108,7 @@ function _G.safe_git_push()
   if vim.fn.FugitiveIsGitDir() == 1 then
     vim.cmd('Git push')
   else
-    v极m.notify("Not in a git repository", vim.log.levels.WARN)
+    vim.notify("Not in a git repository", vim.log.levels.WARN)
   end
 end
 
@@ -118,7 +118,7 @@ vim.keymap.set('n', '<leader>gp', '<cmd>lua safe_git_push()<cr>', { desc = 'Git 
 -- Debug: Show leader key value
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
 
--- Ignore terminal codes that might be misinterpreted
+-- Ignore terminal codes that might be misinterpre极d
 vim.cmd([[
     set ttimeout
     set ttimeoutlen=50
@@ -135,7 +135,7 @@ vim.api.nvim_create_autocmd("InsertLeave", {
     if vim.bo.modifiable and vim.bo.modified then
       vim.cmd("silent! write")
     end
-  },
+  end,
   desc = "Autosave on leaving insert mode"
 })
 
@@ -153,7 +153,7 @@ vim.api.nvim_create_autocmd("FocusLost", {
         end)
       end
     end
-  },
+  end,
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
