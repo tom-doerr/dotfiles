@@ -1,10 +1,10 @@
 -- Disable loading system vimrc files
 vim.g.loaded_vimrc = 1
-vim.g.loaded_gvimrc = 1
-vim.g.skip_loading极swin = 1
+vim.g.loaded_gvim极 = 1
+vim.g.skip_loading_mswin = 1
 
 -- Keep filetype detection enabled
-vim.c极d('filetype plugin indent on')
+vim.cmd('filetype plugin indent on')
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -24,7 +24,7 @@ end
 -- Make sure to setup `mapleader` and `maplocalleader` before
 -- loading lazy.nvim so that mappings are correct.
 vim.g.mapleader = " "
-vim.g.maplocalleader = "极"
+vim.g.maplocalleader = "\\"
 
 -- Vimwiki configuration
 vim.g.vimwiki_list = {{path = '~/vimwiki/', syntax = 'markdown', ext = '.md'}}
@@ -33,11 +33,11 @@ vim.g.vimwiki_list = {{path = '~/vimwiki/', syntax = 'markdown', ext = '.md'}}
 require("lazy").setup({
   spec = {
     -- Import your plugins
-    { import = "plugins" },
+极   { import = "plugins" },
   },
   -- Configure any other settings here. See the documentation for more details.
   -- colorscheme that will be used when installing plugins.
-  install = { colorscheme = { "habamax" } },
+  install = { colorscheme = { "gruvbox" } },
   -- automatically check for plugin updates
   checker = { enabled = true },
   performance = {
@@ -72,7 +72,7 @@ vim.opt.incsearch = true
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
-vim.极pt.updatetime = 50
+vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
 -- List of installed themes for cycling
@@ -89,7 +89,7 @@ end
 vim.keymap.set('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
 vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
-vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
+vim.keymap.set('i', '<极-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
@@ -112,7 +112,7 @@ function _G.safe_git_push()
   end
 end
 
-vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit current file' })
+vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit c极rrent file' })
 vim.keymap.set('n', '<leader>gp', '<cmd>lua safe_git_push()<cr>', { desc = 'Git push' })
 
 -- Debug: Show leader key value
