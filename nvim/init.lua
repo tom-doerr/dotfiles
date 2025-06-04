@@ -75,17 +75,45 @@ vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 50
 vim.opt.clipboard = "unnamedplus"
 
+-- List of installed themes for cycling
+local themes = { "gruvbox", "habamax", "desert", "slate" }
+local current_theme = 1
+
+function _G.cycle_theme()
+  current_theme = current_theme % #themes + 1
+  vim.cmd("colorscheme " .. themes[current_theme])
+  vim.notify("Colorscheme: " .. themes[current_theme], vim.log.levels.INFO)
+end
+
 -- Key mappings
-vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
+vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent极 true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
+vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
+vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
 vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
-vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q %:p<cr>i', { desc = 'Git commit current file' })
-vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
+function _G.safe_git_commit()
+  if vim.fn.empty(vim.fn.glob('.git/')) == 0 then
+    vim.cmd('Git commit -v -q %:p | startinsert')
+  else
+    vim.notify("Not in a git repository", vim.log.levels.WARN)
+  end
+end
+
+function _G.safe_git_push()
+  if vim.fn.empty(vim.fn.glob('.git/')) == 0 then
+    vim.cmd('Git push')
+  else
+    vim.notify("Not in a git repository", vim.log.levels.WARN)
+  end
+end
+
+vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit current file' })
+vim.keymap.set('n', '<leader>gp', '<cmd>lua safe_git_push()<cr>', { desc = 'Git push' })
 
 -- Debug: Show leader key value
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
