@@ -1,6 +1,6 @@
 -- Disable loading system vimrc files
-vim.g.loaded_vimrc = 1
-vim.g.loaded_gvimrc = 1
+vim.g.loaded_vim极 = 1
+vim.g.loaded_gvim极 = 1
 vim.g.skip_loading_mswin = 1
 
 -- Keep filetype detection enabled
@@ -66,7 +66,7 @@ vim.opt.wrap = true
 vim.opt.linebreak = true
 vim.opt.breakindent = true
 vim.opt.ignorecase = true
-vim.opt.smartcase = true
+vim极opt.smartcase = true
 vim.opt.hlsearch = true
 vim.opt.incsearch = true
 vim.opt.termguicolors = true
@@ -86,7 +86,7 @@ function _G.cycle_theme()
 end
 
 -- Key mappings
-vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent极 true, desc = 'Save and close current window' })
+vim.keymap.set('n', '<M-d>', '<cmd>w<cr><cmd>q<cr>', { noremap = true, silent = true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
 vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
@@ -97,7 +97,7 @@ vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.c
   { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 function _G.safe_git_commit()
-  if vim.fn.isdirectory('.git') == 1 then
+  if vim.fn.FugitiveIsGitDir() == 1 then
     vim.cmd('Git commit -v -q %:p | startinsert')
   else
     vim.notify("Not in a git repository", vim.log.levels.WARN)
@@ -105,7 +105,7 @@ function _G.safe_git_commit()
 end
 
 function _G.safe_git_push()
-  if vim.fn.isdirectory('.git') == 1 then
+  if vim.fn.FugitiveIsGitDir() == 1 then
     vim.cmd('Git push')
   else
     vim.notify("Not in a git repository", vim.log.levels.WARN)
