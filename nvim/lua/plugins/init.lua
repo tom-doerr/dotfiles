@@ -305,4 +305,14 @@ return {
       vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
     end
   },
+
+  -- Vimwiki for note taking
+  {
+    "vimwiki/vimwiki",
+    event = "VeryLazy",
+    config = function()
+      -- We'll use the existing vimwiki_list configuration from init.lua
+      -- Add any additional vimwiki configuration here if needed
+    end
+  },
 }
