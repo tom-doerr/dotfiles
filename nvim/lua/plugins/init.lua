@@ -210,9 +210,11 @@ return {
     config = function()
       require("hop").setup() -- Initialize hop with default settings
 
-      -- Set custom highlight colors for jump targets
+      -- Set custom highlight colors for jump targets (all pink)
       vim.api.nvim_set_hl(0, "HopNextKey", { fg = "#ff007f", bold = true })
-      vim.api.nvim_set_hl(0, "HopNextKey1", { fg = "#ff0090", bold = true })
+      vim.api.nvim_set_hl(0, "HopNextKey1", { fg = "#ff007f", bold = true })
+      vim.api.nvim_set_hl(0, "HopNextKey2", { fg = "#ff007f", bold = true })
+      vim.api.nvim_set_hl(0, "HopUnmatched", { fg = "#999999", bold = false })
 
       -- Store hop module for easier access
       local hop = require("hop")
