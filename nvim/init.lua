@@ -94,7 +94,11 @@ vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle col
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
-vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
+-- Print variable under cursor
+vim.keymap.set('n', '<C-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
+vim.keymap.set('n', '<C-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
+-- Toggle comment
+vim.keymap.set('n', '<leader>c', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
@@ -176,6 +180,25 @@ local colorscheme_ok, _ = pcall(vim.cmd, "colorscheme gruvbox")
 if not colorscheme_ok then
   vim.cmd("colorscheme desert")
   vim.notify("Fallback to desert colorscheme", vim.log.levels.WARN)
+end
+
+-- Print variable under cursor
+function _G.print_variable(debug_mode)
+  local word = vim.fn.expand('<cword>')
+  if word == '' then
+    vim.notify("No variable under cursor", vim.log.levels.WARN)
+    return
+  end
+  local lnum = vim.api.nvim_win_get_cursor(0)[1]   -- 1-indexed
+  local lnum0 = lnum - 1
+  local text
+  if debug_mode then
+    text = string.format('print("%s", %s)', word, word)
+  else
+    text = string.format('print(%s)', word)
+  end
+  vim.api.nvim_buf_set_lines(0, lnum0+1, lnum0+1, false, {text})
+  vim.api.nvim_win_set_cursor(0, {lnum+1, 0})
 end
 
 -- Debug mappings
