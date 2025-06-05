@@ -19,6 +19,7 @@ return {
     event = "InsertEnter",
     config = function()
       require("copilot").setup({
+        copilot_node_command = 'node', -- Explicit node command
         suggestion = {
           enabled = true,
           auto_trigger = true,
@@ -37,6 +38,10 @@ return {
           fish = true,
         },
       })
+      -- Schedule setup to ensure proper initialization
+      vim.schedule(function()
+        vim.cmd("Copilot setup")
+      end)
     end,
   },
 
