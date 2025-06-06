@@ -94,12 +94,12 @@ vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle col
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
--- Print variable under cursor
-vim.keymap.set('n', '<C-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
-vim.keymap.set('n', '<C-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
 -- Toggle comment
-vim.keymap.set('n', '<leader>c', function() require('Comment.api').toggle.linewise.current() end, 
+vim.keymap.set('n', '<C-p>', function() require('Comment.api').toggle.linewise.current() end, 
   { noremap = true, silent = true, desc = 'Toggle comment' })
+-- Print variable under cursor
+vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
+vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
 -- Git commands with safety checks
