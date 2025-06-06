@@ -87,6 +87,8 @@ function _G.cycle_theme()
 end
 
 -- Key mappings
+vim.keymap.set('n', '<M-j>', 'o<ESC>', { noremap = true, silent = true, desc = 'Insert new line below' })
+vim.keymap.set('n', '<M-k>', 'O<ESC>', { noremap = true, silent = true, desc = 'Insert new line above' })
 vim.keymap.set('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
 vim.keymap.set('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
 vim.keymap.set('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
