@@ -106,19 +106,21 @@ vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search h
 
 -- Git commands with safety checks
 function _G.safe_git_commit()
-  if vim.fn.FugitiveIsGitDir() == 1 then
-    vim.cmd('Git commit -v -q %:p | startinsert')
-  else
+  local git_root = vim.fn.FugitiveGitDir()
+  if git_root == '' then
     vim.notify("Not in a git repository", vim.log.levels.WARN)
+    return
   end
+  vim.cmd('Git commit -v -q %:p | startinsert')
 end
 
 function _G.safe_git_push()
-  if vim.fn.FugitiveIsGitDir() == 1 then
-    vim.cmd('Git push')
-  else
+  local git_root = vim.fn.FugitiveGitDir()
+  if git_root == '' then
     vim.notify("Not in a git repository", vim.log.levels.WARN)
+    return
   end
+  vim.cmd('Git push')
 end
 
 vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit current file' })
