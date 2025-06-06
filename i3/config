@@ -98,6 +98,8 @@ bindsym $mod+minus scratchpad show
 # navigate workspaces next / previous
 bindsym $mod+Ctrl+Right workspace next
 bindsym $mod+Ctrl+Left workspace prev
+bindsym $mod+n workspace next
+bindsym $mod+p workspace prev
 
 # workspaces
 set $ws1 1
