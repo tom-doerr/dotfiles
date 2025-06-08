@@ -189,6 +189,15 @@ vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
   end
 })
 
+-- Set filetype for jsonl files to json
+vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
+  pattern = "*.jsonl",
+  callback = function()
+    vim.bo.filetype = 'json'
+  end,
+  desc = "Set filetype for jsonl files to json"
+})
+
 -- Set appearance with error handling
 local colorscheme_ok, _ = pcall(vim.cmd, "colorscheme gruvbox")
 if not colorscheme_ok then
