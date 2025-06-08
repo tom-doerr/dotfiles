@@ -115,26 +115,8 @@ vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
 -- Git commands with safety checks
-function _G.safe_git_commit()
-  local git_root = vim.fn.FugitiveGitDir()
-  if git_root == '' then
-    vim.notify("Not in a git repository", vim.log.levels.WARN)
-    return
-  end
-  vim.cmd('Git commit -v -q %:p | startinsert')
-end
-
-function _G.safe_git_push()
-  local git_root = vim.fn.FugitiveGitDir()
-  if git_root == '' then
-    vim.notify("Not in a git repository", vim.log.levels.WARN)
-    return
-  end
-  vim.cmd('Git push')
-end
-
-vim.keymap.set('n', '<leader>gc', '<cmd>lua safe_git_commit()<cr>', { desc = 'Git commit current file' })
-vim.keymap.set('n', '<leader>gp', '<cmd>lua safe_git_push()<cr>', { desc = 'Git push' })
+vim.keymap.set('n', '<leader>gc', '<cmd>Gcommit -v -q<cr>', { desc = 'Git commit current file' })
+vim.keymap.set('n', '<leader>gp', '<cmd>Gpush<cr>', { desc = 'Git push' })
 
 -- Debug help
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })
