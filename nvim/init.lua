@@ -111,8 +111,8 @@ vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
 -- Git commands with safety checks
-vim.keymap.set('n', '<leader>gc', '<cmd>Gcommit -v -q<cr>', { desc = 'Git commit current file' })
-vim.keymap.set('n', '<leader>gp', '<cmd>Gpush<cr>', { desc = 'Git push' })
+vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q -- %<cr>', { desc = 'Git commit current file' })
+vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
 
 -- Debug help
 vim.keymap.set('n', '<Leader>?', '<cmd>echo "Leader is: " . g:mapleader<cr>', { desc = 'Debug: Show leader key' })

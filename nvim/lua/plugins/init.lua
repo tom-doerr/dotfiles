@@ -306,7 +306,7 @@ return {
     "tpope/vim-fugitive",
     event = "VeryLazy",
     config = function()
-      vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q %:p<cr>i', { desc = 'Git commit current file' })
+      vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q -- %<cr>', { desc = 'Git commit current file' })
       vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
     end
   },
