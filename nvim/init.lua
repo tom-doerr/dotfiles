@@ -96,18 +96,14 @@ vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle col
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
--- Toggle comment (works in both normal and visual modes)
-vim.keymap.set({'n', 'v'}, '<C-p>', function()
-    local comment = require('Comment.api')
-    local mode = vim.fn.mode()
-    
-    if mode:match('^[vV]') then
-        -- Visual mode: toggle comments on selected lines
-        comment.toggle.linewise(vim.fn.visualmode())
-    else
-        -- Normal mode: toggle comment on current line
-        comment.toggle.linewise.current()
-    end
+-- Toggle comment in normal mode
+vim.keymap.set('n', '<C-p>', function()
+    require('Comment.api').toggle.linewise.current()
+end, { noremap = true, silent = true, desc = 'Toggle comment' })
+
+-- Toggle comment in visual mode
+vim.keymap.set('x', '<C-p>', function()
+    require('Comment.api').toggle.linewise(vim.fn.visualmode())
 end, { noremap = true, silent = true, desc = 'Toggle comment' })
 -- Print variable under cursor
 vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
