@@ -173,7 +173,7 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
   callback = function()
     vim.bo.filetype = 'json'
   end,
-  desc = "Set filetype for jsonl and ndjson files to json"
+  desc = "Set filetype for JSON Lines/NDJSON files to json"
 })
 
 -- Set appearance with error handling
