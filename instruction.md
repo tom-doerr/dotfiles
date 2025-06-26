@@ -30,6 +30,7 @@ Aliases:
 'con': consolidate
 'ra': run radon (exclude venv;  --exclude "*/venv/*") to find where we need to improve code quality and fix it
 'report': write an in depth report about the state of the project
+'fic': fix the issues written to context.txt
 
 - Please make suggestions of how we should continue
 - Point out bugs or architecture issues
@@ -134,3 +135,4 @@ Don't modify linter settings without my explicit instruction; they are very stri
 rumination will solve all your problems. if you still have problems you have to ruminate more
 When removing files, please use git rm
 When you create new files, only use the filename/path without additional text in paranthesis 
+Important: Please show messages to me again after you've created all search replace blocks so I actually see your messages

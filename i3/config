@@ -247,6 +247,7 @@ exec_always --no-startup-id ff-theme-util
 exec_always --no-startup-id fix_xcursor
 #exec_always --no-startup-id $HOME/.config/polybar/i3wmthemer_bar_launch.sh
 exec --no-startup-id ~/git/dotfiles/keyboard_config/start.sh
+exec --no-startup-id xbindkeys
 #exec --no-startup-id i3-msg 'workspace 7:misc; exec nextcloud-client'
 #exec --no-startup-id i3-msg 'workspace 7:misc; exec deja-dup'
 
@@ -266,6 +267,9 @@ for_window [class=".*"] border pixel 2
 for_window [floating] resize set 80 ppt 80 ppt, move position center
 
 # Gaps
+
+# Voice input toggle (mouse forward button)
+bindsym button9 exec --no-startup-id ~/git/voice_input/voice_toggle.sh
 gaps inner 40
 gaps outer 20
 
@@ -360,7 +364,7 @@ set $concentration_label_path ~/git/concentration_tracking/label
 bindsym F1 exec bash -ic 'echo 1 > $concentration_label_path'
 bindsym F2 exec bash -ic 'echo 2 > $concentration_label_path'
 bindsym F3 exec bash -ic 'echo 3 > $concentration_label_path'
-bindsym F4 exec bash -ic 'echo d > $concentration_label_path'
+# bindsym F4 exec bash -ic 'echo d > $concentration_label_path'  # disabled per user request
 
 set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 bindsym F5 exec bash -ic 'echo r > $inference_signal_file'

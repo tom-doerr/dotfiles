@@ -234,3 +234,32 @@ bindkey '^X' create_completion
 
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }
+#
+#
+#
+# Disable automatic title changes
+DISABLE_AUTO_TITLE="true"
+
+# Function to set terminal title
+function set_terminal_title() {
+    if [[ -n "$1" ]]; then
+        # When a process is running, show: directory | command
+        print -Pn "\e]0;${PWD/#$HOME/~} | $1\a"
+    else
+        # Default: just show directory
+        print -Pn "\e]0;${PWD/#$HOME/~}\a"
+    fi
+}
+
+# Before command runs: show directory + command
+function preexec() {
+    set_terminal_title "$1"
+}
+
+# After command finishes: show just directory
+function precmd() {
+    set_terminal_title
+}
+
+# Set initial title
+set_terminal_title

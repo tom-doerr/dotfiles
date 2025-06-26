@@ -53,3 +53,5 @@ export NVM_DIR="$HOME/.nvm"
 # Load API keys
 [ -f ~/.env_api_keys ] && source ~/.env_api_keys
 . "$HOME/.cargo/env"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
