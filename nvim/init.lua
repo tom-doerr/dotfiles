@@ -96,20 +96,29 @@ vim.keymap.set('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle col
 vim.keymap.set('i', '<Tab>', function() 
     return vim.fn['copilot#Accept']() ~= '' and '<Tab>' or vim.fn['copilot#Accept']()
 end, { expr = true })
--- Toggle comment in normal mode (single line)
+-- Toggle comment in normal mode (single line) and save
 vim.keymap.set('n', '<C-p>', function()
     require('Comment.api').toggle.linewise.current()
-end, { noremap = true, silent = true, desc = 'Toggle comment' })
+    if vim.bo.modifiable and vim.bo.modified then
+        vim.cmd('write')
+    end
+end, { noremap = true, silent = true, desc = 'Toggle comment and save' })
 
--- Toggle comment in visual line mode (multiple lines)
+-- Toggle comment in visual line mode (multiple lines) and save
 vim.keymap.set('x', '<C-p>', function()
     require('Comment.api').toggle.linewise(vim.fn.visualmode())
-end, { noremap = true, silent = true, desc = 'Toggle comment' })
+    if vim.bo.modifiable and vim.bo.modified then
+        vim.cmd('write')
+    end
+end, { noremap = true, silent = true, desc = 'Toggle comment and save' })
 
--- Toggle comment in visual block mode (block comments)
+-- Toggle comment in visual block mode (block comments) and save
 vim.keymap.set('x', '<C-b>', function()
     require('Comment.api').toggle.blockwise(vim.fn.visualmode())
-end, { noremap = true, silent = true, desc = 'Toggle block comment' })
+    if vim.bo.modifiable and vim.bo.modified then
+        vim.cmd('write')
+    end
+end, { noremap = true, silent = true, desc = 'Toggle block comment and save' })
 -- Print variable under cursor
 vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
 vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
