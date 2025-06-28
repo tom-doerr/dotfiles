@@ -209,6 +209,24 @@ if not colorscheme_ok then
   vim.notify("Fallback to desert colorscheme", vim.log.levels.WARN)
 end
 
+-- Autoreload config on save
+local config_dir = vim.fn.stdpath('config')
+vim.api.nvim_create_autocmd('BufWritePost', {
+  pattern = {
+    config_dir .. '/init.lua',
+    config_dir .. '/lua/plugins/*.lua'
+  },
+  callback = function()
+    local ok, err = pcall(_G.reload_config)
+    if ok then
+      vim.notify('Config reloaded!', vim.log.levels.INFO)
+    else
+      vim.notify('Error reloading config: ' .. err, vim.log.levels.ERROR)
+    end
+  end,
+  desc = 'Reload Neovim config on change'
+})
+
 -- Print variable under cursor
 function _G.print_variable(debug_mode)
   local word = vim.fn.expand('<cword>')
