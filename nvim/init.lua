@@ -115,6 +115,16 @@ vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap 
 vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
+-- Insert current military time
+vim.keymap.set('n', '<leader>t', function()
+    vim.api.nvim_put({ os.date("%H%M") }, 'c', false, true)
+end, { noremap = true, silent = true, desc = 'Insert military time' })
+
+-- Insert current datetime in T notation
+vim.keymap.set('n', '<leader>d', function()
+    vim.api.nvim_put({ os.date("%Y-%m-%dT%H:%M:%S") }, 'c', false, true)
+end, { noremap = true, silent = true, desc = 'Insert datetime in T notation' })
+
 -- Git commands with safety checks
 vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q -- %<cr>', { desc = 'Git commit current file' })
 vim.keymap.set('n', '<leader>gp', '<cmd>Git push<cr>', { desc = 'Git push' })
