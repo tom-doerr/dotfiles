@@ -116,13 +116,23 @@ vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
 -- Insert current military time
-vim.keymap.set('n', '<leader>t', function()
-    vim.api.nvim_put({ os.date("%H%M") }, 'c', false, true)
+vim.keymap.set('n', '<leader>it', function()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row = cursor[1] - 1
+    local col = cursor[2]
+    local time_str = os.date("%H%M")
+    vim.api.nvim_buf_set_text(0, row, col, row, col, {time_str})
+    vim.api.nvim_win_set_cursor(0, {cursor[1], cursor[2] + #time_str})
 end, { noremap = true, silent = true, desc = 'Insert military time' })
 
 -- Insert current datetime in T notation
-vim.keymap.set('n', '<leader>d', function()
-    vim.api.nvim_put({ os.date("%Y-%m-%dT%H:%M:%S") }, 'c', false, true)
+vim.keymap.set('n', '<leader>id', function()
+    local cursor = vim.api.nvim_win_get_cursor(0)
+    local row = cursor[1] - 1
+    local col = cursor[2]
+    local datetime_str = os.date("%Y-%m-%dT%H:%M:%S")
+    vim.api.nvim_buf_set_text(0, row, col, row, col, {datetime_str})
+    vim.api.nvim_win_set_cursor(0, {cursor[1], cursor[2] + #datetime_str})
 end, { noremap = true, silent = true, desc = 'Insert datetime in T notation' })
 
 -- Git commands with safety checks
