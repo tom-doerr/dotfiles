@@ -183,15 +183,22 @@ vim.api.nvim_create_autocmd("FocusLost", {
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
--- Save on any text change
-vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI"}, {
+-- Save on any text change (including substitutions)
+vim.api.nvim_create_autocmd({"TextChangedPost"}, {
   pattern = "*",
   callback = function()
-    if vim.bo.modifiable and vim.bo.modified then
-      vim.cmd("silent! write")
-    end
+    save_buffers()  -- Saves all modified buffers that are modifiable
   end,
   desc = "Autosave on text change"
+})
+
+-- Save when leaving buffer
+vim.api.nvim_create_autocmd("BufLeave", {
+  pattern = "*",
+  callback = function()
+    save_buffers()  -- Saves all modified buffers that are modifiable
+  end,
+  desc = "Autosave on leaving buffer"
 })
 
 vim.api.nvim_create_autocmd({"BufEnter", "BufWinEnter"}, {
