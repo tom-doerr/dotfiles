@@ -240,7 +240,7 @@ vim.api.nvim_create_autocmd('BufWritePost', {
   desc = 'Reload Neovim config on change'
 })
 
--- Print variable under cursor
+-- Print variable under cursor as f-string
 function _G.print_variable(debug_mode)
   local word = vim.fn.expand('<cword>')
   if word == '' then
@@ -251,9 +251,9 @@ function _G.print_variable(debug_mode)
   local lnum0 = lnum - 1
   local text
   if debug_mode then
-    text = string.format('print("%s", %s)', word, word)
+    text = string.format('print(f"%s: {%s}")', word, word)
   else
-    text = string.format('print(%s)', word)
+    text = string.format('print(f"{%s}")', word)
   end
   vim.api.nvim_buf_set_lines(0, lnum0+1, lnum0+1, false, {text})
   vim.api.nvim_win_set_cursor(0, {lnum+1, 0})
