@@ -169,11 +169,7 @@ end
 
 vim.api.nvim_create_autocmd("InsertLeave", {
   pattern = "*",
-  callback = function()
-    if vim.bo.modifiable and vim.bo.modified then
-      vim.cmd("silent! write")
-    end
-  end,
+  callback = function() save_buffers() end,
   desc = "Autosave on leaving insert mode"
 })
 
