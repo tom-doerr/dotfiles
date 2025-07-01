@@ -69,7 +69,7 @@ vim.opt.incsearch = true
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 vim.opt.signcolumn = "yes"
-vim.opt.updatetime = 50
+vim.opt.updatetime = 250
 vim.opt.clipboard = "unnamedplus"
 
 -- Theme cycling with fallback
@@ -115,25 +115,25 @@ vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap 
 vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
 vim.keymap.set('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
 
--- Insert current military time
+-- Insert current time in 24h format (HH:MM)
 vim.keymap.set('n', '<leader>it', function()
     local cursor = vim.api.nvim_win_get_cursor(0)
     local row = cursor[1] - 1
     local col = cursor[2]
-    local time_str = os.date("%H%M")
+    local time_str = os.date("%H:%M")
     vim.api.nvim_buf_set_text(0, row, col, row, col, {time_str})
     vim.api.nvim_win_set_cursor(0, {cursor[1], cursor[2] + #time_str})
-end, { noremap = true, silent = true, desc = 'Insert military time' })
+end, { noremap = true, silent = true, desc = 'Insert time (HH:MM)' })
 
--- Insert current datetime in T notation
-vim.keymap.set('n', '<leader>id', function()
+-- Insert current datetime
+vim.keymap.set('n', '<leader>td', function()
     local cursor = vim.api.nvim_win_get_cursor(0)
     local row = cursor[1] - 1
     local col = cursor[2]
-    local datetime_str = os.date("%Y-%m-%dT%H:%M:%S")
+    local datetime_str = os.date("%Y-%m-%d %H:%M:%S")
     vim.api.nvim_buf_set_text(0, row, col, row, col, {datetime_str})
     vim.api.nvim_win_set_cursor(0, {cursor[1], cursor[2] + #datetime_str})
-end, { noremap = true, silent = true, desc = 'Insert datetime in T notation' })
+end, { noremap = true, silent = true, desc = 'Insert datetime' })
 
 -- Git commands with safety checks
 vim.keymap.set('n', '<leader>gc', '<cmd>Git commit -v -q -- %<cr>', { desc = 'Git commit current file' })
@@ -259,9 +259,21 @@ function _G.print_variable(debug_mode)
   vim.api.nvim_win_set_cursor(0, {lnum+1, 0})
 end
 
+-- Auto-reload files changed outside of Neovim
+vim.opt.autoread = true  -- Enable automatic file reloading
+
+-- Check for file changes periodically and on certain events
+vim.api.nvim_create_autocmd({"CursorHold", "CursorHoldI", "FocusGained", "BufEnter"}, {
+  pattern = "*",
+  callback = function()
+    vim.cmd("checktime")
+  end,
+  desc = "Check for file changes and reload if needed"
+})
+
 -- Debug mappings
 vim.keymap.set('n', '<leader>ts', '<cmd>TSModuleInfo<cr>', { desc = 'Treesitter module info' })
-vim.keymap.set('n', '<leader>td', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
+vim.keymap.set('n', '<leader>th', '<cmd>TSHighlightCapturesUnderCursor<cr>', { desc = 'Debug treesitter highlight' })
 
 -- Config reload using lazy.nvim's method
 function _G.reload_config()
