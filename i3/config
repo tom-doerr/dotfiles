@@ -324,8 +324,8 @@ bindsym Mod1+Ctrl+k exec ~/git/scripts/switch_keyboard_layout.sh
 exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f $layout_file ] && $layout_file'
 focus_follows_mouse no
 
-# Screen power management with xscreensaver
-exec --no-startup-id xscreensaver -no-splash
+# Compositor for transparency and blur effects
+exec --no-startup-id picom --experimental-backends -b
 # Set display to turn off after 1 hour of inactivity
 exec --no-startup-id xset dpms 0 0 3600
 
@@ -391,8 +391,6 @@ bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard
 bindsym $mod+Shift+o sticky enable; exec --no-startup-id notify-send "Sticky window enabled"
 #bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro_buffer.sh"
 
-# Open xscreensaver settings
-bindsym $mod+Shift+x exec --no-startup-id xscreensaver-demo
 
 bar {
     position top
