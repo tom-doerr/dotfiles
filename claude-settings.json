@@ -39,7 +39,12 @@
       "Bash(radon:*)",
       "Bash(psql -U tom -d twitter -c \"\\dt:*)",
       "Bash(psql -U tom -d twitter -c \"\\d:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ruff:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(uv:*)"
     ]
   },
   "model": "opus",
