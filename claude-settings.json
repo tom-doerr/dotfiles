@@ -1,10 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "psql -U tom -d twitter -c \"SELECT:*",
-      "psql -U tom twitter -c \"SELECT:*",
-      "Bash(psql -U tom -d twitter -c \"SELECT:*)",
-      "Bash(psql -U tom -d twitter -c \"\nSELECT:*)",
+      "Bash(psql -U tom -d twitter -c 'SELECT*')",
+      "Bash(psql -U tom twitter -c 'SELECT*')",
+      "Bash(psql -U tom -d twitter -c 'EXPLAIN*')",
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(date:*)",
@@ -22,6 +21,7 @@
       "Bash(mkdir:*)",
       "Bash(rg:*)",
       "Bash(pytest:*)",
+      "Bash(:venv/bin/python:*)",
       "Bash(flake:*)",
       "Bash(pylint:*)",
       "Bash(black:*)",
@@ -37,13 +37,14 @@
       "Bash(npx:*)",
       "Bash(readlink:*)",
       "Bash(radon:*)",
-      "Bash(psql -U tom -d twitter -c \"\\dt:*)",
-      "Bash(psql -U tom -d twitter -c \"\\d:*)",
+      "Bash(psql -U tom -d twitter -c '\\dt*')",
+      "Bash(psql -U tom -d twitter -c '\\d*')",
       "Bash(find:*)",
       "Bash(ruff:*)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git log:*)",
+      "Bash(git worktree:*)",
       "Bash(tree:*)",
       "Bash(sed -n:*)",
       "Bash(systemctl --user is-active:*)",
@@ -51,6 +52,7 @@
       "Bash(systemctl --user restart:*)",
       "Bash(systemctl --user enable:*)",
       "Bash(systemctl --user start:*)",
+      "Bash(python -m pytest:*)",
       "Bash(uv:*)"
     ]
   },
