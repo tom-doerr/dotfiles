@@ -1,9 +1,18 @@
 {
+  "env": {
+    "MAX_THINKING_TOKENS": "32000",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
+    "BASH_DEFAULT_TIMEOUT_MS": "180000",
+    "BASH_MAX_TIMEOUT_MS": "5400000"
+  },
   "permissions": {
     "allow": [
-      "Bash(psql -U tom -d twitter -c 'SELECT*')",
-      "Bash(psql -U tom twitter -c 'SELECT*')",
-      "Bash(psql -U tom -d twitter -c 'EXPLAIN*')",
+      "Bash(psql -U tom -d twitter -c 'SELECT *'):*",
+      "Bash(psql -U tom twitter -c 'SELECT *'):*",
+      "Bash(psql -U tom -d twitter -c 'EXPLAIN *'):*",
+      "Bash(psql -U tom -d twitter -c '\\dt'):*",
+      "Bash(psql -U tom -d twitter -c '\\dt *'):*",
+      "Bash(psql -U tom -d twitter -c '\\d *'):*",
       "Bash(ls:*)",
       "Bash(grep:*)",
       "Bash(date:*)",
@@ -37,8 +46,6 @@
       "Bash(npx:*)",
       "Bash(readlink:*)",
       "Bash(radon:*)",
-      "Bash(psql -U tom -d twitter -c '\\dt*')",
-      "Bash(psql -U tom -d twitter -c '\\d*')",
       "Bash(find:*)",
       "Bash(ruff:*)",
       "Bash(git status:*)",
@@ -57,12 +64,6 @@
     ]
   },
   "model": "opus",
-  "env": {
-    "MAX_THINKING_TOKENS": "32000",
-    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "32000",
-    "BASH_DEFAULT_TIMEOUT_MS": "180000",
-    "BASH_MAX_TIMEOUT_MS": "5400000"
-  },
   "hooks": {
     "PreToolUse": [
       {
