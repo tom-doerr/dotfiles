@@ -180,7 +180,7 @@ vim.api.nvim_create_autocmd("FocusLost", {
 })
 
 -- Save on any text change (including substitutions)
-vim.api.nvim_create_autocmd({"TextChangedPost"}, {
+vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI", "CmdlineLeave"}, {
   pattern = "*",
   callback = function()
     save_buffers()  -- Saves all modified buffers that are modifiable
@@ -282,3 +282,27 @@ function _G.reload_config()
 end
 
 vim.keymap.set('n', '<leader>r', '<cmd>lua reload_config()<cr>', { desc = 'Reload plugins' })
+
+
+-- ─── Periodic :checktime ───────────────────────────────────────────────────────
+-- Reload changed files every N ms even if Vim is totally idle.
+-- Skips while you are typing to avoid clobbering unsaved edits.
+local interval = 2000   -- 2 s; pick what you need
+
+local check_timer = vim.loop.new_timer()
+check_timer:start(interval, interval, vim.schedule_wrap(function()
+  local mode = vim.fn.mode()
+  if mode == 'n' or mode == 'v' or mode == 'c' then  -- not in insert/replace
+    pcall(vim.cmd, 'checktime')
+  end
+end))
+
+-- clean‑up on exit
+vim.api.nvim_create_autocmd('VimLeavePre', {
+  callback = function()
+    if check_timer:is_active() then
+      check_timer:stop()
+      check_timer:close()
+    end
+  end,
+})
