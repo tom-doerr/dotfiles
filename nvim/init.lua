@@ -259,16 +259,162 @@ function _G.print_variable(debug_mode)
   vim.api.nvim_win_set_cursor(0, {lnum+1, 0})
 end
 
--- Auto-reload files changed outside of Neovim
-vim.opt.autoread = true  -- Enable automatic file reloading
+-- Auto-reload files changed outside of Neovim, even while unfocused
+vim.opt.autoread = true
 
--- Check for file changes periodically and on certain events
-vim.api.nvim_create_autocmd({"CursorHold", "CursorHoldI", "FocusGained", "BufEnter"}, {
-  pattern = "*",
-  callback = function()
-    vim.cmd("checktime")
+local uv = vim.loop
+local autoread_group = vim.api.nvim_create_augroup("autoread_watchers", { clear = true })
+local watchers = {}
+
+local function stop_watch(path)
+  local entry = watchers[path]
+  if not entry then
+    return
+  end
+  entry.handle:stop()
+  entry.handle:close()
+  watchers[path] = nil
+end
+
+local function schedule_checktime(bufnr)
+  if vim.bo[bufnr].modified then
+    return
+  end
+  vim.api.nvim_buf_call(bufnr, function()
+    pcall(vim.cmd, 'silent! checktime')
+  end)
+end
+
+local function start_watch(bufnr)
+  if not vim.api.nvim_buf_is_valid(bufnr) or not vim.api.nvim_buf_is_loaded(bufnr) then
+    return
+  end
+  if vim.bo[bufnr].buftype ~= "" then
+    return
+  end
+
+  local name = vim.api.nvim_buf_get_name(bufnr)
+  if name == "" then
+    return
+  end
+
+  local path = uv.fs_realpath(name)
+  if not path or watchers[path] then
+    return
+  end
+
+  local handle = uv.new_fs_event()
+  if not handle then
+    return
+  end
+
+  watchers[path] = { handle = handle, bufnr = bufnr }
+  handle:start(path, {}, vim.schedule_wrap(function(err)
+    if err then
+      return
+    end
+    if not vim.api.nvim_buf_is_loaded(bufnr) then
+      stop_watch(path)
+      return
+    end
+    schedule_checktime(bufnr)
+  end))
+end
+
+vim.api.nvim_create_autocmd({ "BufReadPost", "BufFilePost", "BufWinEnter" }, {
+  group = autoread_group,
+  callback = function(ev)
+    start_watch(ev.buf)
   end,
-  desc = "Check for file changes and reload if needed"
+})
+
+vim.api.nvim_create_autocmd({ "BufDelete", "BufWipeout" }, {
+  group = autoread_group,
+  callback = function(ev)
+    local name = vim.api.nvim_buf_get_name(ev.buf)
+    if name == "" then
+      return
+    end
+    local path = uv.fs_realpath(name)
+    if path then
+      stop_watch(path)
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd("VimEnter", {
+  group = autoread_group,
+  callback = function()
+    for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+      start_watch(bufnr)
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileChangedShellPost", {
+  group = autoread_group,
+  callback = function(ev)
+    vim.notify(string.format("Reloaded %s", ev.file), vim.log.levels.INFO, { title = "autoread" })
+    vim.schedule(function()
+      local bufnr = ev.buf
+      if not vim.api.nvim_buf_is_loaded(bufnr) then
+        return
+      end
+      vim.api.nvim_buf_call(bufnr, function()
+        pcall(vim.cmd, 'silent! syntax sync fromstart')
+      end)
+      if vim.treesitter then
+        pcall(vim.treesitter.stop, bufnr)
+        pcall(vim.treesitter.start, bufnr)
+      end
+    end)
+  end,
+})
+
+vim.api.nvim_create_user_command("AutoreadWatchNow", function()
+  for _, bufnr in ipairs(vim.api.nvim_list_bufs()) do
+    start_watch(bufnr)
+  end
+end, {})
+
+vim.api.nvim_create_user_command("AutoreadWatchInfo", function()
+  local info = {}
+  for path, data in pairs(watchers) do
+    table.insert(info, { path = path, bufnr = data.bufnr })
+  end
+  vim.print(info)
+end, {})
+
+vim.cmd("AutoreadWatchNow")
+
+-- Fallback: still poke :checktime on focus/cursor events, but keep it quiet
+vim.api.nvim_create_autocmd({ "CursorHold", "CursorHoldI", "FocusGained" }, {
+  group = autoread_group,
+  callback = function()
+    pcall(vim.cmd, 'silent! checktime')
+  end,
+})
+
+-- Periodic check in case a watcher misses an event (e.g. network mounts)
+local check_timer = uv.new_timer()
+local interval = 5000
+check_timer:start(interval, interval, vim.schedule_wrap(function()
+  local mode = vim.fn.mode(1)
+  if mode == 'n' or mode == 'v' or mode == 'c' then
+    pcall(vim.cmd, 'silent! checktime')
+  end
+end))
+
+vim.api.nvim_create_autocmd('VimLeavePre', {
+  callback = function()
+    if check_timer:is_active() then
+      check_timer:stop()
+      check_timer:close()
+    end
+    for path in pairs(watchers) do
+      stop_watch(path)
+    end
+  end,
 })
 
 -- Debug mappings
@@ -282,27 +428,3 @@ function _G.reload_config()
 end
 
 vim.keymap.set('n', '<leader>r', '<cmd>lua reload_config()<cr>', { desc = 'Reload plugins' })
-
-
--- ─── Periodic :checktime ───────────────────────────────────────────────────────
--- Reload changed files every N ms even if Vim is totally idle.
--- Skips while you are typing to avoid clobbering unsaved edits.
-local interval = 2000   -- 2 s; pick what you need
-
-local check_timer = vim.loop.new_timer()
-check_timer:start(interval, interval, vim.schedule_wrap(function()
-  local mode = vim.fn.mode()
-  if mode == 'n' or mode == 'v' or mode == 'c' then  -- not in insert/replace
-    pcall(vim.cmd, 'checktime')
-  end
-end))
-
--- clean‑up on exit
-vim.api.nvim_create_autocmd('VimLeavePre', {
-  callback = function()
-    if check_timer:is_active() then
-      check_timer:stop()
-      check_timer:close()
-    end
-  end,
-})
