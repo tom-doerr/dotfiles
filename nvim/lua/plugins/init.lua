@@ -19,7 +19,7 @@ return {
     event = "InsertEnter",
     config = function()
       require("copilot").setup({
-        copilot_node_command = 'node', -- Explicit node command
+        copilot_node_command = vim.fn.expand("~/.nvm/versions/node/v22.14.0/bin/node"),
         suggestion = {
           enabled = true,
           auto_trigger = true,
@@ -80,18 +80,25 @@ return {
     tag = '0.1.8',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
-      require('telescope').setup({
+      local telescope = require('telescope')
+      local actions = require('telescope.actions')
+      local builtin = require('telescope.builtin')
+
+      local insert_mappings = {
+        ["<C-j>"] = actions.move_selection_next,
+        ["<C-k>"] = actions.move_selection_previous,
+      }
+      if actions.to_fuzzy_refine then
+        insert_mappings["<C-f>"] = actions.to_fuzzy_refine
+      end
+
+      telescope.setup({
         defaults = {
           layout_strategy = 'vertical',
           layout_config = {
             vertical = { width = 0.9 }
           },
-          mappings = {
-            i = {
-              ["<C-j>"] = require('telescope.actions').move_selection_next,
-              ["<C-k>"] = require('telescope.actions').move_selection_previous,
-            }
-          },
+          mappings = { i = insert_mappings },
           preview = {
             treesitter = true
           },
@@ -108,19 +115,39 @@ return {
           },
           buffers = {
           },
-        }
+        },
+        extensions = {
+          fzf = {
+            fuzzy = true,
+            override_generic_sorter = true,
+            override_file_sorter = true,
+            case_mode = "smart_case",
+          },
+        },
       })
+
+      pcall(telescope.load_extension, 'fzf')
 
       -- Key mappings for Telescope
       vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>s', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope search content' })
+      vim.keymap.set('n', '<leader>s', function()
+        builtin.live_grep({ prompt_title = 'FZF Live Grep' })
+      end, { desc = 'Telescope fzf live grep' })
       vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope global grep' })
       vim.keymap.set('n', '<leader>fs', '<cmd>Telescope current_buffer_fuzzy_find<cr>', { desc = 'Telescope buffer fuzzy find' })
       vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Telescope buffers' })
       vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Telescope help tags' })
       vim.keymap.set('n', '<leader>:', '<cmd>Telescope command_history<cr>', { desc = 'Telescope command history' })
+    end,
+  },
+
+  {
+    'nvim-telescope/telescope-fzf-native.nvim',
+    build = 'make',
+    cond = function()
+      return vim.fn.executable('make') == 1
     end,
   },
 
@@ -152,57 +179,29 @@ return {
     "neovim/nvim-lspconfig",
     dependencies = {
       "williamboman/mason.nvim",
-      -- "williamboman/mason-lspconfig.nvim",
+      "williamboman/mason-lspconfig.nvim",
     },
     config = function()
       require("mason").setup()
-      local lspconfig = require("lspconfig") -- Define lspconfig before mason-lspconfig setup uses it in handler
-
-      -- require("mason-lspconfig").setup({
-        -- ensure_installed = { "lua_ls" },
-        -- automatic_installation = false,
-        -- handlers = {
-          -- Generic fallback handler for any server not explicitly handled.
-          -- This will be called for servers found by mason-lspconfig that don't have a specific handler below.
-          -- function(server_name)
-            -- local server_ok, server_config = pcall(require, "lspconfig." .. server_name)
-            -- if server_ok and server_config and server_config.setup then
-            --   require("lspconfig")[server_name].setup({})
-            --   vim.notify("Mason-lspconfig: Automatically configured " .. server_name, vim.log.levels.INFO)
-            -- else
-            --   vim.notify("Mason-lspconfig: Skipping automatic configuration for " .. server_name .. ". No default lspconfig found or setup function missing.", vim.log.levels.WARN)
-            -- end
-          -- end,
-
-          -- Default handler (if you want to see it explicitly) -- This comment can be kept or removed
-          -- -- function(server_name) 
-          -- --   lspconfig[server_name].setup({})
-          -- -- end,
-
-          -- Custom handler for lua_ls
-          -- ["lua_ls"] = function()
-            -- lspconfig.lua_ls.setup({
-            --   settings = {
-            --     Lua = {
-            --       diagnostics = {
-            --         globals = { "vim" },
-            --       },
-            --     },
-            --   },
-            -- })
-          -- end,
-        -- },
-      -- })
-      
-      -- Manual setup for lua_ls
-      lspconfig.lua_ls.setup({
-      --   settings = {
-      --     Lua = {
-      --       diagnostics = {
-      --         globals = { "vim" },
-      --       },
-      --     },
-      --   },
+      require("mason-lspconfig").setup({
+        ensure_installed = { "lua_ls", "pyright" },
+        handlers = {
+          function(server_name)
+            vim.lsp.enable(server_name)
+          end,
+          ["lua_ls"] = function()
+            vim.lsp.config("lua_ls", {
+              settings = {
+                Lua = {
+                  diagnostics = {
+                    globals = { "vim" },
+                  },
+                },
+              },
+            })
+            vim.lsp.enable("lua_ls")
+          end,
+        },
       })
     end,
   },

@@ -110,6 +110,29 @@ end, { noremap = true, silent = true, desc = 'Toggle comment' })
 vim.keymap.set('x', '<C-b>', function()
     require('Comment.api').toggle.blockwise(vim.fn.visualmode())
 end, { noremap = true, silent = true, desc = 'Toggle block comment' })
+vim.keymap.set('n', '<leader>d', function()
+    local bufnr = vim.api.nvim_get_current_buf()
+    local clients = vim.lsp.get_clients and vim.lsp.get_clients({ bufnr = bufnr }) or vim.lsp.buf_get_clients(bufnr)
+    if not clients or vim.tbl_isempty(clients) then
+        vim.notify('No LSP attached to this buffer', vim.log.levels.WARN)
+        return
+    end
+
+    local supports_definition = false
+    for _, client in pairs(clients) do
+        local caps = client.server_capabilities or client.resolved_capabilities
+        if caps and (caps.definitionProvider or caps.goto_definition) then
+            supports_definition = true
+            break
+        end
+    end
+
+    if supports_definition then
+        vim.lsp.buf.definition()
+    else
+        vim.notify('Attached LSP has no definition capability', vim.log.levels.WARN)
+    end
+end, { noremap = true, silent = true, desc = 'LSP: go to definition' })
 -- Print variable under cursor
 vim.keymap.set('n', '<M-p>', function() _G.print_variable(false) end, { noremap = true, silent = true, desc = 'Print variable' })
 vim.keymap.set('n', '<M-S-p>', function() _G.print_variable(true) end, { noremap = true, silent = true, desc = 'Print variable with name' })
