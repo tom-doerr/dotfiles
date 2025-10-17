@@ -23,6 +23,7 @@ return {
         suggestion = {
           enabled = true,
           auto_trigger = true,
+          hide_during_completion = false,
           keymap = {
             accept = "<Tab>",
             accept_word = false,
@@ -44,23 +45,6 @@ return {
       end)
     end,
   },
-
-  -- Windsurf (Codeium) AI code completion
-  {
-    "Exafunction/windsurf.nvim",
-    enabled = false, -- Set to true to enable, false to disable
-    event = "VeryLazy", -- Or "BufReadPre", "BufNewFile"
-    config = function()
-      -- Placeholder for Windsurf/Codeium setup
-      -- You will likely need to run an authentication command provided by the plugin
-      -- e.g., :WindsurfAuth or :CodeiumAuth
-      -- require("windsurf").setup({
-      --   -- any specific config options from the plugin's documentation
-      -- })
-      vim.notify("Windsurf (Codeium) plugin added. Set 'enabled = true' and run authentication if needed.", vim.log.levels.INFO)
-    end,
-  },
-
   -- File explorer
   {
     "nvim-tree/nvim-tree.lua",
@@ -243,43 +227,6 @@ return {
       -- vim.keymap.set('n', '<leader>hw', function() hop.hint_words({ direction = require('hop.hint').HintDirection.AFTER_CURSOR }) end, { noremap = true, silent = true, desc = "Hop: Word After Cursor" })
     end,
   },
-
-  -- Auto completion
-  {
-    "hrsh7th/nvim-cmp",
-    dependencies = {
-      "hrsh7th/cmp-nvim-lsp",
-      "hrsh7th/cmp-buffer",
-      "hrsh7th/cmp-path",
-      "hrsh7th/cmp-cmdline",
-      "L3MON4D3/LuaSnip",
-      "saadparwaiz1/cmp_luasnip",
-    },
-    config = function()
-      local cmp = require("cmp")
-      cmp.setup({
-        snippet = {
-          expand = function(args)
-            require("luasnip").lsp_expand(args.body)
-          end,
-        },
-        mapping = cmp.mapping.preset.insert({
-          ['<C-b>'] = cmp.mapping.scroll_docs(-4),
-          ['<C-f>'] = cmp.mapping.scroll_docs(4),
-          ['<C-Space>'] = cmp.mapping.complete(),
-          ['<C-e>'] = cmp.mapping.abort(),
-          ['<CR>'] = cmp.mapping.confirm({ select = true }),
-        }),
-        sources = cmp.config.sources({
-          { name = 'nvim_lsp' },
-          { name = 'luasnip' },
-        }, {
-          { name = 'buffer' },
-        })
-      })
-    end,
-  },
-
   -- Which-key shows available keymaps
   {
     "folke/which-key.nvim",
