@@ -31,6 +31,10 @@ Notes / potential issues
 2025‑11‑07: How to reload i3
 - Reload config: press `$mod+Shift+c` (Super+Shift+C).
 - CLI alternative: `i3-msg reload` (and `i3-msg restart` if needed).
+- If it errors, run `i3 -C` to see the failing line.
+
+2025‑11‑07: Config linkage
+- Verified `~/.config/i3/config` is a symlink to `~/git/dotfiles/i3/config` on this system; reloading i3 picks up repo changes.
 
 2025‑11‑07: i3 reload error reported
 - Ask user to run `i3 -C` and share the exact error line(s) and line number.
