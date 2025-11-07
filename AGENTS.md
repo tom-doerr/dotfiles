@@ -12,7 +12,7 @@
 - Kept existing QWERTY home‑row nav (`j/k/l/;`). Did not change `$mod+h` since it’s used for `split h` here.
 - Freed conflicting bindings:
   - Removed `$mod+n`/`$mod+p` workspace next/prev; rely on `$mod+Ctrl+Right/Left` (already present). This also resolves the `$mod+p` conflict with the `--release` Anki screenshot.
-  - Moved `layout toggle split` from `$mod+e` to `$mod+Shift+e`.
+  - Removed `layout toggle split` binding to avoid duplicate with exit on `$mod+Shift+e` (use `$mod+q` split toggle instead).
   - Sticky toggle now on `$mod+Shift+a` (freed `$mod+Shift+o` for move‑right).
 - Test added: `tests/i3_nav_keys_test.sh` verifies NEIO focus binds exist and conflicts are gone.
 
@@ -26,8 +26,7 @@
 - Test added: `tests/i3_resize_neio_test.sh`; all tests pass.
 
 Notes / potential issues
-- i3 `bindsym` is layout‑dependent; enabling both NEIO and JKL; provides simple multi‑layout support without `bindcode` complexity.
-- Resize mode still uses `j/k/l/;` only; add NEIO there if desired later.
+- i3 `bindsym` is layout‑dependent; enabling both NEIO and JKL provides simple multi‑layout support without `bindcode` complexity.
 
 2025‑11‑07: How to reload i3
 - Reload config: press `$mod+Shift+c` (Super+Shift+C).

@@ -25,8 +25,7 @@ if rg -n '^bindsym \$mod\+p +workspace prev' "$cfg"; then
   exit 1
 fi
 
-# Ensure reassigned helpers exist
-rg -n '^bindsym \$mod\+Shift\+e +layout toggle split$' "$cfg" >/dev/null
+# Ensure sticky helper exists
 rg -n '^bindsym \$mod\+Shift\+a +sticky toggle;' "$cfg" >/dev/null
 if rg -n '^bindsym \$mod\+Shift\+o +sticky toggle;' "$cfg"; then
   echo "FAIL: sticky toggle still on $mod+Shift+o (conflicts with move)" >&2
