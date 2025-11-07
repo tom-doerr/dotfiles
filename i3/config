@@ -7,7 +7,7 @@ hide_edge_borders none
 
 bindsym $mod+u border none
 bindsym $mod+y border pixel 1
-bindsym $mod+Shift+n border normal
+bindsym $mod+Shift+y border normal
 
 font xft:URWGothic-Book 9
 
@@ -35,6 +35,17 @@ bindsym $mod+j focus left
 bindsym $mod+k focus down
 bindsym $mod+l focus up
 bindsym $mod+semicolon focus right
+# Colemak-DH nav on home row
+bindsym $mod+n focus left
+bindsym $mod+e focus down
+bindsym $mod+i focus up
+bindsym $mod+o focus right
+
+# Colemak-DH move windows (tiling): Shift+NEIO
+bindsym $mod+Shift+n move left
+bindsym $mod+Shift+e move down
+bindsym $mod+Shift+i move up
+bindsym $mod+Shift+o move right
 
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
@@ -74,7 +85,7 @@ bindsym $mod+f fullscreen toggle
 # change container layout (stacked, tabbed, toggle split)
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
-bindsym $mod+e layout toggle split
+bindsym $mod+Shift+e layout toggle split
 
 # toggle tiling / floating
 bindsym $mod+Shift+space floating toggle
@@ -98,8 +109,6 @@ bindsym $mod+minus scratchpad show
 # navigate workspaces next / previous
 bindsym $mod+Ctrl+Right workspace next
 bindsym $mod+Ctrl+Left workspace prev
-bindsym $mod+n workspace next
-bindsym $mod+p workspace prev
 
 # workspaces
 set $ws1 1
@@ -225,6 +234,11 @@ mode "resize" {
         bindsym k resize grow height 50 px or 5 ppt
         bindsym l resize shrink height 50 px or 5 ppt
         bindsym semicolon resize grow width 50 px or 5 ppt
+        # Colemak-DH aliases
+        bindsym n resize shrink width 50 px or 5 ppt
+        bindsym e resize grow height 50 px or 5 ppt
+        bindsym i resize shrink height 50 px or 5 ppt
+        bindsym o resize grow width 50 px or 5 ppt
 
         # same bindings, but for the arrow keys
         bindsym Left resize shrink width 10 px or 10 ppt
@@ -267,9 +281,6 @@ for_window [class=".*"] border pixel 2
 for_window [floating] resize set 80 ppt 80 ppt, move position center
 
 # Gaps
-
-# Voice input toggle (mouse forward button)
-bindsym button9 exec --no-startup-id ~/git/voice_input/voice_toggle.sh
 gaps inner 40
 gaps outer 20
 
@@ -371,7 +382,7 @@ set $inference_signal_file ~/git/concentration_tracking/inference_signal_file
 
 
 bindsym --release $mod+x exec --no-startup-id /home/tom/git/scripts/keys_to_send.sh
-bindsym --release $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
+bindsym $mod+p exec --no-startup-id /home/tom/git/scripts/add_anki_screenshot.sh
 
 
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
@@ -382,13 +393,13 @@ bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-%M-%S.png' && xclip -selection clipboard -t image/png -i $(ls -t /home/tom/Pictures/*.png | head -n 1)
 
 # Make focused window sticky (visible on all workspaces)
-bindsym $mod+o sticky toggle; exec --no-startup-id notify-send "Sticky window toggled"
+bindsym $mod+Shift+a sticky toggle; exec --no-startup-id notify-send "Sticky window toggled"
 
 bindsym $mod+Shift+M exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png"
 bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro.sh"
 
 # Explicitly make window sticky (test)
-bindsym $mod+Shift+o sticky enable; exec --no-startup-id notify-send "Sticky window enabled"
+# (removed separate enable binding to avoid conflict with Shift+o toggle)
 #bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro_buffer.sh"
 
 
