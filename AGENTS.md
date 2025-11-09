@@ -25,6 +25,11 @@
 - Added `n/e/i/o` in `mode "resize"` mirroring `j/k/l/;`.
 - Test added: `tests/i3_resize_neio_test.sh`; all tests pass.
 
+2025‑11‑09: Move stays on Shift
+- Reverted move-window to `$mod+Shift+n/e/i/o`.
+- Moved exit shortcut to `$mod+Shift+Escape` to avoid conflict with `Shift+e`.
+- Tests updated; `i3 -C` clean; reload succeeds.
+
 Notes / potential issues
 - i3 `bindsym` is layout‑dependent; enabling both NEIO and JKL provides simple multi‑layout support without `bindcode` complexity.
 

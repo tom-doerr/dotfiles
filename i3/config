@@ -41,11 +41,11 @@ bindsym $mod+e focus down
 bindsym $mod+i focus up
 bindsym $mod+o focus right
 
-# Colemak-DH move windows (tiling): Ctrl+NEIO (avoid $mod+Shift+e exit)
-bindsym $mod+Ctrl+n move left
-bindsym $mod+Ctrl+e move down
-bindsym $mod+Ctrl+i move up
-bindsym $mod+Ctrl+o move right
+# Colemak-DH move windows (tiling): Shift+NEIO
+bindsym $mod+Shift+n move left
+bindsym $mod+Shift+e move down
+bindsym $mod+Shift+i move up
+bindsym $mod+Shift+o move right
 
 bindsym $mod+Left focus left
 bindsym $mod+Down focus down
@@ -198,7 +198,7 @@ bindsym $mod+Shift+c reload
 bindsym $mod+Shift+r restart
 
 # exit i3 (logs you out of your X session)
-bindsym $mod+Shift+e exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
+bindsym $mod+Shift+Escape exec "i3-nagbar -t warning -m 'You pressed the exit shortcut. Do you really want to exit i3? This will end your X session.' -b 'Yes, exit i3' 'i3-msg exit'"
 
 # Set shut down, restart and locking features
 bindsym $mod+0 mode "$mode_system"

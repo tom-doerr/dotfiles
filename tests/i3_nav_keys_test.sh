@@ -9,11 +9,11 @@ rg -n '^bindsym \$mod\+e +focus down$' "$cfg" >/dev/null
 rg -n '^bindsym \$mod\+i +focus up$' "$cfg" >/dev/null
 rg -n '^bindsym \$mod\+o +focus right$' "$cfg" >/dev/null
 
-# Ensure Colemak-DH move bindings exist (Ctrl+NEIO)
-rg -n '^bindsym \$mod\+Ctrl\+n +move left$' "$cfg" >/dev/null
-rg -n '^bindsym \$mod\+Ctrl\+e +move down$' "$cfg" >/dev/null
-rg -n '^bindsym \$mod\+Ctrl\+i +move up$' "$cfg" >/dev/null
-rg -n '^bindsym \$mod\+Ctrl\+o +move right$' "$cfg" >/dev/null
+# Ensure Colemak-DH move bindings exist (Shift+NEIO)
+rg -n '^bindsym \$mod\+Shift\+n +move left$' "$cfg" >/dev/null
+rg -n '^bindsym \$mod\+Shift\+e +move down$' "$cfg" >/dev/null
+rg -n '^bindsym \$mod\+Shift\+i +move up$' "$cfg" >/dev/null
+rg -n '^bindsym \$mod\+Shift\+o +move right$' "$cfg" >/dev/null
 
 # Ensure conflicting workspace bindings removed
 if rg -n '^bindsym \$mod\+n +workspace next' "$cfg"; then
