@@ -11,6 +11,10 @@ return {
       })
     end,
   },
+  {
+    "folke/tokyonight.nvim",
+    priority = 1000,
+  },
 
   -- Copilot
   {
@@ -115,6 +119,10 @@ return {
       -- Key mappings for Telescope
       vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
       vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
+      -- Colemak-DH friendly: filename search on <leader>i
+      vim.keymap.set('n', '<leader>i', '<cmd>Telescope find_files<cr>', { desc = 'Project file search' })
+      -- Colemak-DH friendly: project content search on <leader>e
+      vim.keymap.set('n', '<leader>e', '<cmd>Telescope live_grep<cr>', { desc = 'Project content search' })
       vim.keymap.set('n', '<leader>s', function()
         builtin.live_grep({ prompt_title = 'FZF Live Grep' })
       end, { desc = 'Telescope fzf live grep' })

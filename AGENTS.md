@@ -65,3 +65,26 @@ Suggested fixes (pending user pick)
 - Cause: duplicate binding for `$mod+Shift+n` — `border normal` (i3/config:10) conflicted with new `move left` (i3/config:45). i3 keeps the earlier one and ignores the later, so move-left didn’t fire and reload printed a duplicate-binding error.
 - Fix: remapped `border normal` to `$mod+Shift+y`.
 - Test: `tests/i3_nav_keys_test.sh` now fails if `$mod+Shift+n` is bound to `border normal`.
+
+2025‑11‑11: Fuzzy‑search shortcuts (current)
+- i3 launcher: `$mod+d` → `dmenu_run` (`i3/config:26`). `rofi -show run` exists but is commented (`i3/config:25`).
+- Neovim Telescope: `<leader>f` and `<C-s>` → `Telescope find_files` (`nvim/lua/plugins/init.lua:120`, `:121`);
+  `<leader>fs` → `current_buffer_fuzzy_find` (`:127`); `<leader>fg` → `live_grep` (`:126`).
+- Zsh + fzf: `Ctrl+K` history (`zshrc_custom.sh:166`), `Alt/Ctrl+A` file widget (`:182`, `:183`),
+  `Alt/Ctrl+J` z+j dir jump (`:169`, `:170`), `Ctrl+S` opens `nvim` oldfiles picker (`:240`).
+
+Notes
+- If “fuzzy search” is intended as the i3 app launcher, consider switching back to `rofi` for true fuzzy matching and replacing the current `dmenu_run`.
+
+2025‑11‑11: Project content search mapping
+- Added Neovim mapping: `<leader>e` → `Telescope live_grep` for project-wide content search (Colemak-DH home row). File: `nvim/lua/plugins/init.lua:121–129` area.
+- Test: `tests/nvim_project_search_keymap_test.sh` asserts the mapping exists; all tests pass locally.
+- Future cleanup (optional): remove duplicate live_grep bindings (`<leader>s`, `<leader>fg`) to keep the surface minimal.
+
+2025‑11‑11: Filename fuzzy search mapping
+- Added Neovim mapping: `<leader>i` → `Telescope find_files` (home‑row on Colemak‑DH; pairs with `<leader>e` content search). File: `nvim/lua/plugins/init.lua` near other Telescope maps.
+- Test: `tests/nvim_filename_search_keymap_test.sh` verifies the keymap.
+
+2025‑11‑11: Git shorthand
+- "acp" means: run tests, then `git add -A`, `git commit`, and `git push`.
+- Commit style: concise, mention mappings/tests/docs; keep it minimal.
