@@ -336,7 +336,7 @@ exec --no-startup-id bash -c 'layout_file=~/git/dotfiles/display_layout.sh; [ -f
 focus_follows_mouse no
 
 # Compositor for transparency and blur effects
-exec --no-startup-id picom --experimental-backends -b
+exec --no-startup-id picom --config ~/git/dotfiles/picom.conf --experimental-backends -b
 # Set display to turn off after 1 hour of inactivity
 exec --no-startup-id xset dpms 0 0 3600
 
