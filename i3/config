@@ -85,6 +85,7 @@ bindsym $mod+f fullscreen toggle
 # change container layout (stacked, tabbed, toggle split)
 bindsym $mod+s layout stacking
 bindsym $mod+w layout tabbed
+bindsym $mod+t layout toggle split
 # (removed: duplicated with exit binding on $mod+Shift+e)
 
 # toggle tiling / floating
@@ -396,7 +397,7 @@ bindsym $mod+Shift+S exec --no-startup-id scrot '/home/tom/Pictures/%Y-%m-%d_%H-
 bindsym $mod+Shift+a sticky toggle; exec --no-startup-id notify-send "Sticky window toggled"
 
 bindsym $mod+Shift+M exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png"
-bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro.sh"
+#bindsym $mod+T exec --no-startup-id "maim -s -d 0.1 | xclip -selection clipboard -t image/png; ~/git/scripts/post_macro.sh"
 
 # Explicitly make window sticky (test)
 # (removed separate enable binding to avoid conflict with Shift+o toggle)
