@@ -51,6 +51,7 @@ ucm: update CLAUDE.md
 - keep the notes in CLAUDE.md very detailed and write down everything you learned in it 
 - update it frequently
 - instead of just removing outdated knowledge, note down why it is no longer true
+- update it each time before you finish working
 
 # HUMANS.md
 - i often send multiple requests and let you work async on them, which means i might not see your messages
