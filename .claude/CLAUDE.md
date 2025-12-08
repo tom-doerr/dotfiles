@@ -1,3 +1,5 @@
+do not use fallbacks since they hide issues
+do not use broad excepts which hide issues
 don't copy service files into the systemd folder, create symlinks instead
 when you run SELECT commands with psql please do it all in a single line so my allow rule matches 
 do many tiny edits instead of a large one 
