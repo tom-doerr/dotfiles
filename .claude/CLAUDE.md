@@ -1,3 +1,4 @@
+when you finish working, give me a numbered list of options of how you think we should continue so i can just send you a number to prompt you to continue with that; order them by the priority that you think they should have with the most important one the furthest up
 do not use fallbacks since they hide issues
 do not use broad excepts which hide issues
 don't copy service files into the systemd folder, create symlinks instead
