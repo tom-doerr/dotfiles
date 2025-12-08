@@ -32,3 +32,36 @@ Commented out the function key bindings in `i3/config`:
 - F9: log timestamp refocused script
 
 Reload i3 with `$mod+Shift+r` to apply changes.
+
+## Semantic Code Search Plan
+
+### Goal
+Add local semantic search alongside existing ripgrep/fzf flows using a persistent vector index.
+
+### Components
+1. **Neovim plugin**: `vectorcode.nvim` for Telescope pickers and CLI utilities.
+2. **Embedding runtime**: Ollama running `nomic-embed-text` locally (HTTP API compatible with OpenAI format).
+3. **Vector database**: Qdrant in Docker with storage volume at `~/qdrant_storage`.
+4. **Updater**: Watchman + Python helper that batches modified file paths and calls `vectorcode index --update`.
+
+### Implementation Steps
+1. Start services  
+   - `docker run -d --name qdrant -p 6333:6333 -p 6334:6334 -v ~/qdrant_storage:/qdrant/storage qdrant/qdrant`  
+   - `ollama run nomic-embed-text` (ensure Ollama daemon is up).
+2. Configure VectorCode  
+   - `~/.config/vectorcode/config.json` → set `embedding` base URL to Ollama and `database` to the Qdrant collection.  
+   - Run `vectorcode index --rebuild $HOME/git/dotfiles` once to seed the index.
+3. Automate updates  
+   - Watchman trigger on repository `BufWritePost` / created files writes paths to `/tmp/vectorcode_queue`.  
+   - Cron or systemd timer executes `vectorcode index --update @/tmp/vectorcode_queue` every ~30 s, then clears the queue.
+4. Neovim integration  
+   - Map `<leader>sv` → `:VectorCode search` (semantic) and keep `<leader>s` for `live_grep`.  
+   - Optional: add `:VectorCode refresh` command to Neovim which touches the queue file for manual reindexing.
+5. Maintenance  
+   - Weekly `vectorcode index --sync` to catch branch switches or large refactors.  
+   - Monitor `~/.vectorcode/logs` for failed ingests and re-run update if needed.
+
+### Notes
+- Keep chunk size consistent (default 512 tokens) so Qdrant payloads remain uniform.  
+- If Ollama is too slow, swap in a sentence-transformers model inside a Python FastAPI server that mimics `/v1/embeddings`.  
+- For multi-repo support, use separate Qdrant collections and include `{project = "dotfiles"}` in payload metadata for filtering.*** End Patch
