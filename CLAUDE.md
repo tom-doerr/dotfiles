@@ -64,4 +64,31 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 ### Notes
 - Keep chunk size consistent (default 512 tokens) so Qdrant payloads remain uniform.  
 - If Ollama is too slow, swap in a sentence-transformers model inside a Python FastAPI server that mimics `/v1/embeddings`.  
-- For multi-repo support, use separate Qdrant collections and include `{project = "dotfiles"}` in payload metadata for filtering.*** End Patch
+- For multi-repo support, use separate Qdrant collections and include `{project = "dotfiles"}` in payload metadata for filtering.
+
+## Hyprland Configuration
+
+### Setup
+- Config: `~/git/dotfiles/hypr/hyprland.conf` (symlinked)
+- Display: Samsung S95D 55" OLED at 4K@120Hz
+- Terminal: Ghostty with frosted glass blur
+
+### Keyboard
+- ZSA Voyager (compact split, no arrow keys)
+- Colemak DH layout
+- Navigation: Super + neio (focus), Super + Shift + neio (move window)
+
+### HDR vs Transparency
+HDR (`cm_enabled = true`) breaks window transparency. Currently HDR is on.
+To fix transparency: set `cm_enabled = false` in render block.
+
+### Style
+- Gaps: airy (12 inner, 40 outer)
+- Blur: frosted glass (size 6, passes 3)
+- Animations: snappy (~2x default speed)
+
+## Ghostty Configuration
+
+- Config: `~/git/dotfiles/ghostty/config` (symlinked)
+- Font size 7 is normal for 55" 4K (same PPI as 27" 1080p)
+- Transparency looks whitish due to HDR + light default wallpaper
