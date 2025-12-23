@@ -9,6 +9,7 @@ function M.setup()
   map('n', '<M-d>', 'ZZ', { noremap = true, silent = true, desc = 'Save and close current window' })
   map('n', '<Leader>b', '<cmd>Black<cr>', { desc = 'Run Black formatter' })
   map('n', '<C-M-l>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
+  map('n', '<leader>tc', cycle_theme, { desc = 'Cycle color theme' })
   map('i', '<C-M-k>', '<cmd>lua cycle_theme()<cr>', { desc = 'Cycle color theme' })
 
   local has_comment, comment_api = pcall(require, "Comment.api")
@@ -59,6 +60,7 @@ function M.setup()
   end, { noremap = true, silent = true, desc = 'Print variable with name' })
 
   map('n', '<leader>h', '<cmd>nohlsearch<cr>', { desc = 'Clear search highlights' })
+  map('n', '<leader>p', '<C-^>', { desc = 'Go to previous file' })
 
   map('n', '<leader>it', function()
     local cursor = vim.api.nvim_win_get_cursor(0)

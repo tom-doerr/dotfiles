@@ -82,9 +82,74 @@ Notes
 - Future cleanup (optional): remove duplicate live_grep bindings (`<leader>s`, `<leader>fg`) to keep the surface minimal.
 
 2025‑11‑11: Filename fuzzy search mapping
-- Added Neovim mapping: `<leader>i` → `Telescope find_files` (home‑row on Colemak‑DH; pairs with `<leader>e` content search). File: `nvim/lua/plugins/init.lua` near other Telescope maps.
-- Test: `tests/nvim_filename_search_keymap_test.sh` verifies the keymap.
+- Updated: `<leader>o` → `Telescope find_files` (Colemak‑DH home row). Replaces prior `<leader>i`.
+- Test: `tests/nvim_filename_search_keymap_test.sh` updated accordingly.
 
 2025‑11‑11: Git shorthand
 - "acp" means: run tests, then `git add -A`, `git commit`, and `git push`.
 - Commit style: concise, mention mappings/tests/docs; keep it minimal.
+
+2025‑11‑11: Telescope keymap audit (applied)
+- Files: standardized on `<leader>o` (find_files). Removed leader duplicates `<leader>f`/`<leader>ff>`; kept `<C-s>` as optional non‑leader.
+- Content: standardized on `<leader>s` (live_grep). Removed `<leader>e` and `<leader>fg` duplicates.
+- Others kept: `<leader>fs` buffer fuzzy find; `<leader>fb` buffers; `<leader>fh` help; `<leader>:` cmd history.
+
+2025‑11‑11: Leader keys
+- `mapleader` is Space; `maplocalleader` is `\`. File: `nvim/init.lua:25–26`.
+- Test added: `tests/nvim_leader_test.sh` verifies both assignments.
+
+2025‑11‑11: Hop jump mappings
+- Added Hop char jumps: `s` → 2‑char jump (current window); `S` → 2‑char jump across all windows. File: `nvim/lua/plugins/init.lua` in Hop config.
+- Test: `tests/nvim_hop_mappings_test.sh` greps for `hint_char2()` and `multi_windows = true`.
+- Note: This repurposes default `s`/`S` motions; if you rely on `s` (substitute), consider `gs`/`gS` instead.
+- Also: `;` currently runs a custom Hop‑word action.
+
+2025‑11‑11: Why `<Space>f`/`<Space>s` didn’t work
+- We deduped and removed `<Space>f`; filename search is now `<Space>o` (see note below about a conflicting map in `keymaps.lua`).
+- `<Space>s` mapping lived inside Telescope’s plugin `config`, but Telescope was lazy‑loaded with no key triggers, so the mapping wasn’t created at startup. Fix: set `lazy = false` for Telescope. Test: `tests/nvim_telescope_eager_test.sh`.
+- Heads‑up: `nvim/lua/keymaps.lua:63` maps `<Space>o` to previous file (`<C-^>`), overriding the Telescope file search map. Decide which one to keep.
+
+2025‑11‑11: Revert Hop `s`/`S` bindings
+- Removed `s`/`S` char-jump mappings per request; semicolon remains the Hop trigger.
+- Test updated: `tests/nvim_hop_semicolon_test.sh` ensures `;` mappings exist.
+2025‑11‑11: Hop mapping options (proposed)
+- Goal: one key then type chars to jump anywhere (Hop).
+- 11a (recommend): `;` → `hop.hint_char2()` (current window). Minimal; fast.
+- 11b: `;` → `hop.hint_char2({ multi_windows = true })` (all windows).
+- 11c: Split: `;` → char2 (current window), `g;` → char2 (all windows).
+- 11d: Keep `;` = Hop words; add `<Space>;` → char2 (avoids overriding current `;`).
+- 11e: Use `gs`/`gS` for char2 (preserves default `s`/`S`).
+- 11f: Line jumping: `<Space>l` → `hop.hint_lines()`; keep `;` for words.
+- Note: Pick one; do not keep multiple to avoid muscle-memory conflicts. Remove the old `;` mapping when switching.
+2025‑11‑11: Why use Hop char2
+- Char2 balances precision and speed: far fewer on‑screen hints than char1, but no word‑boundary constraints like `hint_words`.
+- Works uniformly across code, prose, and symbols (camelCase, snake_case, punctuation, paths) without per‑language setup.
+- Muscle‑memory friendly: one trigger then two natural letters you already see under the cursor.
+- Tradeoffs: char1 is faster to type but noisy; `hint_words` is simple but can’t jump mid‑token. Choose based on preference.
+
+2025‑11‑11: Why `<leader>o` fuzzy file search didn’t work
+- Root cause: conflicting map in `nvim/lua/keymaps.lua:63` sets `<leader>o` to `<C-^>` (previous file), overriding Telescope’s `<leader>o` → `find_files` in `nvim/lua/plugins/init.lua:123`.
+- Load order: Telescope is eager (`lazy = false`), but `require("keymaps").setup()` runs at the end of `nvim/init.lua`, so the keymaps file wins.
+- Added test: `tests/nvim_leader_o_conflict_test.sh` fails if `<leader>o` is defined in `keymaps.lua`.
+- Suggested fix: remove the `<leader>o` mapping in `keymaps.lua` and rely on native `<C-^>` for previous file, keeping `<leader>o` exclusively for Telescope.
+
+2025‑11‑12: Prev file on `<leader>p` (applied)
+- Change: remapped previous file to `<leader>p` in `nvim/lua/keymaps.lua`; `<leader>o` is now free for Telescope files.
+- Test: `tests/nvim_prev_file_leader_p_test.sh` asserts the new mapping.
+- Guard: `tests/nvim_leader_o_conflict_test.sh` prevents regressions by failing if `<leader>o` reappears in `keymaps.lua`.
+
+2025‑11‑12: Fixed flaky tests
+- `tests/nvim_leader_test.sh`: switched to fixed‑string `rg -F` and corrected backslash escaping for `maplocalleader = "\\"`.
+- `tests/nvim_hop_semicolon_test.sh`: simplified to fixed‑string checks; no brittle regexes.
+- Full suite now passes locally.
+
+2025‑11‑24: ZSA Keymapp install (user‑space)
+- Found `~/Downloads/keymapp-latest.tar.gz`; installed Keymapp to `~/.local/opt/keymapp` and symlinked `~/.local/bin/keymapp`.
+- Added desktop entry: `~/.local/share/applications/keymapp.desktop` (icon from the tarball).
+- Test added: `tests/keymapp_install_test.sh` verifies binary, icon, and desktop entry.
+- Note: udev rules for ZSA (vendor `3297`) were NOT installed due to no root access in this session. Without them, Keymapp may not detect keyboards. Next session with sudo: add `/etc/udev/rules.d/50-zsa.rules` and reload udev.
+- Ubuntu 20.04: if Keymapp fails to start, install runtime deps: `libwebkit2gtk-4.0-37 libusb-1.0-0 libgtk-3-0`.
+
+What I learned / keep in mind
+- Prefer user‑space installs when escalations aren’t available; leave a minimal test.
+- ZSA needs udev `uaccess` rules for Vendor `3297`; add them system‑wide when allowed.

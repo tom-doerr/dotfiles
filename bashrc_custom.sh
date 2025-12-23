@@ -55,3 +55,6 @@ export NVM_DIR="$HOME/.nvm"
 . "$HOME/.cargo/env"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
 eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+export PULSE_RUNTIME_PATH=/run/user/1000/pulse
+export PATH="$HOME/.claude/local:$PATH"
+alias gcloud="/home/tom/git/llm_task_manager/google-cloud-sdk/bin/gcloud"

@@ -65,6 +65,7 @@ return {
   -- Fuzzy finder
   {
     'nvim-telescope/telescope.nvim',
+    lazy = false,
     tag = '0.1.8',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
@@ -118,16 +119,11 @@ return {
 
       -- Key mappings for Telescope
       vim.keymap.set('n', '<C-s>', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>f', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      -- Colemak-DH friendly: filename search on <leader>i
-      vim.keymap.set('n', '<leader>i', '<cmd>Telescope find_files<cr>', { desc = 'Project file search' })
-      -- Colemak-DH friendly: project content search on <leader>e
-      vim.keymap.set('n', '<leader>e', '<cmd>Telescope live_grep<cr>', { desc = 'Project content search' })
-      vim.keymap.set('n', '<leader>s', function()
-        builtin.live_grep({ prompt_title = 'FZF Live Grep' })
-      end, { desc = 'Telescope fzf live grep' })
-      vim.keymap.set('n', '<leader>ff', '<cmd>Telescope find_files<cr>', { desc = 'Telescope find files' })
-      vim.keymap.set('n', '<leader>fg', '<cmd>Telescope live_grep<cr>', { desc = 'Telescope global grep' })
+      -- Colemak-DH: filename search on <leader>o
+      vim.keymap.set('n', '<leader>o', '<cmd>Telescope find_files<cr>', { desc = 'Project file search' })
+      -- Colemak-DH: content search on <leader>s
+      vim.keymap.set('n', '<leader>s', '<cmd>Telescope live_grep<cr>', { desc = 'Project content search' })
+      -- Remove duplicate leader mappings to keep it minimal
       vim.keymap.set('n', '<leader>fs', '<cmd>Telescope current_buffer_fuzzy_find<cr>', { desc = 'Telescope buffer fuzzy find' })
       vim.keymap.set('n', '<leader>fb', '<cmd>Telescope buffers<cr>', { desc = 'Telescope buffers' })
       vim.keymap.set('n', '<leader>fh', '<cmd>Telescope help_tags<cr>', { desc = 'Telescope help tags' })

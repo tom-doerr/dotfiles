@@ -232,12 +232,16 @@ ZSH_HIGHLIGHT_STYLES[comment]='none'
 
 bindkey '^X' create_completion
 
-# Ctrl+S to open vim with telescope oldfiles (history)
-vim_fuzzy_search() {
-    nvim -c ':Telescope oldfiles<CR>'
+# Ctrl+S to fuzzy file search and open in vim
+vim_fuzzy_file() {
+    local file=$(fzf --preview 'head -100 {}')
+    if [[ -n "$file" ]]; then
+        nvim "$file"
+    fi
+    zle reset-prompt
 }
-zle -N vim_fuzzy_search
-bindkey '^S' vim_fuzzy_search
+zle -N vim_fuzzy_file
+bindkey '^S' vim_fuzzy_file
 
 #alias lf='*(om[1])'
 #lf() { echo *(om[1]) }

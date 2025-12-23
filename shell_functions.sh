@@ -644,10 +644,6 @@ get_task_id_fzf() {
         awk '{print $1}'
 }
 
-nl() {
-    execute_for_id_argument_else_fzf "task_tag next_local" "$@"
-}
-
 tws() {
     time_length="$1"
     tags=${@:2}

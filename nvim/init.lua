@@ -72,17 +72,37 @@ vim.opt.signcolumn = "yes"
 vim.opt.updatetime = 250
 vim.opt.clipboard = "unnamedplus"
 
--- Theme cycling with fallback
-local themes = { "gruvbox", "habamax", "desert", "slate" }
-local current_theme = 1
+-- Theme cycling across all available colorschemes
+local themes = vim.fn.getcompletion("", "color")
+table.sort(themes)
+if #themes == 0 then
+  themes = { "default" }
+end
 
-function _G.cycle_theme()
-  current_theme = current_theme % #themes + 1
-  local ok, _ = pcall(vim.cmd, "colorscheme " .. themes[current_theme])
+local current_theme_index = 1
+
+local function sync_current_theme_index()
+  local active = vim.g.colors_name or "default"
+  for idx, name in ipairs(themes) do
+    if name == active then
+      current_theme_index = idx
+      return
+    end
+  end
+  current_theme_index = 1
+end
+
+sync_current_theme_index()
+
+function _G.cycle_theme(step)
+  step = step or 1
+  current_theme_index = (current_theme_index - 1 + step) % #themes + 1
+  local target = themes[current_theme_index]
+  local ok = pcall(vim.cmd, "colorscheme " .. target)
   if ok then
-    vim.notify("Colorscheme: " .. themes[current_theme], vim.log.levels.INFO)
+    vim.notify("Colorscheme: " .. target, vim.log.levels.INFO)
   else
-    vim.notify("Failed to load colorscheme: " .. themes[current_theme], vim.log.levels.ERROR)
+    vim.notify("Failed to load colorscheme: " .. target, vim.log.levels.ERROR)
   end
 end
 
@@ -124,10 +144,13 @@ vim.api.nvim_create_autocmd("FocusLost", {
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
--- Save on any text change (including substitutions)
-vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI", "CmdlineLeave"}, {
+-- Save on text change outside insert mode or after command-line edits
+vim.api.nvim_create_autocmd({"TextChanged", "CmdlineLeave"}, {
   pattern = "*",
   callback = function()
+    if vim.fn.mode() == "i" then
+      return
+    end
     save_buffers()  -- Saves all modified buffers that are modifiable
   end,
   desc = "Autosave on text change"
@@ -161,11 +184,12 @@ vim.api.nvim_create_autocmd({"BufRead", "BufNewFile"}, {
 })
 
 -- Set appearance with error handling
-local colorscheme_ok, _ = pcall(vim.cmd, "colorscheme gruvbox")
+local colorscheme_ok, _ = pcall(vim.cmd, "colorscheme tokyonight-night")
 if not colorscheme_ok then
   vim.cmd("colorscheme desert")
   vim.notify("Fallback to desert colorscheme", vim.log.levels.WARN)
 end
+sync_current_theme_index()
 
 -- Autoreload config on save
 local config_dir = vim.fn.stdpath('config')
