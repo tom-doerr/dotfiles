@@ -52,10 +52,9 @@
 # Font size (default is ~13)
 font-size = 7
 
-# Limit scrollback to prevent memory bloat (default unlimited)
-scrollback-limit = 50000
+scrollback-limit = 100000000
 
-background-opacity = 0.3
+background-opacity = 0
 
 # Blur (works with Hyprland)
 background-blur-radius = 20
@@ -65,5 +64,5 @@ gtk-titlebar = false
 window-decoration = false
 
 # Padding
-window-padding-x = 10
-window-padding-y = 10
+window-padding-x = 4
+window-padding-y = 4
