@@ -1,0 +1,14 @@
+{
+  "positionX": "right",
+  "positionY": "top",
+  "timeout": 5,
+  "timeout-low": 3,
+  "timeout-critical": 0,
+  "notification-window-width": 400,
+  "keyboard-shortcuts": true,
+  "image-visibility": "when-available",
+  "transition-time": 200,
+  "hide-on-clear": true,
+  "hide-on-action": true,
+  "script-fail-notify": true
+}

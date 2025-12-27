@@ -1,0 +1,42 @@
+/* Frosted glass aesthetic matching Hyprland */
+* {
+  font-family: monospace;
+  font-size: 11pt;
+}
+
+window {
+  background: transparent;
+}
+
+.notification-row {
+  outline: none;
+  margin: 10px;
+}
+
+.notification {
+  background: rgba(26, 26, 26, 0.7);
+  border: 2px solid #33ccff;
+  border-radius: 10px;
+  padding: 15px;
+  margin: 5px;
+}
+
+.notification-content {
+  color: white;
+}
+
+.notification.critical {
+  border-color: #ff3366;
+}
+
+.summary {
+  font-weight: bold;
+  color: #33ccff;
+}
+
+.control-center {
+  background: rgba(26, 26, 26, 0.7);
+  border: 2px solid #33ccff;
+  border-radius: 10px;
+  padding: 15px;
+}
