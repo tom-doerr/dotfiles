@@ -87,8 +87,30 @@ To fix transparency: set `cm_enabled = false` in render block.
 - Blur: frosted glass (size 6, passes 3)
 - Animations: snappy (~2x default speed)
 
+### Notifications: swaync (not mako)
+Use swaync (SwayNotificationCenter), not mako. Both were enabled causing DBus conflicts.
+
+Fix: `pkill mako && systemctl --user restart swaync`
+Permanent: `sudo systemctl --global disable mako.service`
+
 ## Ghostty Configuration
 
 - Config: `~/git/dotfiles/ghostty/config` (symlinked)
 - Font size 7 is normal for 55" 4K (same PPI as 27" 1080p)
 - Transparency looks whitish due to HDR + light default wallpaper
+
+## Zsh Ctrl+J Fuzzy Directory Jump
+
+### Problem
+Ctrl+J (fzf_cd) was hanging for several seconds after selecting a directory.
+
+### Root Cause
+The for loop `(for d in {1..20}; do find...; done) | fzf` continues after fzf exits.
+Each remaining find spawns, gets SIGPIPE, exits - but loop runs all 20 iterations.
+
+### Solution
+Added `|| break` to exit loop on SIGPIPE: `find ... 2>/dev/null || break`
+
+Location: `/home/tom/.zshrc` lines 48-56
+
+Note: Same issue exists in fzf-file-widget (Ctrl+A, lines 90-97).
