@@ -3,16 +3,19 @@
     "height": 30,
     "modules-left": ["hyprland/workspaces", "network"],
     "modules-center": ["hyprland/window"],
-    "modules-right": ["custom/posts", "custom/gpu", "custom/temp", "load", "cpu", "memory", "pulseaudio", "clock", "tray"],
+    "modules-right": ["custom/posts", "custom/temp", "custom/load", "custom/spark1", "custom/spark2", "custom/spark3", "clock", "tray"],
 
     "hyprland/workspaces": { "format": "{id}" },
-    "clock": { "format": "{:%H:%M}" },
-    "cpu": { "format": "CPU {usage}%", "interval": 2, "min-length": 8 },
-    "load": { "format": "      L1 {load1}   L5 {load5}   L15 {load15}      ", "interval": 5 },
-    "memory": { "format": "MEM {}% SW {swapPercentage}%", "min-length": 16 },
+    "clock": { "format": "{:%a %b %d  %H:%M}" },
+    "custom/cpu": { "exec": "~/.config/waybar/cpu.sh", "interval": 2, "min-length": 16 },
+    "custom/mem": { "exec": "~/.config/waybar/mem.sh", "interval": 2, "min-length": 16 },
+    "custom/load": { "exec": "~/.config/waybar/load.sh", "interval": 5, "min-length": 36 },
     "network": { "format-wifi": "↓{bandwidthDownBytes} ↑{bandwidthUpBytes}", "format-ethernet": "↓{bandwidthDownBytes} ↑{bandwidthUpBytes}", "interval": 2, "min-length": 18 },
     "pulseaudio": { "format": "VOL {volume}%", "format-muted": "MUTE", "min-length": 8 },
-    "custom/gpu": { "exec": "~/.config/waybar/gpu.sh", "interval": 2, "min-length": 10 },
+    "custom/gpu": { "exec": "~/.config/waybar/gpu.sh", "interval": 2, "min-length": 22 },
     "custom/temp": { "exec": "~/.config/waybar/temp.sh", "interval": 5, "min-length": 8 },
-    "custom/posts": { "exec": "~/.config/waybar/posts.sh", "interval": 30 }
+    "custom/posts": { "exec": "~/.config/waybar/posts.sh", "interval": 30 },
+    "custom/spark1": { "exec": "~/.config/waybar/spark1.sh", "interval": 2, "min-length": 55 },
+    "custom/spark2": { "exec": "~/.config/waybar/spark2.sh", "interval": 5, "min-length": 55 },
+    "custom/spark3": { "exec": "~/.config/waybar/spark3.sh", "interval": 5, "min-length": 55 }
 }
