@@ -48,8 +48,8 @@ require("lazy").setup({
   },
 })
 
-vim.keymap.del({ "i", "s" }, "<Tab>")
-vim.keymap.del({ "i", "s" }, "<S-Tab>")
+pcall(vim.keymap.del, { "i", "s" }, "<Tab>")
+pcall(vim.keymap.del, { "i", "s" }, "<S-Tab>")
 
 -- Basic Neovim settings
 vim.opt.number = true
@@ -144,14 +144,11 @@ vim.api.nvim_create_autocmd("FocusLost", {
   desc = "Autosave modified buffers when Neovim loses focus"
 })
 
--- Save on text change outside insert mode or after command-line edits
-vim.api.nvim_create_autocmd({"TextChanged", "CmdlineLeave"}, {
+-- Save on every text change (including insert mode)
+vim.api.nvim_create_autocmd({"TextChanged", "TextChangedI", "CmdlineLeave"}, {
   pattern = "*",
   callback = function()
-    if vim.fn.mode() == "i" then
-      return
-    end
-    save_buffers()  -- Saves all modified buffers that are modifiable
+    save_buffers()
   end,
   desc = "Autosave on text change"
 })

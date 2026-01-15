@@ -139,58 +139,32 @@ return {
     end,
   },
 
-  -- Treesitter for syntax highlighting (must load at startup)
+  -- Treesitter (pinned for Neovim 0.9)
   {
     "nvim-treesitter/nvim-treesitter",
+    commit = "f197a15",
     lazy = false,
     priority = 900,
     build = ":TSUpdate",
     config = function()
       require("nvim-treesitter.configs").setup({
-        ensure_installed = { 
-          "lua", "vim", "vimdoc", "query", "markdown", "markdown_inline",
-          "python", "javascript", "typescript", "html", "css", "json", "yaml", "bash"
-        },
-        auto_install = true,
-        sync_install = false,
-        highlight = {
-          enable = true,
-          additional_vim_regex_highlighting = true,
-        },
-        indent = { enable = true },
+        ensure_installed = { "lua", "vim", "vimdoc", "python", "bash" },
+        highlight = { enable = true },
       })
     end,
   },
 
-  -- LSP Configuration
+  -- LSP (pinned for Neovim 0.9)
+  { "williamboman/mason.nvim", version = "1.10.0", config = true },
+  { "williamboman/mason-lspconfig.nvim", version = "1.31.0" },
   {
     "neovim/nvim-lspconfig",
-    dependencies = {
-      "williamboman/mason.nvim",
-      "williamboman/mason-lspconfig.nvim",
-    },
+    tag = "v1.7.0",
     config = function()
-      require("mason").setup()
-      require("mason-lspconfig").setup({
-        ensure_installed = { "lua_ls", "pyright" },
-        handlers = {
-          function(server_name)
-            vim.lsp.enable(server_name)
-          end,
-          ["lua_ls"] = function()
-            vim.lsp.config("lua_ls", {
-              settings = {
-                Lua = {
-                  diagnostics = {
-                    globals = { "vim" },
-                  },
-                },
-              },
-            })
-            vim.lsp.enable("lua_ls")
-          end,
-        },
-      })
+      require("mason-lspconfig").setup({ ensure_installed = { "lua_ls", "pyright" } })
+      local lsp = require("lspconfig")
+      lsp.pyright.setup({})
+      lsp.lua_ls.setup({ settings = { Lua = { diagnostics = { globals = { "vim" } } } } })
     end,
   },
 
