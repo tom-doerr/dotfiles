@@ -24,4 +24,4 @@ dt=$((now - ${pt:-now})); [[ $dt -lt 1 ]] && dt=1
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
 memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span color='#ff5555'>$memv</span>"
 dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
-printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s ↓%s ↑%s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)"
+printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s↓ %s↑          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)"
