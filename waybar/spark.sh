@@ -2,7 +2,7 @@
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
 bar() { printf '█%.0s' $(seq 1 $(($1/10)) 2>/dev/null); printf '░%.0s' $(seq 1 $((10-$1/10)) 2>/dev/null); }
-fmt() { [[ $1 -gt 1048576 ]] && printf "%4dM" $((($1+524288)/1048576)) || printf "%4dK" $((($1+512)/1024)); }
+fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 
 cmd='nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits
 awk "/^cpu /{printf \"%.0f\n\",100-((\$5+\$6)*100/(\$2+\$3+\$4+\$5+\$6+\$7+\$8))}" /proc/stat
