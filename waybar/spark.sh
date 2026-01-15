@@ -14,5 +14,6 @@ else data=$(ssh -o ConnectTimeout=2 "$host" "$cmd" 2>/dev/null); fi
 [[ -z "$data" ]] && echo "$host offline" && exit
 read -r g p c m d <<< "$(echo "$data" | tr ',\n' '  ')"
 p=${p%.*}
+mem="MEM$(bar $m)${m}%"; [[ $m -gt 90 ]] && mem="<span color='#ff5555'>$mem</span>"
 dsk="DSK$(bar $d)${d}%"; [[ $d -gt 90 ]] && dsk="<span color='#ff5555'>$dsk</span>"
-echo "$host GPU$(bar $g)${g}% ${p}W CPU$(bar $c)${c}% MEM$(bar $m)${m}% $dsk          "
+echo "$host GPU$(bar $g)${g}% ${p}W CPU$(bar $c)${c}% $mem $dsk          "
