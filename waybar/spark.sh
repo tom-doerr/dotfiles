@@ -22,8 +22,9 @@ cache="/tmp/spark_net_$host"
 read -r prx ptx pt 2>/dev/null < "$cache"; now=$(date +%s)
 echo "$rx $tx $now" > "$cache"
 dt=$((now - ${pt:-now})); [[ $dt -lt 1 ]] && dt=1
+age="${dt}s"; [[ $dt -gt 3 ]] && age="<span color='#ff5555'>${dt}s</span>"
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
 memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span color='#ff5555'>$memv</span>"
 dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "Z%.1fG/%.1fx",$1/1073741824,$1/$2}')
-printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s↓ %s↑          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$dskv" "$(fmt $rxs)" "$(fmt $txs)"
+printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
