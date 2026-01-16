@@ -1,7 +1,7 @@
 {
     "layer": "top",
     "height": 30,
-    "modules-left": ["hyprland/workspaces", "network"],
+    "modules-left": ["hyprland/workspaces"],
     "modules-center": ["hyprland/window"],
     "modules-right": ["custom/posts", "custom/temp", "custom/load", "custom/spark1", "custom/spark2", "custom/spark3", "clock", "tray"],
 
