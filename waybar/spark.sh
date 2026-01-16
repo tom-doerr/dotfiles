@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
-bar() { printf '█%.0s' $(seq 1 $(($1/10)) 2>/dev/null); printf '░%.0s' $(seq 1 $((10-$1/10)) 2>/dev/null); }
+bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; printf '█%.0s' $(seq 1 $((v/10))); printf '░%.0s' $(seq 1 $((10-v/10))); }
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 cache="/tmp/spark_$host"
 
@@ -12,8 +12,9 @@ echo $(df / --output=pcent | tail -1 | tr -dc "0-9")
 awk "/wl|en.*:/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{print rx, tx}" /proc/net/dev
 zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"'
 
-# Read cached data first
-read -r g p c m d prx ptx pt zd zc 2>/dev/null < "$cache"
+# Read cached data (validate 10 fields)
+cached=$(cat "$cache" 2>/dev/null)
+[[ $(echo "$cached" | wc -w) -eq 10 ]] && read -r g p c m d prx ptx pt zd zc <<< "$cached"
 now=$(date +%s); pt=${pt:-$now}
 
 # Fetch with timeout
