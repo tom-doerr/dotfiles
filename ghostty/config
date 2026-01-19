@@ -49,8 +49,11 @@
 # resize-overlay-duration = 4s 200ms
 
 # Transparency
-# Font size (default is ~13)
+# Font size - 11pt = ~12px at 80 PPI (55" 4K)
+font-family = JetBrains Mono
 font-size = 7
+font-style = Medium
+alpha-blending = linear-corrected
 
 scrollback-limit = 100000000
 
@@ -59,10 +62,16 @@ background-opacity = 0
 # Blur (works with Hyprland)
 background-blur-radius = 20
 
-# Disable GTK titlebar (might help with transparency)
-gtk-titlebar = false
-window-decoration = false
+# GTK titlebar with cwd
+gtk-titlebar = true
+window-decoration = true
 
 # Padding
 window-padding-x = 4
 window-padding-y = 4
+
+# Glow shader
+#custom-shader = shaders/glow.glsl
+
+# Separate process per window (OOM kill only affects one window)
+gtk-single-instance = false
