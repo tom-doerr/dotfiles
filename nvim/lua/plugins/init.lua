@@ -23,7 +23,7 @@ return {
     event = "InsertEnter",
     config = function()
       require("copilot").setup({
-        copilot_node_command = vim.fn.expand("~/.nvm/versions/node/v22.14.0/bin/node"),
+        copilot_node_command = vim.fn.expand("~/.nvm/versions/node/v24.12.0/bin/node"),
         suggestion = {
           enabled = true,
           auto_trigger = true,
@@ -139,32 +139,32 @@ return {
     end,
   },
 
-  -- Treesitter (pinned for Neovim 0.9)
+  -- Treesitter
   {
     "nvim-treesitter/nvim-treesitter",
-    commit = "f197a15",
     lazy = false,
     priority = 900,
     build = ":TSUpdate",
     config = function()
-      require("nvim-treesitter.configs").setup({
-        ensure_installed = { "lua", "vim", "vimdoc", "python", "bash" },
-        highlight = { enable = true },
+      require("nvim-treesitter").install({ "lua", "vim", "vimdoc", "python", "bash", "json", "yaml", "markdown" })
+      vim.api.nvim_create_autocmd("FileType", {
+        pattern = { "lua", "vim", "python", "bash", "sh", "json", "yaml", "markdown" },
+        callback = function() pcall(vim.treesitter.start) end,
       })
     end,
   },
 
-  -- LSP (pinned for Neovim 0.9)
-  { "williamboman/mason.nvim", version = "1.10.0", config = true },
-  { "williamboman/mason-lspconfig.nvim", version = "1.31.0" },
+  -- LSP
+  { "williamboman/mason.nvim", config = true },
+  { "williamboman/mason-lspconfig.nvim" },
   {
     "neovim/nvim-lspconfig",
-    tag = "v1.7.0",
     config = function()
       require("mason-lspconfig").setup({ ensure_installed = { "lua_ls", "pyright" } })
-      local lsp = require("lspconfig")
-      lsp.pyright.setup({})
-      lsp.lua_ls.setup({ settings = { Lua = { diagnostics = { globals = { "vim" } } } } })
+      -- Use vim.lsp.config for Neovim 0.11+
+      vim.lsp.config.pyright = {}
+      vim.lsp.config.lua_ls = { settings = { Lua = { diagnostics = { globals = { "vim" } } } } }
+      vim.lsp.enable({ "pyright", "lua_ls" })
     end,
   },
 
