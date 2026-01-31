@@ -200,3 +200,40 @@ High iowait (70-80%) despite free RAM was caused by `vm.swappiness=190`.
 Fix: `sudo sysctl vm.swappiness=60`
 
 To clear existing swap: `sudo swapoff -a && sudo swapon -a`
+
+## Neovim 0.11 Plugin Updates (Jan 2026)
+
+### Problem
+After upgrading to Neovim 0.11.5, startup errors appeared:
+1. `nvim-lspconfig` deprecation warning for `require('lspconfig')`
+2. `nvim-treesitter` failed - `module 'nvim-treesitter.configs' not found`
+
+### Root Cause
+Plugins were pinned to old versions for Neovim 0.9 compatibility.
+New nvim-treesitter completely rewrote its API - no more `nvim-treesitter.configs`.
+
+### Solution
+1. Removed version pins from all three plugins
+2. Updated treesitter config to new API:
+   - `require("nvim-treesitter").install({...})` instead of `ensure_installed`
+   - `vim.treesitter.start()` in FileType autocmd for highlighting
+3. Updated lspconfig to use `vim.lsp.config` and `vim.lsp.enable()`
+
+### New Treesitter API (Neovim 0.11+)
+Old API (pre-rewrite):
+```lua
+require("nvim-treesitter.configs").setup({ ensure_installed = {...}, highlight = { enable = true } })
+```
+
+New API:
+```lua
+require("nvim-treesitter").install({ "lua", "python" })
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = { "lua", "python" },
+  callback = function() vim.treesitter.start() end,
+})
+```
+
+### New LSP API (Neovim 0.11+)
+Old: `require("lspconfig").pyright.setup({})`
+New: `vim.lsp.config.pyright = {}` then `vim.lsp.enable({ "pyright" })`
