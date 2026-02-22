@@ -10,11 +10,12 @@ awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
 echo $(df / --output=pcent | tail -1 | tr -dc "0-9")
 awk "/wl|en.*:/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{print rx, tx}" /proc/net/dev
-zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"'
+zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"
+awk "BEGIN{v=0}/swap.img/{v=\$4}END{print v}" /proc/swaps 2>/dev/null'
 
-# Read cached data (validate 12 fields: g p c m d rx tx pt zd zc ci ct)
+# Read cached data (validate 14 fields: g p c m d rx tx pt zd zc nv ci ct _)
 cached=$(cat "$cache" 2>/dev/null)
-[[ $(echo "$cached" | wc -w) -eq 12 ]] && read -r g p c m d prx ptx pt zd zc pci pct <<< "$cached"
+[[ $(echo "$cached" | wc -w) -eq 14 ]] && read -r g p c m d prx ptx pt zd zc nv pci pct _ <<< "$cached"
 now=$(date +%s); fetch_ok=0
 
 # Fetch with timeout
@@ -23,14 +24,19 @@ else data=$(timeout 2 ssh -o ConnectTimeout=1 "$host" "$cmd" 2>/dev/null); fi
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc <<< "$(echo "$data" | tr ',\n' '  ')"
-  p=${p%.*}
-  # CPU % from jiffies delta
-  if [[ -n "$pci" && -n "$pct" ]]; then
+  read -r g p ci ct m d rx tx zd zc nv <<< "$(echo "$data" | tr ',\n' '  ')"
+  p=${p%.*}; nv=${nv:-0}
+  # CPU % from jiffies delta (with sanity checks)
+  if [[ -n "$pci" && -n "$pct" && $ci -ge $pci && $ct -gt $pct ]]; then
     di=$((ci - pci)); dtc=$((ct - pct))
-    [[ $dtc -gt 0 ]] && c=$((100 - di * 100 / dtc)) || c=0
-  else c=0; fi
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc $ci $ct" > "$cache"
+    # dtc ~100-1000 for 1s (100Hz * cores). >100k = stale cache, keep old c
+    if [[ $dtc -gt 0 && $dtc -lt 100000 ]]; then
+      c=$((100 - di * 100 / dtc))
+      [[ $c -lt 0 ]] && c=0; [[ $c -gt 100 ]] && c=100
+    fi
+  fi
+  : ${c:=0}
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc $nv $ci $ct _" > "$cache"
   pt=$now; prx=${prx:-$rx}; ptx=${ptx:-$tx}; fetch_ok=1
 else rx=$prx; tx=$ptx; fi
 [[ -z "$g" ]] && echo "<span color='#ff5555'>$host OFFLINE</span>" && exit
@@ -51,4 +57,5 @@ rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
 memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span color='#ff5555'>$memv</span>"
 dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "Z%.1fG/%.1fx",$1/1073741824,$1/$2}')
-printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
+nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)printf "NV%.1fG",n/1048576;else printf "NV%dM",n/1024}'); [[ $nv -gt 67108864 ]] && nvv="<span color='#ff5555'>$nvv</span>"; fi
+printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$nvv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"

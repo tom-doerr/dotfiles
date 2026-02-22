@@ -3,7 +3,7 @@
   "positionY": "top",
   "timeout": 5,
   "timeout-low": 3,
-  "timeout-critical": 0,
+  "timeout-critical": 10,
   "notification-window-width": 400,
   "keyboard-shortcuts": true,
   "image-visibility": "when-available",
