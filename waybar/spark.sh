@@ -59,6 +59,6 @@ rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
 memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span color='#ff5555'>$memv</span>"
 dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "Z%.1fG/%.1fx",$1/1073741824,$1/$2}')
-zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)printf "ZS0";else if(zs>0)printf "ZS%.1fG/%.1fx",zw/1048576,zw/zs;else printf "ZS%.1fG",zw/1048576}'); fi
+zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)printf "ZS:0";else if(zs>0)printf "ZS:%.1fG/%.1fx",zw/1048576,zw/zs;else printf "ZS:%.1fG",zw/1048576}'); fi
 nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)printf "NV%.1fG",n/1048576;else printf "NV%dM",n/1024}'); [[ $nv -gt 67108864 ]] && nvv="<span color='#ff5555'>$nvv</span>"; fi
 printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$zswap" "$nvv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
