@@ -65,10 +65,11 @@ gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 90 ]] && memv=$(red "$memv")
 dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
-zram=$(pad "Z:0" 15); [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
+zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
 nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)v=sprintf("NV:%.1fG",n/1048576);else v=sprintf("NV:%dM",n/1024); printf "%-10s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
-swapv="$zram"
-[[ -n "$zswap" ]] && swapv="$swapv $zswap"
-[[ -n "$nvv" ]] && swapv="$swapv $nvv"
+swapv=""
+[[ -n "$zram" ]] && swapv="$zram"
+[[ -n "$zswap" ]] && swapv="${swapv:+$swapv }$zswap"
+[[ -n "$nvv" ]] && swapv="${swapv:+$swapv }$nvv"
 printf "%s %s %s %s %s %s %s↓ %s↑ %s\n" "$host" "$gpuv" "$cpuv" "$memv" "$swapv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
