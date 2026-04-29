@@ -3,6 +3,8 @@
 host=${1:-spark-1}
 bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; printf '█%.0s' $(seq 1 $((v/10))); printf '░%.0s' $(seq 1 $((10-v/10))); }
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
+pad() { printf "%-${2}s" "$1"; }
+red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
 
 cmd='nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits
@@ -44,24 +46,26 @@ if [[ -n "$data" ]]; then
   echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $ci $ct _" > "$cache"
   pt=$now; prx=${prx:-$rx}; ptx=${ptx:-$tx}; fetch_ok=1
 else rx=$prx; tx=$ptx; fi
-[[ -z "$g" ]] && echo "<span color='#ff5555'>$host OFFLINE</span>" && exit
+[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 150)")" && exit
 # Calculate age - show failure state clearly
 if [[ -z "$pt" ]]; then
-  age="<span color='#ff5555'>FAIL</span>"; dt=1
+  age=$(red "$(pad "FAIL" 5)"); dt=1
 else
   dt=$((now - pt)); [[ $dt -lt 1 ]] && dt=1
   if [[ $fetch_ok -eq 0 ]]; then
-    age="<span color='#ff5555'>${dt}s!</span>"
+    age=$(red "$(printf "%5s" "${dt}s!")")
   elif [[ $dt -gt 3 ]]; then
-    age="<span color='#ff5555'>${dt}s</span>"
+    age=$(red "$(printf "%5s" "${dt}s")")
   else
-    age="${dt}s"
+    age=$(printf "%5s" "${dt}s")
   fi
 fi
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
-memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span color='#ff5555'>$memv</span>"
-dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
-zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "Z:%.1fG/%.1fx",$1/1073741824,$1/$2}')
-zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)printf "ZS:0";else if(zs>0)printf "ZS:%.1fG/%.1fx",zw/1048576,zw/zs;else printf "ZS:%.1fG",zw/1048576}'); fi
-nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)printf "NV:%.1fG",n/1048576;else printf "NV:%dM",n/1024}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv="<span color='#ff5555'>$nvv</span>"; fi
-printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$zswap" "$nvv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
+gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
+cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
+memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 90 ]] && memv=$(red "$memv")
+dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
+zram=$(pad "Z:0" 15); [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
+zswap=$(pad "ZS:off" 16); if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
+nvv=$(pad "NV:0" 10); if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)v=sprintf("NV:%.1fG",n/1048576);else v=sprintf("NV:%dM",n/1024); printf "%-10s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
+printf "%s %s %s %s %s %s %s %s %s↓ %s↑ %s\n" "$host" "$gpuv" "$cpuv" "$memv" "$zram" "$zswap" "$nvv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
