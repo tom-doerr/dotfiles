@@ -13,11 +13,14 @@ awk "/wl|en.*:/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{print rx, tx}" /proc/net
 zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"
 cat /sys/module/zswap/parameters/enabled 2>/dev/null || echo N
 awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
-awk "BEGIN{v=0}/swap.img/{v=\$4}END{print v}" /proc/swaps 2>/dev/null'
+awk "BEGIN{s=0;v=0}/swap.img/{s=\$3;v=\$4}END{print v, s}" /proc/swaps 2>/dev/null'
 
-# Read cached data (validate 17 fields: g p c m d rx tx pt zd zc zse zs zw nv ci ct _)
+# Read cached data (validate 18 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs ci ct _)
 cached=$(cat "$cache" 2>/dev/null)
-[[ $(echo "$cached" | wc -w) -eq 17 ]] && read -r g p c m d prx ptx pt zd zc zse zs zw nv pci pct _ <<< "$cached"
+case $(echo "$cached" | wc -w) in
+  18) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs pci pct _ <<< "$cached" ;;
+  17) read -r g p c m d prx ptx pt zd zc zse zs zw nv pci pct _ <<< "$cached"; nvs=0 ;;
+esac
 now=$(date +%s); fetch_ok=0
 
 # Fetch with timeout
@@ -26,8 +29,8 @@ else data=$(timeout 2 ssh -o ConnectTimeout=1 "$host" "$cmd" 2>/dev/null); fi
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv <<< "$(echo "$data" | tr ',\n' '  ')"
-  p=${p%.*}; nv=${nv:-0}
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs <<< "$(echo "$data" | tr ',\n' '  ')"
+  p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}
   # CPU % from jiffies delta (with sanity checks)
   if [[ -n "$pci" && -n "$pct" && $ci -ge $pci && $ct -gt $pct ]]; then
     di=$((ci - pci)); dtc=$((ct - pct))
@@ -38,7 +41,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $ci $ct _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $ci $ct _" > "$cache"
   pt=$now; prx=${prx:-$rx}; ptx=${ptx:-$tx}; fetch_ok=1
 else rx=$prx; tx=$ptx; fi
 [[ -z "$g" ]] && echo "<span color='#ff5555'>$host OFFLINE</span>" && exit
@@ -60,5 +63,5 @@ memv=$(printf "MEM%s%2d%%" "$(bar $m)" "$m"); [[ $m -gt 90 ]] && memv="<span col
 dskv=$(printf "DSK%s%2d%%" "$(bar $d)" "$d"); [[ $d -gt 90 ]] && dskv="<span color='#ff5555'>$dskv</span>"
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "Z:%.1fG/%.1fx",$1/1073741824,$1/$2}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)printf "ZS:0";else if(zs>0)printf "ZS:%.1fG/%.1fx",zw/1048576,zw/zs;else printf "ZS:%.1fG",zw/1048576}'); fi
-nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)printf "NV:%.1fG",n/1048576;else printf "NV:%dM",n/1024}'); [[ $nv -gt 67108864 ]] && nvv="<span color='#ff5555'>$nvv</span>"; fi
+nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)printf "NV:%.1fG",n/1048576;else printf "NV:%dM",n/1024}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv="<span color='#ff5555'>$nvv</span>"; fi
 printf "%s GPU%s%2d%% %3dW CPU%s%2d%% %s %s %s %s %s %s↓ %s↑ %s          \n" "$host" "$(bar $g)" "$g" "$p" "$(bar $c)" "$c" "$memv" "$zram" "$zswap" "$nvv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
