@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
-bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; printf '█%.0s' $(seq 1 $((v/10))); printf '░%.0s' $(seq 1 $((10-v/10))); }
+bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<10; i++)); do printf '░'; done; }
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 pad() { printf "%-${2}s" "$1"; }
 red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
