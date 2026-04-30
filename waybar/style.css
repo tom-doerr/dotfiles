@@ -27,10 +27,10 @@ window#waybar {
 }
 
 #custom-gpu, #custom-temp {
-    padding: 0 10px;
-    min-width: 100px;
+    padding: 0 6px;
+    min-width: 72px;
 }
 
 #custom-spark1, #custom-spark2, #custom-spark3 {
-    padding: 0 8px;
+    padding: 0 4px;
 }

@@ -1,8 +1,9 @@
 #!/bin/bash
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
-bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<10; i++)); do printf '░'; done; }
-fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
+label=${host/spark-/s}
+bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/20)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<5; i++)); do printf '░'; done; }
+fmt() { [[ $1 -gt 1048576 ]] && printf "%3dM" $((($1+524288)/1048576)) || printf "%3dK" $((($1+512)/1024)); }
 pad() { printf "%-${2}s" "$1"; }
 red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
@@ -46,30 +47,30 @@ if [[ -n "$data" ]]; then
   echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $ci $ct _" > "$cache"
   pt=$now; prx=${prx:-$rx}; ptx=${ptx:-$tx}; fetch_ok=1
 else rx=$prx; tx=$ptx; fi
-[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 150)")" && exit
+[[ -z "$g" ]] && echo "$(red "$(pad "$label OFFLINE" 100)")" && exit
 # Calculate age - show failure state clearly
 if [[ -z "$pt" ]]; then
-  age=$(red "$(pad "FAIL" 5)"); dt=1
+  age=$(red "$(pad "FAIL" 4)"); dt=1
 else
   dt=$((now - pt)); [[ $dt -lt 1 ]] && dt=1
   if [[ $fetch_ok -eq 0 ]]; then
-    age=$(red "$(printf "%5s" "${dt}s!")")
+    age=$(red "$(printf "%4s" "${dt}s!")")
   elif [[ $dt -gt 3 ]]; then
-    age=$(red "$(printf "%5s" "${dt}s")")
+    age=$(red "$(printf "%4s" "${dt}s")")
   else
-    age=$(printf "%5s" "${dt}s")
+    age=$(printf "%4s" "${dt}s")
   fi
 fi
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
-gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
-cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
-memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
-dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
-zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
-zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
-nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)v=sprintf("NV:%.1fG",n/1048576);else v=sprintf("NV:%dM",n/1024); printf "%-10s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
+gpuv=$(printf "G:%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
+cpuv=$(printf "C:%s%3d%%" "$(bar $c)" "$c")
+memv=$(pad "$(printf "M:%s%3d%%" "$(bar $m)" "$m")" 11); [[ $m -gt 95 ]] && memv=$(red "$memv")
+dskv=$(pad "$(printf "D:%s%3d%%" "$(bar $d)" "$d")" 11); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
+zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{g=$1/1073741824; s=(g<10?sprintf("%.1fG",g):sprintf("%.0fG",g)); printf "%-12s", sprintf("Z:%s/%.1fx",s,$1/$2)}')
+zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0){g=zw/1048576;s=(g<10?sprintf("%.1fG",g):sprintf("%.0fG",g));v=sprintf("ZS:%s/%.1fx",s,zw/zs)}else{g=zw/1048576;s=(g<10?sprintf("%.1fG",g):sprintf("%.0fG",g));v=sprintf("ZS:%s",s)} printf "%-13s", v}'); fi
+nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576){g=n/1048576;v=sprintf("NV:%s",g<10?sprintf("%.1fG",g):sprintf("%.0fG",g))}else v=sprintf("NV:%dM",n/1024); printf "%-8s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
 swapv=""
 [[ -n "$zram" ]] && swapv="$zram"
 [[ -n "$zswap" ]] && swapv="${swapv:+$swapv }$zswap"
 [[ -n "$nvv" ]] && swapv="${swapv:+$swapv }$nvv"
-printf "%s %s %s %s %s %s %s↓ %s↑ %s\n" "$host" "$gpuv" "$cpuv" "$memv" "$swapv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
+printf "%s %s %s %s %s %s ↓%s ↑%s %s\n" "$label" "$gpuv" "$cpuv" "$memv" "$swapv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
