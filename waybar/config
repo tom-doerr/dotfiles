@@ -10,7 +10,7 @@
 
         "hyprland/workspaces": { "format": "{id}" },
         "clock": { "format": "{:%a %b %d  %H:%M}" },
-        "custom/load": { "exec": "~/.config/waybar/load.sh", "interval": 1, "min-length": 16 },
+        "custom/load": { "exec": "~/.config/waybar/load.sh", "interval": 1, "min-length": 36 },
         "custom/temp": { "exec": "~/.config/waybar/temp.sh", "interval": 1, "min-length": 8 },
         "custom/posts": { "exec": "~/.config/waybar/posts.sh", "interval": 30 }
     },
