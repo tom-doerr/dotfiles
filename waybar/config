@@ -4,11 +4,11 @@
         "layer": "top",
         "position": "top",
         "height": 24,
-        "modules-left": [],
+        "modules-left": ["custom/nas"],
         "modules-center": [],
-        "modules-right": ["custom/spark1", "custom/spark2", "custom/spark3"],
+        "modules-right": ["custom/spark2", "custom/spark3"],
 
-        "custom/spark1": { "exec": "~/.config/waybar/spark.sh spark-1", "interval": 1, "min-length": 70 },
+        "custom/nas": { "exec": "~/.config/waybar/spark.sh nas", "interval": 5, "min-length": 70 },
         "custom/spark2": { "exec": "~/.config/waybar/spark.sh spark-2", "interval": 1, "min-length": 70 },
         "custom/spark3": { "exec": "~/.config/waybar/spark.sh spark-3", "interval": 1, "min-length": 70 }
     },
@@ -17,10 +17,11 @@
         "layer": "top",
         "position": "top",
         "height": 24,
-        "modules-left": ["hyprland/workspaces"],
+        "modules-left": ["custom/spark1", "hyprland/workspaces"],
         "modules-center": ["hyprland/window"],
         "modules-right": ["custom/posts", "custom/temp", "custom/load", "clock", "tray"],
 
+        "custom/spark1": { "exec": "~/.config/waybar/spark.sh spark-1", "interval": 1, "min-length": 70 },
         "hyprland/workspaces": { "format": "{id}" },
         "clock": { "format": "{:%a %b %d  %H:%M}" },
         "custom/load": { "exec": "~/.config/waybar/load.sh", "interval": 1, "min-length": 36 },

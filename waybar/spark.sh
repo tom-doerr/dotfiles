@@ -7,11 +7,11 @@ pad() { printf "%-${2}s" "$1"; }
 red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
 
-cmd='nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits
+cmd='if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits | head -1; else echo "-1 0"; fi
 awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
-echo $(df / --output=pcent | tail -1 | tr -dc "0-9")
-awk "/wl|en.*:/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{print rx, tx}" /proc/net/dev
+disk=/; [ -d /volume1 ] && disk=/volume1; echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")
+awk "/^[[:space:]]*(wl|en|eth|bond|br|ovs)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"
 cat /sys/module/zswap/parameters/enabled 2>/dev/null || echo N
 awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
@@ -26,8 +26,14 @@ esac
 now=$(date +%s); fetch_ok=0
 
 # Fetch with timeout
+ssh_timeout=2
+connect_timeout=1
+if [[ "$host" == "nas" ]]; then
+  ssh_timeout=5
+  connect_timeout=3
+fi
 if [[ "$host" == "$(hostname)" ]]; then data=$(eval "$cmd" 2>/dev/null)
-else data=$(timeout 2 ssh -o ConnectTimeout=1 "$host" "$cmd" 2>/dev/null); fi
+else data=$(timeout "$ssh_timeout" ssh -o ConnectTimeout="$connect_timeout" "$host" "$cmd" 2>/dev/null); fi
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
@@ -61,7 +67,7 @@ else
   fi
 fi
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
-gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
+gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
 dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
@@ -72,4 +78,8 @@ swapv=""
 [[ -n "$zram" ]] && swapv="$zram"
 [[ -n "$zswap" ]] && swapv="${swapv:+$swapv }$zswap"
 [[ -n "$nvv" ]] && swapv="${swapv:+$swapv }$nvv"
-printf "%s %s %s %s %s %s %s↓ %s↑ %s\n" "$host" "$gpuv" "$cpuv" "$memv" "$swapv" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
+prefix="$host"
+[[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
+line="$prefix $cpuv $memv"
+[[ -n "$swapv" ]] && line="$line $swapv"
+printf "%s %s %s↓ %s↑ %s\n" "$line" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
