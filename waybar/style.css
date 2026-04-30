@@ -34,3 +34,8 @@ window#waybar {
 #custom-nas, #custom-spark1, #custom-spark2, #custom-spark3 {
     padding: 0 8px;
 }
+
+#custom-spark-separator {
+    padding: 0 2px;
+    color: #6c7086;
+}
