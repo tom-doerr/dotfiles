@@ -1,5 +1,18 @@
 [
     {
+        "name": "spark",
+        "layer": "top",
+        "position": "top",
+        "height": 24,
+        "modules-left": [],
+        "modules-center": [],
+        "modules-right": ["custom/spark1", "custom/spark2", "custom/spark3"],
+
+        "custom/spark1": { "exec": "~/.config/waybar/spark.sh spark-1", "interval": 1, "min-length": 70 },
+        "custom/spark2": { "exec": "~/.config/waybar/spark.sh spark-2", "interval": 1, "min-length": 70 },
+        "custom/spark3": { "exec": "~/.config/waybar/spark.sh spark-3", "interval": 1, "min-length": 70 }
+    },
+    {
         "name": "main",
         "layer": "top",
         "position": "top",
@@ -13,18 +26,5 @@
         "custom/load": { "exec": "~/.config/waybar/load.sh", "interval": 1, "min-length": 36 },
         "custom/temp": { "exec": "~/.config/waybar/temp.sh", "interval": 1, "min-length": 8 },
         "custom/posts": { "exec": "~/.config/waybar/posts.sh", "interval": 30 }
-    },
-    {
-        "name": "spark",
-        "layer": "top",
-        "position": "top",
-        "height": 24,
-        "modules-left": [],
-        "modules-center": [],
-        "modules-right": ["custom/spark1", "custom/spark2", "custom/spark3"],
-
-        "custom/spark1": { "exec": "~/.config/waybar/spark.sh spark-1", "interval": 1, "min-length": 70 },
-        "custom/spark2": { "exec": "~/.config/waybar/spark.sh spark-2", "interval": 1, "min-length": 70 },
-        "custom/spark3": { "exec": "~/.config/waybar/spark.sh spark-3", "interval": 1, "min-length": 70 }
     }
 ]
