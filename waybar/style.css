@@ -35,6 +35,10 @@ window#waybar {
     padding: 0 8px;
 }
 
+#custom-nas {
+    margin-right: 12px;
+}
+
 #custom-spark-separator {
     padding: 0 2px;
     color: #6c7086;
