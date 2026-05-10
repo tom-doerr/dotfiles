@@ -11,7 +11,7 @@ cmd='if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=utili
 awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
 disk=/; [ -d /volume1 ] && disk=/volume1; echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")
-awk "/^[[:space:]]*(wl|en|eth|bond|br|ovs)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
+awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"
 cat /sys/module/zswap/parameters/enabled 2>/dev/null || echo N
 awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
@@ -67,6 +67,8 @@ else
   fi
 fi
 rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
+[[ $rxs -lt 0 ]] && rxs=0
+[[ $txs -lt 0 ]] && txs=0
 gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
