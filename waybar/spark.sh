@@ -12,10 +12,20 @@ awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
 disk=/; [ -d /volume1 ] && disk=/volume1; echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")
 awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
-zramctl -b --raw --noheadings -o DATA,COMPR /dev/zram0 2>/dev/null || echo "0 0"
+if command -v zramctl >/dev/null 2>&1; then
+  zramctl -b --raw --noheadings -o DATA,COMPR 2>/dev/null | awk "{zd+=\$1; zc+=\$2} END{print zd+0, zc+0}"
+else
+  for f in /sys/block/zram*/mm_stat; do
+    [ -r "$f" ] || continue
+    read -r orig compr _ < "$f"
+    zd=$((zd + orig))
+    zc=$((zc + compr))
+  done
+  echo "${zd:-0} ${zc:-0}"
+fi
 cat /sys/module/zswap/parameters/enabled 2>/dev/null || echo N
 awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
-awk "BEGIN{s=0;v=0}/swap.img/{s=\$3;v=\$4}END{print v, s}" /proc/swaps 2>/dev/null'
+awk "NR>1 && \$1 !~ /^\\/dev\\/zram/ {s+=\$3; v+=\$4} END{print v+0, s+0}" /proc/swaps 2>/dev/null'
 
 # Read cached data (validate 18 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs ci ct _)
 cached=$(cat "$cache" 2>/dev/null)
@@ -75,7 +85,8 @@ memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && mem
 dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
-nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" 'BEGIN{if(n>1048576)v=sprintf("NV:%.1fG",n/1048576);else v=sprintf("NV:%dM",n/1024); printf "%-10s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
+swap_label="NV"; [[ "$host" == "nas" ]] && swap_label="SW"
+nvv=""; if [[ ${nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$nv" -v label="$swap_label" 'BEGIN{if(n>1048576)v=sprintf("%s:%.1fG",label,n/1048576);else v=sprintf("%s:%dM",label,n/1024); printf "%-10s", v}'); [[ ${nvs:-0} -gt 0 && $((nv * 2)) -gt $nvs ]] && nvv=$(red "$nvv"); fi
 swapv=""
 [[ -n "$zram" ]] && swapv="$zram"
 [[ -n "$zswap" ]] && swapv="${swapv:+$swapv }$zswap"
