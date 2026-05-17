@@ -34,6 +34,8 @@ case $(echo "$cached" | wc -w) in
   18) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs pci pct _ <<< "$cached"; sf=0; sfs=0 ;;
   17) read -r g p c m d prx ptx pt zd zc zse zs zw nv pci pct _ <<< "$cached"; nvs=0; sf=0; sfs=0 ;;
 esac
+prev_rx=$prx; prev_tx=$ptx; prev_pt=$pt
+rate_prx=$prx; rate_ptx=$ptx; rate_dt=1
 now=$(date +%s); fetch_ok=0
 
 # Fetch with timeout
@@ -50,6 +52,10 @@ else data=$(timeout "$ssh_timeout" ssh -o ConnectTimeout="$connect_timeout" "$ho
 if [[ -n "$data" ]]; then
   read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs <<< "$(echo "$data" | tr ',\n' '  ')"
   p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}
+  rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
+  if [[ -n "$prev_pt" ]]; then
+    rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
+  fi
   # CPU % from jiffies delta (with sanity checks)
   if [[ -n "$pci" && -n "$pct" && $ci -ge $pci && $ct -gt $pct ]]; then
     di=$((ci - pci)); dtc=$((ct - pct))
@@ -61,8 +67,14 @@ if [[ -n "$data" ]]; then
   fi
   : ${c:=0}
   echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs $ci $ct _" > "$cache"
-  pt=$now; prx=${prx:-$rx}; ptx=${ptx:-$tx}; fetch_ok=1
-else rx=$prx; tx=$ptx; fi
+  pt=$now; fetch_ok=1
+else
+  rx=$prx; tx=$ptx
+  rate_prx=${prx:-$rx}; rate_ptx=${ptx:-$tx}
+  if [[ -n "$pt" ]]; then
+    rate_dt=$((now - pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
+  fi
+fi
 [[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 150)")" && exit
 # Calculate age - show failure state clearly
 if [[ -z "$pt" ]]; then
@@ -77,7 +89,7 @@ else
     age=$(printf "%5s" "${dt}s")
   fi
 fi
-rxs=$(( (rx - ${prx:-rx}) / dt )); txs=$(( (tx - ${ptx:-tx}) / dt ))
+rxs=$(( (rx - ${rate_prx:-$rx}) / rate_dt )); txs=$(( (tx - ${rate_ptx:-$tx}) / rate_dt ))
 [[ $rxs -lt 0 ]] && rxs=0
 [[ $txs -lt 0 ]] && txs=0
 gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
