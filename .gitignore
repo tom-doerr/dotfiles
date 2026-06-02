@@ -1,3 +1,34 @@
 .aider*
 .env
 terminalizer/token.txt
+
+# Local/private agent and editor state
+claude-settings.json
+.nvimlog
+.vimrc.un~
+HUMANS.md
+aider.args
+aider.system.txt
+aider_bug_report.md
+aider_issue_template.md
+analytics.log
+artifact.md
+auto_tag.log
+startup.log
+plexsearch.log
+tags
+test3.yml
+
+# Local/generated config trees
+docker/
+systemd/
+scripts/
+nvim-bin/
+
+# Local desktop/system config snapshots
+i3/analytics.log
+kglobalshortcutsrc
+nvidia_container_runtime_config.toml
+
+# Local machine-specific tests
+tests/keymapp_install_test.sh
