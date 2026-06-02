@@ -66,7 +66,6 @@ return {
   {
     'nvim-telescope/telescope.nvim',
     lazy = false,
-    tag = '0.1.8',
     dependencies = { 'nvim-lua/plenary.nvim' },
     config = function()
       local telescope = require('telescope')
@@ -89,7 +88,7 @@ return {
           },
           mappings = { i = insert_mappings },
           preview = {
-            treesitter = true
+            treesitter = false
           },
           -- Use gruvbox colors
           color_devicons = true,
