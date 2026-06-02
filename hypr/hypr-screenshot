@@ -1,0 +1,252 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+mode="${1:-region}"
+geometry=""
+compression="${GRIM_PNG_COMPRESSION:-9}"
+screenshot_dir="${SCREENSHOT_DIR:-$HOME/Pictures/screenshots}"
+mkdir -p "$screenshot_dir"
+
+notify() {
+    local color="$1"
+    local message="$2"
+    if command -v hyprctl >/dev/null 2>&1; then
+        hyprctl notify 5 1800 "$color" "$message" >/dev/null 2>&1 || true
+    elif command -v notify-send >/dev/null 2>&1; then
+        notify-send "Screenshot" "$message" >/dev/null 2>&1 || true
+    fi
+}
+
+case "$mode" in
+    full)
+        ;;
+    region)
+        if ! geometry="$(slurp)"; then
+            notify "rgb(ffcc33)" "Screenshot cancelled"
+            exit 0
+        fi
+        if [[ -z "$geometry" ]]; then
+            notify "rgb(ffcc33)" "Screenshot cancelled"
+            exit 0
+        fi
+        ;;
+    geometry)
+        geometry="${2:?geometry mode requires a grim geometry string}"
+        ;;
+    *)
+        echo "usage: $0 [full|region|geometry '<x,y widthxheight>']" >&2
+        exit 2
+        ;;
+esac
+
+stamp="$(date +%Y%m%d-%H%M%S)"
+base="$screenshot_dir/screenshot-$stamp"
+path="$base.png"
+meta_path="$base.json"
+i=1
+while [[ -e "$path" || -e "$meta_path" ]]; do
+    path="$base-$i.png"
+    meta_path="$base-$i.json"
+    i=$((i + 1))
+done
+
+tmp="$path.tmp"
+cleanup() { rm -f "$tmp"; }
+trap cleanup EXIT
+
+grim_args=(-t png -l "$compression")
+if [[ -n "$geometry" ]]; then
+    grim_args+=(-g "$geometry")
+fi
+
+if ! grim "${grim_args[@]}" "$tmp"; then
+    notify "rgb(ff3344)" "Screenshot failed"
+    exit 1
+fi
+
+python3 - "$tmp" "$meta_path" "$mode" "$geometry" "$path" "$compression" <<'PYPNG'
+import datetime as _dt
+import json
+import shutil
+import socket
+import struct
+import subprocess
+import sys
+import zlib
+
+png_path, meta_path, mode, geometry, final_path, compression = sys.argv[1:7]
+
+PNG_SIG = b"\x89PNG\r\n\x1a\n"
+COLOR_TYPES = {
+    0: "grayscale",
+    2: "truecolor RGB",
+    3: "indexed color",
+    4: "grayscale + alpha",
+    6: "truecolor RGB + alpha",
+}
+
+
+def run(cmd, timeout=5):
+    if shutil.which(cmd[0]) is None:
+        return {"available": False, "argv": cmd}
+    try:
+        p = subprocess.run(cmd, text=True, capture_output=True, timeout=timeout)
+        return {
+            "available": True,
+            "argv": cmd,
+            "returncode": p.returncode,
+            "stdout": p.stdout.strip(),
+            "stderr": p.stderr.strip(),
+        }
+    except Exception as exc:
+        return {"available": True, "argv": cmd, "error": repr(exc)}
+
+
+def parse_png(data):
+    if not data.startswith(PNG_SIG):
+        raise SystemExit("not a PNG file")
+    pos = len(PNG_SIG)
+    chunks = []
+    ihdr = None
+    while pos + 8 <= len(data):
+        n = int.from_bytes(data[pos:pos + 4], "big")
+        typ = data[pos + 4:pos + 8]
+        chunk_data = data[pos + 8:pos + 8 + n]
+        chunks.append(typ.decode("latin1"))
+        if typ == b"IHDR":
+            width, height, bit_depth, color_type, compression_method, filter_method, interlace = struct.unpack(
+                ">IIBBBBB", chunk_data
+            )
+            ihdr = {
+                "width": width,
+                "height": height,
+                "bit_depth_per_channel": bit_depth,
+                "color_type": color_type,
+                "color_type_name": COLOR_TYPES.get(color_type, "unknown"),
+                "compression_method": compression_method,
+                "filter_method": filter_method,
+                "interlace_method": interlace,
+            }
+        pos += 12 + n
+        if typ == b"IEND":
+            break
+    return ihdr or {}, chunks
+
+
+def chunk(typ, payload):
+    crc = zlib.crc32(typ + payload) & 0xFFFFFFFF
+    return len(payload).to_bytes(4, "big") + typ + payload + crc.to_bytes(4, "big")
+
+
+def text_chunk(keyword, text):
+    payload = keyword.encode("latin1") + b"\0" + text.encode("latin1", "replace")
+    return chunk(b"tEXt", payload)
+
+
+def itxt_chunk(keyword, text):
+    payload = (
+        keyword.encode("latin1")
+        + b"\0"
+        + b"\x00"  # uncompressed text
+        + b"\x00"  # compression method 0
+        + b"\0"    # empty language tag
+        + b"\0"    # empty translated keyword
+        + text.encode("utf-8")
+    )
+    return chunk(b"iTXt", payload)
+
+
+def insert_chunks(data, new_chunks):
+    pos = len(PNG_SIG)
+    out = bytearray(data[:pos])
+    inserted = False
+    while pos + 8 <= len(data):
+        n = int.from_bytes(data[pos:pos + 4], "big")
+        typ = data[pos + 4:pos + 8]
+        if typ == b"IDAT" and not inserted:
+            for ch in new_chunks:
+                out.extend(ch)
+            inserted = True
+        out.extend(data[pos:pos + 12 + n])
+        pos += 12 + n
+        if typ == b"IEND":
+            break
+    if not inserted:
+        raise SystemExit("PNG has no IDAT chunk")
+    return bytes(out)
+
+
+data = open(png_path, "rb").read()
+ihdr, chunks_before = parse_png(data)
+
+hypr_monitors = run(["hyprctl", "monitors", "-j"], timeout=10)
+try:
+    monitors_json = json.loads(hypr_monitors.get("stdout") or "[]")
+except Exception:
+    monitors_json = None
+
+hypr_options = {
+    name: run(["hyprctl", "getoption", name])
+    for name in [
+        "render:cm_enabled",
+        "render:cm_fs_passthrough",
+        "render:cm_auto_hdr",
+        "experimental:xx_color_management_v4",
+    ]
+}
+
+meta = {
+    "captured_at_local": _dt.datetime.now().astimezone().isoformat(),
+    "hostname": socket.gethostname(),
+    "mode": mode,
+    "geometry": geometry or None,
+    "output_png": final_path,
+    "metadata_json": meta_path,
+    "tool": "hypr-screenshot",
+    "lossless": True,
+    "grim": {
+        "argv": ["grim", "-t", "png", "-l", str(compression)] + (["-g", geometry] if geometry else []) + [final_path],
+        "help": run(["grim", "-h"]),
+    },
+    "stored_image": {
+        "format": "PNG",
+        "png_compression_level": int(compression),
+        "ihdr": ihdr,
+        "chunks_before_metadata": sorted(set(chunks_before)),
+        "icc_profile_embedded": False,
+        "explicit_srgb_or_gamma_embedded": False,
+    },
+    "wayland_hyprland": {
+        "version": run(["hyprctl", "version"]),
+        "monitors": monitors_json if monitors_json is not None else hypr_monitors,
+        "options": hypr_options,
+    },
+    "capture_limits": {
+        "stored_hdr_pixel_data": ihdr.get("bit_depth_per_channel", 0) > 8,
+        "note": "This records the exact PNG emitted by grim plus Hyprland HDR/10-bit state metadata. If grim/wlr-screencopy emitted 8-bit RGB, this script cannot reconstruct lost 10-bit/HDR pixel values.",
+    },
+}
+
+meta_json = json.dumps(meta, ensure_ascii=False, indent=2, sort_keys=True)
+new_chunks = [
+    text_chunk("Software", "grim + Hyprland via hypr-screenshot"),
+    text_chunk("Comment", "Lossless PNG screenshot; detailed capture metadata is embedded as iTXt and saved as JSON."),
+    itxt_chunk("screenshot.metadata", meta_json),
+]
+
+with open(png_path, "wb") as f:
+    f.write(insert_chunks(data, new_chunks))
+with open(meta_path, "w", encoding="utf-8") as f:
+    f.write(meta_json)
+    f.write("\n")
+PYPNG
+
+if command -v wl-copy >/dev/null 2>&1; then
+    wl-copy --type image/png < "$tmp" || true
+fi
+
+mv "$tmp" "$path"
+trap - EXIT
+info="$(file -b "$path" 2>/dev/null || printf 'PNG')"
+notify "rgb(33ccff)" "Screenshot saved + copied: $info"
+printf '%s\n' "$path"
