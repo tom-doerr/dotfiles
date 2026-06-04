@@ -112,8 +112,9 @@ else
 fi
 nvv=""; if [[ ${shown_nv:-0} -gt 1024 ]]; then nvv=$(awk -v n="$shown_nv" 'BEGIN{if(n>1048576)v=sprintf("NV:%.1fG",n/1048576);else v=sprintf("NV:%dM",n/1024); printf "%-10s", v}'); [[ ${shown_nvs:-0} -gt 0 && $((shown_nv * 100)) -ge $((shown_nvs * 95)) ]] && nvv=$(red "$nvv"); fi
 sfv=""; if [[ ${shown_sf:-0} -gt 1024 ]]; then sfv=$(awk -v n="$shown_sf" 'BEGIN{if(n>1048576)v=sprintf("SF:%.1fG",n/1048576);else v=sprintf("SF:%dM",n/1024); printf "%-10s", v}'); [[ ${shown_sfs:-0} -gt 0 && $((shown_sf * 100)) -ge $((shown_sfs * 95)) ]] && sfv=$(red "$sfv"); fi
-ncdv=""; ncd_pct=$(awk -v p="${ncd:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
-if [[ "$host" == "nas" && $ncd_pct -ge 0 ]]; then ncdv=$(printf "%-8s" "NVD:${ncd_pct}%"); [[ $ncd_pct -ge 95 ]] && ncdv=$(red "$ncdv"); fi
+ncdv=""; ncd_text=$(awk -v p="${ncd:--1}" 'BEGIN{if(p<0)print ""; else printf "%.2f", p}')
+ncd_red=$(awk -v p="${ncd:--1}" 'BEGIN{if(p>=95)print 1; else print 0}')
+if [[ "$host" == "nas" && -n "$ncd_text" ]]; then ncdv=$(printf "%-11s" "NVD:${ncd_text}%"); [[ $ncd_red -eq 1 ]] && ncdv=$(red "$ncdv"); fi
 swapv=""
 [[ -n "$zram" ]] && swapv="$zram"
 [[ -n "$zswap" ]] && swapv="${swapv:+$swapv }$zswap"
