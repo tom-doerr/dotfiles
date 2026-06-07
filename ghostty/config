@@ -48,19 +48,17 @@
 # # Just for example:
 # resize-overlay-duration = 4s 200ms
 
-# Transparency
+# Opaque true black avoids HDR/compositor alpha blending around glyph edges.
 # Font size - 11pt = ~12px at 80 PPI (55" 4K)
 font-family = JetBrains Mono
 font-size = 7
 font-style = Medium
-alpha-blending = linear-corrected
+alpha-blending = native
 
 scrollback-limit = 100000000
 
-background-opacity = 0
-
-# Blur (works with Hyprland)
-background-blur-radius = 20
+background = #000000
+background-opacity = 1
 
 # GTK titlebar with cwd
 gtk-titlebar = true
