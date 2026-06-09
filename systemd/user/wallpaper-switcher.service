@@ -1,0 +1,8 @@
+[Unit]
+Description=Gradual wallpaper transition based on time
+Requires=swww-daemon.service
+After=swww-daemon.service
+
+[Service]
+Type=oneshot
+ExecStart=%h/git/dotfiles/scripts/wallpaper-gradient.py

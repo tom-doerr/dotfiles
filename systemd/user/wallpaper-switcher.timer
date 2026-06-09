@@ -1,0 +1,16 @@
+[Unit]
+Description=Gradual wallpaper transition timer
+
+[Timer]
+OnStartupSec=15s
+OnCalendar=*-*-* 06:*:00
+OnCalendar=*-*-* 18:*:00
+OnCalendar=*-*-* 19:*:00
+OnCalendar=*-*-* 22:*:00
+OnCalendar=*-*-* 23:*:00
+OnCalendar=*-*-* 00:00:00
+OnCalendar=*-*-* 07:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
