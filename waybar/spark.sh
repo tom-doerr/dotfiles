@@ -27,11 +27,16 @@ cat /sys/module/zswap/parameters/enabled 2>/dev/null || echo N
 awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
 awk "NR>1 && \$1 !~ /^\\/dev\\/zram/ {if(\$2==\"partition\"){nvs+=\$3;nv+=\$4}else if(\$2==\"file\"){sfs+=\$3;sf+=\$4}} END{print nv+0, nvs+0, sf+0, sfs+0}" /proc/swaps 2>/dev/null
 if [ -r /tmp/waybar-nvme-cache-dirty ]; then awk "NR==1{print \$1+0; exit}" /tmp/waybar-nvme-cache-dirty; else echo -1; fi
-awk "/^full /{for(i=1;i<=NF;i++)if(\$i~/^avg60=/){v=\$i; sub(/^avg60=/,0,v); print v+0; found=1}}END{if(!found)print -1}" /proc/pressure/io 2>/dev/null'
+awk "/^full /{for(i=1;i<=NF;i++)if(\$i~/^avg60=/){v=\$i; sub(/^avg60=/,0,v); print v+0; found=1}}END{if(!found)print -1}" /proc/pressure/io 2>/dev/null
+for dev in md1 md2; do
+  stat="/sys/block/$dev/stat"
+  if [ -r "$stat" ]; then awk "{print \$10}" "$stat"; else echo -1; fi
+done'
 
-# Read cached data (validate 22 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop ci ct _)
+# Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 cached=$(cat "$cache" 2>/dev/null)
 case $(echo "$cached" | wc -w) in
+  26) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u pmd1t pmd2t pci pct _ <<< "$cached" ;;
   22) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop pci pct _ <<< "$cached" ;;
   21) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd pci pct _ <<< "$cached"; iop=-1 ;;
   20) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs pci pct _ <<< "$cached"; ncd=-1; iop=-1 ;;
@@ -39,6 +44,7 @@ case $(echo "$cached" | wc -w) in
   17) read -r g p c m d prx ptx pt zd zc zse zs zw nv pci pct _ <<< "$cached"; nvs=0; sf=0; sfs=0; ncd=-1; iop=-1 ;;
 esac
 prev_rx=$prx; prev_tx=$ptx; prev_pt=$pt
+prev_md1t=$pmd1t; prev_md2t=$pmd2t
 rate_prx=$prx; rate_ptx=$ptx; rate_dt=1
 now=$(date +%s); fetch_ok=0
 
@@ -54,11 +60,23 @@ else data=$(timeout "$ssh_timeout" ssh -o ConnectTimeout="$connect_timeout" "$ho
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop <<< "$(echo "$data" | tr ',\n' '  ')"
-  p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop md1t md2t <<< "$(echo "$data" | tr ',\n' '  ')"
+  p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}; md1t=${md1t:--1}; md2t=${md2t:--1}
   rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
   if [[ -n "$prev_pt" ]]; then
     rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
+  fi
+  if [[ ${prev_md1t:--1} -ge 0 && ${md1t:--1} -ge ${prev_md1t:--1} ]]; then
+    md1u=$(( (md1t - prev_md1t + rate_dt * 5) / (rate_dt * 10) ))
+    [[ $md1u -gt 100 ]] && md1u=100
+  else
+    md1u=${md1u:--1}
+  fi
+  if [[ ${prev_md2t:--1} -ge 0 && ${md2t:--1} -ge ${prev_md2t:--1} ]]; then
+    md2u=$(( (md2t - prev_md2t + rate_dt * 5) / (rate_dt * 10) ))
+    [[ $md2u -gt 100 ]] && md2u=100
+  else
+    md2u=${md2u:--1}
   fi
   # CPU % from jiffies delta (with sanity checks)
   if [[ -n "$pci" && -n "$pct" && $ci -ge $pci && $ct -gt $pct ]]; then
@@ -70,7 +88,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} $ci $ct _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${md1u:--1} ${md2u:--1} ${md1t:--1} ${md2t:--1} $ci $ct _" > "$cache"
   pt=$now; fetch_ok=1
 else
   rx=$prx; tx=$ptx
@@ -102,6 +120,15 @@ memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && mem
 dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
 iopv=""; iop_pct=$(awk -v p="${iop:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
 if [[ $iop_pct -ge 0 ]]; then iopv=$(printf "%-7s" "IO:${iop_pct}%"); [[ $iop_pct -ge 20 ]] && iopv=$(red "$iopv"); fi
+mdv=""
+if [[ "$host" == "nas" ]]; then
+  md1_pct=$(awk -v p="${md1u:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
+  md2_pct=$(awk -v p="${md2u:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
+  if [[ $md1_pct -ge 0 || $md2_pct -ge 0 ]]; then
+    mdv=$(printf "%-15s" "MD1:${md1_pct}% MD2:${md2_pct}%")
+    [[ $md1_pct -ge 90 || $md2_pct -ge 90 ]] && mdv=$(red "$mdv")
+  fi
+fi
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
 nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}
@@ -125,5 +152,6 @@ prefix="$host"
 [[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
 line="$prefix $cpuv $memv"
 [[ -n "$iopv" ]] && line="$line $iopv"
+[[ -n "$mdv" ]] && line="$line $mdv"
 [[ -n "$swapv" ]] && line="$line $swapv"
 printf "%s %s %s↓ %s↑ %s\n" "$line" "$dskv" "$(fmt $rxs)" "$(fmt $txs)" "$age"
