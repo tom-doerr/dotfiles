@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+grouped_count="$(hyprctl -j activewindow | jq '.grouped | length')"
+
+if [[ "${grouped_count}" -gt 0 ]]; then
+  hyprctl dispatch moveoutofgroup
+else
+  hyprctl dispatch togglegroup
+fi
