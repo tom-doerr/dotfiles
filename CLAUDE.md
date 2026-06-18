@@ -92,6 +92,12 @@ render { cm_enabled = false }
 - Blur: frosted glass (size 6, passes 3)
 - Animations: snappy (~2x default speed)
 
+### Screenshots: hypr-screenshot
+Script `hypr/hypr-screenshot` (lossless PNG + clipboard + JSON/iTXt metadata).
+Modes: `region` (slurp), `full`, `window` (focused window via `hyprctl activewindow -j` + jq), `geometry`.
+Binds: `Super+M` region, `Super+Shift+M` full, `Super+Ctrl+M` window.
+No cursor in any mode (grim omits pointer unless `-c`). `window` guards on `*null*` (no focused window).
+
 ### Notifications: swaync (not mako)
 Use swaync (SwayNotificationCenter), not mako. Both were enabled causing DBus conflicts.
 
