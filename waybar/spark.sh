@@ -1,6 +1,11 @@
 #!/bin/bash
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
+if [[ "${SPARK_WAYBAR_INNER:-0}" != "1" ]]; then
+  outer_timeout=4
+  [[ "$host" == "nas" ]] && outer_timeout=8
+  exec timeout --kill-after=1s "$outer_timeout" env SPARK_WAYBAR_INNER=1 "$0" "$@"
+fi
 bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<10; i++)); do printf '░'; done; }
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 pad() { printf "%-${2}s" "$1"; }
@@ -55,8 +60,17 @@ if [[ "$host" == "nas" ]]; then
   ssh_timeout=5
   connect_timeout=3
 fi
+ssh_opts=(
+  -o BatchMode=yes
+  -o ConnectTimeout="$connect_timeout"
+  -o ConnectionAttempts=1
+  -o ServerAliveInterval=1
+  -o ServerAliveCountMax=1
+  -o ControlMaster=no
+  -o ControlPath=none
+)
 if [[ "$host" == "$(hostname)" ]]; then data=$(eval "$cmd" 2>/dev/null)
-else data=$(timeout "$ssh_timeout" ssh -o ConnectTimeout="$connect_timeout" "$host" "$cmd" 2>/dev/null); fi
+else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" "$cmd" 2>/dev/null); fi
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
