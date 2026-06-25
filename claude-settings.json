@@ -80,8 +80,8 @@
     ],
     "defaultMode": "default"
   },
-  "model": "claude-opus-4-7",
-  "hooks": {
+  "model": "opus[1m]",
+  "_disabledHooks": {
     "PreToolUse": [
       {
         "matcher": "Bash",
@@ -92,7 +92,11 @@
             "timeout": 30
           }
         ]
-      },
+      }
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
         "hooks": [
@@ -106,6 +110,7 @@
     ]
   },
   "effortLevel": "xhigh",
+  "tui": "fullscreen",
   "skipWorkflowUsageWarning": true,
   "verbose": true,
   "preferredNotifChannel": "ghostty",
@@ -126,6 +131,5 @@
     "compiledModelPath": "$CLAUDE_PROJECT_DIR/.claude/models/approver.compiled.json",
     "optimizer": "mipro",
     "auto": "light"
-  },
-  "tui": "fullscreen"
+  }
 }
