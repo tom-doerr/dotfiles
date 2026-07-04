@@ -20,7 +20,7 @@ if grep -q " /pool " /proc/mounts 2>/dev/null; then disk=/pool
 elif grep -q " /volume1 " /proc/mounts 2>/dev/null; then disk=/volume1
 elif [ -d /pool ] || [ -d /volume1 ]; then disk=""
 fi
-if [ -n "$disk" ]; then echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9"); else echo -1; fi
+if [ -n "$disk" ]; then echo "$(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")|$(df -h "$disk" --output=used | tail -1 | tr -dc "0-9.TGMKP")"; else echo -1; fi
 awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 if command -v zramctl >/dev/null 2>&1; then
   zramctl -b --raw --noheadings -o DATA,COMPR 2>/dev/null | awk "{zd+=\$1; zc+=\$2} END{print zd+0, zc+0}"
@@ -134,10 +134,14 @@ rxs=$(( (rx - ${rate_prx:-$rx}) / rate_dt )); txs=$(( (tx - ${rate_ptx:-$tx}) / 
 gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
-if [[ ${d:--1} -lt 0 ]]; then
-  dskv=$(red "$(pad "DSK NO-POOL" 17)")
+# d is "pct|used" (e.g. "9|8.0T"); bar shows pct, label shows used storage
+dpct=${d%%|*}; dused=${d#*|}; [[ "$dused" == "$d" ]] && dused=""
+if [[ ${dpct:--1} -lt 0 ]]; then
+  dskv=$(red "$(pad "DSK NO-POOL" 18)")
+elif [[ -n "$dused" ]]; then
+  dskv=$(pad "$(printf "DSK%s%5s" "$(bar $dpct)" "$dused")" 18); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
 else
-  dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
+  dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $dpct)" "$dpct")" 18); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
 fi
 iopv=""; iop_pct=$(awk -v p="${iop:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
 if [[ $iop_pct -ge 0 ]]; then iopv=$(printf "%-7s" "IO:${iop_pct}%"); [[ $iop_pct -ge 20 ]] && iopv=$(red "$iopv"); fi

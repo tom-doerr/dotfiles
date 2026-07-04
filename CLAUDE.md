@@ -212,6 +212,9 @@ background→hdd; 2× replicas; lz4+zstd).
   for `/pool` then `/volume1` → reports the real pool (~3%). **Non-silent**: if a
   pool dir exists but is NOT mounted (mount failure), cmd emits `-1` and DSK renders
   red `DSK NO-POOL` instead of silently reporting `/`. Sparks legitimately use `/`.
+  The DSK label shows human-readable **used storage** (e.g. `7.7T`), not %, next to
+  the fill bar; the probe emits `pct|used` packed into the one disk field (`d` var
+  split client-side on `|`), so the 26-field cache format is unchanged.
 - `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). Their
   4 cache slots (positions 20-23) are **repurposed on the NAS for 4 bcachefs
   metrics** (kept field count at 26 — no parser surgery): `bc_saved`=compression
