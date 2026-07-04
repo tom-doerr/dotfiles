@@ -191,13 +191,45 @@ Requires NVIDIA driver 580.95.05 series.
 
 ## Waybar Spark Cluster Monitoring
 
-Custom modules: `spark1.sh`, `spark2.sh`, `spark3.sh` (SSH, shows "offline" if unreachable).
+Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
+`custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
+`spark.sh` parses a fixed **26-field** positional cache at `/tmp/spark_<host>`;
+changing emitted fields means updating `cmd`, the success `read`, the cache
+`echo`, and the `case $(... wc -w)` blocks — fragile, so prefer repurposing slots.
 
 ### CPU Calculation
 Must count `iowait` ($6) as idle, not just `idle` ($5):
 ```
 100-(($5+$6)*100/($2+$3+$4+$5+$6+$7+$8))
 ```
+
+### NAS disk = bcachefs `/pool` (fixed Jul 2026)
+After the NAS Debian reinstall, the data pool moved from UGOS `/volume1` to
+**bcachefs `/pool`** (2× Lexar SSD + 2× Exos HDD; tiered foreground/promote→ssd,
+background→hdd; 2× replicas; lz4+zstd).
+- **DSK** was silently showing `df /` (110 GB OS disk, ~14%) because the old
+  `[ -d /volume1 ] && disk=/volume1` fell through to `/`. Now checks `/proc/mounts`
+  for `/pool` then `/volume1` → reports the real pool (~3%). **Non-silent**: if a
+  pool dir exists but is NOT mounted (mount failure), cmd emits `-1` and DSK renders
+  red `DSK NO-POOL` instead of silently reporting `/`. Sparks legitimately use `/`.
+- `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). Their
+  4 cache slots (positions 20-23) are **repurposed on the NAS for 4 bcachefs
+  metrics** (kept field count at 26 — no parser surgery): `bc_saved`=compression
+  saved GiB, `bc_ssd`=SSD fast-tier share %, `bc_ratio`=overall ratio ×100,
+  `bc_backlog`=rebalance backlog GiB. Displayed (NAS only):
+  `CMP:<saved>G/<ratio>x SSD:<share>% RB:<backlog>G`, red if backlog ≥100 GiB.
+- Stats read non-root from `/sys/fs/bcachefs/<uuid>/internal/accounting`
+  (`compression` lines: $4=uncompressed $5=compressed sectors; `replicas user`
+  `[0 1]`=SSD, `[2 3]`=HDD; backlog from top-level `rebalance_work` counter in
+  sectors). Uses `find` not a shell glob (zsh `nomatch` safe on sparks).
+- **bcachefs CLI:** NOT installed. Debian 13 (trixie) **dropped `bcachefs-tools`**
+  (2025 upstream/Rust-version split), so no apt package. Build deps ARE present
+  (cargo 1.85, rustc, libclang-dev). Install = build from source:
+  `git clone --depth 1 https://github.com/koverstreet/bcachefs-tools && cd
+  bcachefs-tools && nice -n19 make -j2 && sudo make install`. (Agent auto-mode
+  blocks the git-clone+make as untrusted-code integration — run it manually.)
+  CLI mostly pretty-prints the same accounting we already read from sysfs; the
+  only extras are per-device free space + fragmentation via `bcachefs fs usage -h`.
 
 ## Swappiness
 

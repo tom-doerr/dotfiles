@@ -15,7 +15,12 @@ cache="/tmp/spark_$host"
 cmd='if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits | head -1; else echo "-1 0"; fi
 awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
-disk=/; [ -d /volume1 ] && disk=/volume1; echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")
+disk=/
+if grep -q " /pool " /proc/mounts 2>/dev/null; then disk=/pool
+elif grep -q " /volume1 " /proc/mounts 2>/dev/null; then disk=/volume1
+elif [ -d /pool ] || [ -d /volume1 ]; then disk=""
+fi
+if [ -n "$disk" ]; then echo $(df "$disk" --output=pcent | tail -1 | tr -dc "0-9"); else echo -1; fi
 awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 if command -v zramctl >/dev/null 2>&1; then
   zramctl -b --raw --noheadings -o DATA,COMPR 2>/dev/null | awk "{zd+=\$1; zc+=\$2} END{print zd+0, zc+0}"
@@ -33,15 +38,21 @@ awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
 awk "NR>1 && \$1 !~ /^\\/dev\\/zram/ {if(\$2==\"partition\"){nvs+=\$3;nv+=\$4}else if(\$2==\"file\"){sfs+=\$3;sf+=\$4}} END{print nv+0, nvs+0, sf+0, sfs+0}" /proc/swaps 2>/dev/null
 if [ -r /tmp/waybar-nvme-cache-dirty ]; then awk "NR==1{print \$1+0; exit}" /tmp/waybar-nvme-cache-dirty; else echo -1; fi
 awk "/^full /{for(i=1;i<=NF;i++)if(\$i~/^avg60=/){v=\$i; sub(/^avg60=/,0,v); print v+0; found=1}}END{if(!found)print -1}" /proc/pressure/io 2>/dev/null
-for dev in md1 md2; do
-  stat="/sys/block/$dev/stat"
-  if [ -r "$stat" ]; then awk "{print \$10}" "$stat"; else echo -1; fi
-done'
+acc=$(find /sys/fs/bcachefs -name accounting 2>/dev/null | head -1)
+if [ -n "$acc" ] && [ -r "$acc" ]; then
+  awk "/^compression /{u+=\$4;c+=\$5} END{print int((u-c)*512/1073741824)}" "$acc"
+  awk "/replicas user/{if(index(\$0,\"[0 1]\"))s=\$NF; if(index(\$0,\"[2 3]\"))h=\$NF} END{if(s+h>0)print int(s*100/(s+h)); else print -1}" "$acc"
+  awk "/^compression /{u+=\$4;c+=\$5} END{if(c>0)print int(u*100/c); else print -1}" "$acc"
+  awk "/^rebalance_work /{v=\$NF;f=1} END{if(f)print int(v*512/1073741824); else print -1}" "$acc"
+else
+  echo -1; echo -1; echo -1; echo -1
+fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
+# NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog=rebalance backlog GiB. md1/md2 RAID devices no longer exist post-reinstall.
 cached=$(cat "$cache" 2>/dev/null)
 case $(echo "$cached" | wc -w) in
-  26) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u pmd1t pmd2t pci pct _ <<< "$cached" ;;
+  26) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved bc_ssd bc_ratio bc_backlog pci pct _ <<< "$cached" ;;
   22) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop pci pct _ <<< "$cached" ;;
   21) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd pci pct _ <<< "$cached"; iop=-1 ;;
   20) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs pci pct _ <<< "$cached"; ncd=-1; iop=-1 ;;
@@ -49,7 +60,6 @@ case $(echo "$cached" | wc -w) in
   17) read -r g p c m d prx ptx pt zd zc zse zs zw nv pci pct _ <<< "$cached"; nvs=0; sf=0; sfs=0; ncd=-1; iop=-1 ;;
 esac
 prev_rx=$prx; prev_tx=$ptx; prev_pt=$pt
-prev_md1t=$pmd1t; prev_md2t=$pmd2t
 rate_prx=$prx; rate_ptx=$ptx; rate_dt=1
 now=$(date +%s); fetch_ok=0
 
@@ -74,24 +84,14 @@ else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" 
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop md1t md2t <<< "$(echo "$data" | tr ',\n' '  ')"
-  p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}; md1t=${md1t:--1}; md2t=${md2t:--1}
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved bc_ssd bc_ratio bc_backlog <<< "$(echo "$data" | tr ',\n' '  ')"
+  p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}
+  bc_saved=${bc_saved:--1}; bc_ssd=${bc_ssd:--1}; bc_ratio=${bc_ratio:--1}; bc_backlog=${bc_backlog:--1}
   rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
   if [[ -n "$prev_pt" ]]; then
     rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
   fi
-  if [[ ${prev_md1t:--1} -ge 0 && ${md1t:--1} -ge ${prev_md1t:--1} ]]; then
-    md1u=$(( (md1t - prev_md1t + rate_dt * 5) / (rate_dt * 10) ))
-    [[ $md1u -gt 100 ]] && md1u=100
-  else
-    md1u=${md1u:--1}
-  fi
-  if [[ ${prev_md2t:--1} -ge 0 && ${md2t:--1} -ge ${prev_md2t:--1} ]]; then
-    md2u=$(( (md2t - prev_md2t + rate_dt * 5) / (rate_dt * 10) ))
-    [[ $md2u -gt 100 ]] && md2u=100
-  else
-    md2u=${md2u:--1}
-  fi
+  # bcachefs metrics (bc_saved/bc_ssd/bc_ratio/bc_backlog) are absolute, read directly above
   # CPU % from jiffies delta (with sanity checks)
   if [[ -n "$pci" && -n "$pct" && $ci -ge $pci && $ct -gt $pct ]]; then
     di=$((ci - pci)); dtc=$((ct - pct))
@@ -102,7 +102,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${md1u:--1} ${md2u:--1} ${md1t:--1} ${md2t:--1} $ci $ct _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${bc_ssd:--1} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct _" > "$cache"
   pt=$now; fetch_ok=1
 else
   rx=$prx; tx=$ptx
@@ -131,17 +131,19 @@ rxs=$(( (rx - ${rate_prx:-$rx}) / rate_dt )); txs=$(( (tx - ${rate_ptx:-$tx}) / 
 gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
-dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
+if [[ ${d:--1} -lt 0 ]]; then
+  dskv=$(red "$(pad "DSK NO-POOL" 17)")
+else
+  dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $d)" "$d")" 17); [[ $d -gt 90 ]] && dskv=$(red "$dskv")
+fi
 iopv=""; iop_pct=$(awk -v p="${iop:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
 if [[ $iop_pct -ge 0 ]]; then iopv=$(printf "%-7s" "IO:${iop_pct}%"); [[ $iop_pct -ge 20 ]] && iopv=$(red "$iopv"); fi
 mdv=""
-if [[ "$host" == "nas" ]]; then
-  md1_pct=$(awk -v p="${md1u:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
-  md2_pct=$(awk -v p="${md2u:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
-  if [[ $md1_pct -ge 0 || $md2_pct -ge 0 ]]; then
-    mdv=$(printf "%-15s" "MD1:${md1_pct}% MD2:${md2_pct}%")
-    [[ $md1_pct -ge 90 || $md2_pct -ge 90 ]] && mdv=$(red "$mdv")
-  fi
+if [[ "$host" == "nas" && ${bc_saved:--1} -ge 0 ]]; then
+  # bcachefs: saved GiB / overall ratio / SSD fast-tier share % / rebalance backlog GiB
+  ratio=$(awk -v r="${bc_ratio:--1}" 'BEGIN{if(r<0)print "?"; else printf "%.2f", r/100}')
+  mdv=$(printf "%-28s" "CMP:${bc_saved}G/${ratio}x SSD:${bc_ssd}% RB:${bc_backlog}G")
+  [[ ${bc_backlog:-0} -ge 100 ]] && mdv=$(red "$mdv")
 fi
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-16s", v}'); fi
