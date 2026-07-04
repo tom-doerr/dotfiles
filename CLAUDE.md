@@ -231,6 +231,18 @@ background→hdd; 2× replicas; lz4+zstd).
   CLI mostly pretty-prints the same accounting we already read from sysfs; the
   only extras are per-device free space + fragmentation via `bcachefs fs usage -h`.
 
+### SSH probe stalls when NAS is loaded (fixed Jul 2026)
+When codex's recovery copy loaded the NAS, the bar sat stale for 20+ min
+(`963s!`, `1486s!`). Two causes in `ssh_opts`, both in play (verified 0/8 → 8/8):
+1. `ServerAliveInterval=1 ServerAliveCountMax=1` dropped the connection after ONE
+   second of unresponsiveness — a busy-but-reachable host gets declared dead.
+2. `ControlPath=none` forced a fresh TCP+handshake per probe; under load a fresh
+   connect fails, but a new channel on the warm multiplexed master (from
+   `~/.ssh/config`, `ControlMaster auto` + `ControlPersist`) is instant.
+Fix: removed both — reuse the master, no aggressive keepalive. Dead-host detection
+still bounded by `timeout --kill-after=1s $ssh_timeout` + `ConnectTimeout`. NOT a
+network/DNS/auth issue (ping 1.7ms, bare ssh 0.01s, cmd runs 0.03s on the NAS).
+
 ## Swappiness
 
 High iowait (70-80%) despite free RAM was caused by `vm.swappiness=190`.

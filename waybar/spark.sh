@@ -74,10 +74,13 @@ ssh_opts=(
   -o BatchMode=yes
   -o ConnectTimeout="$connect_timeout"
   -o ConnectionAttempts=1
-  -o ServerAliveInterval=1
-  -o ServerAliveCountMax=1
-  -o ControlMaster=no
-  -o ControlPath=none
+  # Reuse the SSH multiplexed master from ~/.ssh/config (do NOT force ControlPath=none,
+  # do NOT set an aggressive ServerAlive keepalive). Under heavy NAS load, a fresh
+  # TCP+handshake fails and a 1s keepalive (ServerAliveInterval=1/CountMax=1) drops the
+  # connection after one missed ping, so the bar sat stale for 20+ min. A new channel on
+  # the warm master is instant instead. Failure of a truly dead host is still bounded by
+  # the `timeout --kill-after=1s $ssh_timeout` wrapper + ConnectTimeout.
+  # Verified under codex's copy load: reuse + no keepalive = 8/8, vs 0/8 with either.
 )
 if [[ "$host" == "$(hostname)" ]]; then data=$(eval "$cmd" 2>/dev/null)
 else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" "$cmd" 2>/dev/null); fi
