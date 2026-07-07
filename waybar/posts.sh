@@ -8,4 +8,4 @@ if [[ $count_rc -ne 0 || $last_rc -ne 0 ]]; then
   exit 0
 fi
 age="${last:-0}s"; [[ ${last:-0} -gt 1000 ]] && age="<span color='#ff5555'>$age</span>"
-echo "PQ $count $age    "
+echo "PQ $count $age"

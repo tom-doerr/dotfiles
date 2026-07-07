@@ -43,3 +43,15 @@ window#waybar {
     padding: 0 2px;
     color: #6c7086;
 }
+
+#custom-posts {
+    margin-right: 6px;
+}
+
+#custom-impressions {
+    margin-right: 20px;
+}
+
+#custom-vast-instances {
+    margin-right: 12px;
+}

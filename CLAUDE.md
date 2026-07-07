@@ -193,7 +193,7 @@ Requires NVIDIA driver 580.95.05 series.
 
 Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
 `custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
-`spark.sh` parses a fixed **26-field** positional cache at `/tmp/spark_<host>`;
+`spark.sh` parses a fixed **33-field** positional cache at `/tmp/spark_<host>`;
 changing emitted fields means updating `cmd`, the success `read`, the cache
 `echo`, and the `case $(... wc -w)` blocks — fragile, so prefer repurposing slots.
 
@@ -214,17 +214,36 @@ background→hdd; 2× replicas; lz4+zstd).
   red `DSK NO-POOL` instead of silently reporting `/`. Sparks legitimately use `/`.
   The DSK label shows human-readable **used storage** (e.g. `7.7T`), not %, next to
   the fill bar; the probe emits `pct|used` packed into the one disk field (`d` var
-  split client-side on `|`), so the 26-field cache format is unchanged.
-- `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). Their
-  4 cache slots (positions 20-23) are **repurposed on the NAS for 4 bcachefs
-  metrics** (kept field count at 26 — no parser surgery): `bc_saved`=compression
-  saved GiB, `bc_ssd`=SSD fast-tier share %, `bc_ratio`=overall ratio ×100,
-  `bc_backlog`=rebalance backlog GiB. Displayed (NAS only):
-  `CMP:<saved>G/<ratio>x SSD:<share>% RB:<backlog>G`, red if backlog ≥100 GiB.
-- Stats read non-root from `/sys/fs/bcachefs/<uuid>/internal/accounting`
-  (`compression` lines: $4=uncompressed $5=compressed sectors; `replicas user`
-  `[0 1]`=SSD, `[2 3]`=HDD; backlog from top-level `rebalance_work` counter in
-  sectors). Uses `find` not a shell glob (zsh `nomatch` safe on sparks).
+  split client-side on `|`), so DSK didn't grow the field count (it later grew
+  26→33 for bcachefs IO rates — below).
+- `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). The
+  NAS module packs **11 bcachefs metrics** into the cache: slots 20-23 = `bc_saved`
+  (compression saved GiB), `du` (cumulative `data_update` bytes → destage rate),
+  `bc_ratio` (blended ratio ×100), `bc_backlog` (reconcile backlog GiB); slots 26-32
+  (grew format 26→33) = SSD/HDD tier cumulative sectors r/w (throughput), HDD
+  writes-completed & ms-writing (write await, diskstats fields 8/11), and summed
+  per-drive `dev-*/io_errors` (read+write+checksum, creation-section → `errs`).
+  Displayed (NAS only): `CMP:<saved>/<ratio>x RB:<backlog>G DST:<destage>M` then
+  `SSD <r>↓<w>↑ HDD <r>↓<w>↑ <await>ms` (MB/s + HDD-tier write await), plus a red
+  `ERR:<n>` shown only when summed drive io_errors > 0 (silent when healthy); mdv
+  red if backlog ≥100 GiB. Dropped the old
+  `bc_ssd` SSD-share (redundant with the DSK-field `SSD:<fill>%`).
+- **Sysfs sources changed with the DKMS bcachefs upgrade (Jul 2026):** the old
+  monolithic `internal/accounting` file is GONE — `rebalance` → `reconcile` refactor.
+  New non-root sources under `/sys/fs/bcachefs/<uuid>/`: `compression_stats` (human
+  `T/G/M/k` — `tb()` awk parses suffix→bytes; saved=Σ(uncompressed−compressed) over
+  lz4+zstd, ratio incl. incompressible), `counters/data_update` "since mount" (destage
+  cumulative), `reconcile_scan_pending` (backlog, 0=caught up; was `rebalance_work`).
+  Symptom of the break: `find -name accounting` empty → whole bcachefs block (gated on
+  `bc_saved≥0`) vanished = "RB no longer showing".
+- Per-tier throughput sums `/proc/diskstats` sectors ($6 read, $10 written, ×512)
+  by bcachefs **label** (`ssd.*`/`hdd.*`) resolved from `dev-*/label`+`dev-*/block` —
+  robust to `sdh`/`sdi` renumbering across reboots. Rates = cache deltas over
+  `rate_dt` (same machinery as network rx/tx), clamped ≥0. HDD **write await** =
+  Δms-writing/Δwrites-completed (fields 11/8) = tier saturation signal (~1ms cache-ack
+  when idle → 10s-100s ms under load; measures device-ack, NOT platter durability
+  unless the write is FUA/flush). Sparks emit defaults
+  (constant field count) and gate the whole block off (`host==nas`).
 - **bcachefs CLI:** NOT installed. Debian 13 (trixie) **dropped `bcachefs-tools`**
   (2025 upstream/Rust-version split), so no apt package. Build deps ARE present
   (cargo 1.85, rustc, libclang-dev). Install = build from source:
