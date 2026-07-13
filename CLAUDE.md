@@ -89,6 +89,11 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   (then restore via `systemctl --user start wallpaper-switcher.service`).
 - All three Dells: `bitdepth = 10` (XBGR2101010 at full 120Hz, DSC
   handles the bandwidth; tested on FCZKPF4 first, then extended Jul 13).
+- HDR test on FCZKPF4 (Jul 13): `cm = hdr` + `sdr_max_luminance = 200`
+  set but FALLS BACK to srgb — Hyprland log: "connector Unknown-4 crtc
+  doesn't support HDR (0)" (EDID advertises no HDR EOTFs; TV shows "(7)").
+  Likely cause: Smart HDR disabled in the Dell OSD → monitor omits HDR
+  from EDID. Enable via OSD joystick, then re-check log/`hyprctl monitors`.
 - Workspaces pinned left→right: 4 (FCZKPF4), 5 (58ZKPF4), 6 (9FZKPF4),
   with `default:true, persistent:true` — they return home when a Dell
   reconnects and survive as empty workspaces.
