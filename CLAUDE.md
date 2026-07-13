@@ -71,18 +71,22 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 ### Setup
 - Config: `~/git/dotfiles/hypr/hyprland.conf` (symlinked)
 - Display: Samsung S95D 55" OLED at 4K@120Hz
-- Second display: Dell U2725QE 27" 4K, portrait (see below)
+- Secondary: 3x Dell U2725QE 27" 4K, portrait row below the TV (see below)
 - Terminal: Ghostty with frosted glass blur
 
-### Dell U2725QE Portrait Monitor (Jul 2026)
-- Connects as `Unknown-4` — NVIDIA driver on GB10 doesn't report proper
+### 3x Dell U2725QE Portrait Monitors (Jul 2026)
+- Connect as `Unknown-2/3/4` — NVIDIA driver on GB10 doesn't report proper
   connector type names for DP/USB-C outputs, so Hyprland shows "Unknown-N".
-- Config matches on `desc:Dell Inc. DELL U2725QE FCZKPF4` instead of the
+- Config matches on `desc:Dell Inc. DELL U2725QE <serial>` instead of the
   connector name (robust against Unknown-N renumbering across reboots).
-- Physically rotated CCW (top edge on the left) → `transform = 3` (270°).
-  transform 1 was upside down for this orientation.
-- monitorv2 block: 3840x2160@120, position 3840x0 (right of Samsung),
-  scale 1.25 (logical 1728x3072 portrait; both dims divide cleanly at 1.25).
+- Layout: portrait row BELOW the TV. Left→right: FCZKPF4 (0x2160),
+  58ZKPF4 (1728x2160), 9FZKPF4 (3456x2160); TV centered above at 672x0
+  (Dell row 5184 logical wide vs TV 3840).
+- All three: 3840x2160@120, scale 1.25 (logical 1728x3072, divides cleanly),
+  `transform = 1` = top edge physically on the RIGHT. `transform = 3` = top
+  on the LEFT (first Dell's original orientation before its 180° flip).
+- Identify which panel is which: `swww clear FF0000 --outputs Unknown-4`
+  (then restore via `systemctl --user start wallpaper-switcher.service`).
 
 ### Keyboard
 - ZSA Voyager (compact split, no arrow keys)
