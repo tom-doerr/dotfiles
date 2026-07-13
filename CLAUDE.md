@@ -87,6 +87,9 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   on the LEFT (first Dell's original orientation before its 180° flip).
 - Identify which panel is which: `swww clear FF0000 --outputs Unknown-4`
   (then restore via `systemctl --user start wallpaper-switcher.service`).
+- Workspaces pinned left→right: 4 (FCZKPF4), 5 (58ZKPF4), 6 (9FZKPF4),
+  with `default:true, persistent:true` — they return home when a Dell
+  reconnects and survive as empty workspaces.
 
 ### Keyboard
 - ZSA Voyager (compact split, no arrow keys)
