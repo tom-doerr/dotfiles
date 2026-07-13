@@ -71,7 +71,18 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 ### Setup
 - Config: `~/git/dotfiles/hypr/hyprland.conf` (symlinked)
 - Display: Samsung S95D 55" OLED at 4K@120Hz
+- Second display: Dell U2725QE 27" 4K, portrait (see below)
 - Terminal: Ghostty with frosted glass blur
+
+### Dell U2725QE Portrait Monitor (Jul 2026)
+- Connects as `Unknown-4` — NVIDIA driver on GB10 doesn't report proper
+  connector type names for DP/USB-C outputs, so Hyprland shows "Unknown-N".
+- Config matches on `desc:Dell Inc. DELL U2725QE FCZKPF4` instead of the
+  connector name (robust against Unknown-N renumbering across reboots).
+- Physically rotated CCW (top edge on the left) → `transform = 3` (270°).
+  transform 1 was upside down for this orientation.
+- monitorv2 block: 3840x2160@60, position 3840x0 (right of Samsung), scale 1.
+  Panel supports 120Hz (3840x2160@120) if ever wanted.
 
 ### Keyboard
 - ZSA Voyager (compact split, no arrow keys)
@@ -193,7 +204,7 @@ Requires NVIDIA driver 580.95.05 series.
 
 Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
 `custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
-`spark.sh` parses a fixed **33-field** positional cache at `/tmp/spark_<host>`;
+`spark.sh` parses a fixed **38-field** positional cache at `/tmp/spark_<host>`;
 changing emitted fields means updating `cmd`, the success `read`, the cache
 `echo`, and the `case $(... wc -w)` blocks — fragile, so prefer repurposing slots.
 
@@ -215,25 +226,35 @@ background→hdd; 2× replicas; lz4+zstd).
   The DSK label shows human-readable **used storage** (e.g. `7.7T`), not %, next to
   the fill bar; the probe emits `pct|used` packed into the one disk field (`d` var
   split client-side on `|`), so DSK didn't grow the field count (it later grew
-  26→33 for bcachefs IO rates — below).
+  26→38 for bcachefs IO rates + per-algo compression — below).
 - `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). The
-  NAS module packs **11 bcachefs metrics** into the cache: slots 20-23 = `bc_saved`
-  (compression saved GiB), `du` (cumulative `data_update` bytes → destage rate),
-  `bc_ratio` (blended ratio ×100), `bc_backlog` (reconcile backlog GiB); slots 26-32
+  NAS module packs **16 bcachefs metrics** into the cache: slots 20-23 = `bc_saved`
+  (compression saved GiB), `du` (cumulative `data_update`+`reconcile_data` bytes → DST rate),
+  `bc_ratio` (blended ratio ×100), `bc_backlog` (vestigial — RB dropped from display); slots 26-32
   (grew format 26→33) = SSD/HDD tier cumulative sectors r/w (throughput), HDD
   writes-completed & ms-writing (write await, diskstats fields 8/11), and summed
-  per-drive `dev-*/io_errors` (read+write+checksum, creation-section → `errs`).
-  Displayed (NAS only): `CMP:<saved>/<ratio>x RB:<backlog>G DST:<destage>M` then
-  `SSD <r>↓<w>↑ HDD <r>↓<w>↑ <await>ms` (MB/s + HDD-tier write await), plus a red
-  `ERR:<n>` shown only when summed drive io_errors > 0 (silent when healthy); mdv
-  red if backlog ≥100 GiB. Dropped the old
-  `bc_ssd` SSD-share (redundant with the DSK-field `SSD:<fill>%`).
+  per-drive `dev-*/io_errors` (read+write+checksum, creation-section → `errs`); slots 33-37
+  = per-algo compression from `compression_stats` (`lz4log lz4r zstdlog zstdr inclog`:
+  lz4/zstd logical-GiB + ratio×100, incompressible logical-GiB).
+  Displayed (NAS only): `CMP:<saved>/<ratio>x lz4 <log>T/<r>x zstd <log>T/<r>x inc <log>T DST:<rate>M`
+  (overall saved/ratio kept, PLUS per-algo logical size + ratio; lz4=pending-zstd-recompress,
+  inc=incompressible) then
+  `SSD <w>↓<r>↑MB HDD <w>↓<r>↑MB <await>ms` — writes↓ on the LEFT, reads↑ on the RIGHT
+  (user pref; note this is OPPOSITE the network rx/tx ↓↑ at the bar's end), fixed-width
+  %4d MB/s columns so digits change in place without shifting layout, + HDD write await.
+  Plus a red `ERR:<n>` shown only when summed drive io_errors > 0 (silent when healthy).
+  Dropped the old `bc_ssd` SSD-share (redundant with DSK-field `SSD:<fill>%`) and the RB field.
 - **Sysfs sources changed with the DKMS bcachefs upgrade (Jul 2026):** the old
   monolithic `internal/accounting` file is GONE — `rebalance` → `reconcile` refactor.
   New non-root sources under `/sys/fs/bcachefs/<uuid>/`: `compression_stats` (human
-  `T/G/M/k` — `tb()` awk parses suffix→bytes; saved=Σ(uncompressed−compressed) over
-  lz4+zstd, ratio incl. incompressible), `counters/data_update` "since mount" (destage
-  cumulative), `reconcile_scan_pending` (backlog, 0=caught up; was `rebalance_work`).
+  `T/G/M/k` — `tb()` awk parses suffix→bytes; per-algo logical(uncompressed)+ratio for
+  lz4/zstd/incompressible extracted directly for display; `bc_saved` gate still =
+  Σ(uncompressed−compressed) over lz4+zstd), `counters/data_update`+`counters/reconcile_data`
+  "since mount" summed (DST = background-movement rate: copygc + reconcile). **RB was
+  DROPPED (Jul 8):** `reconcile_scan_pending` (its old source) tracks only the SCAN queue
+  — it stays 0 once the scan has found the work, NOT pending bytes — so it read 0 while
+  reconcile churned 8T of `reconcile_data`. Misleading; this bcachefs version exposes no
+  clean rebalance-backlog counter, and `reconcile_data` in DST captures the activity instead.
   Symptom of the break: `find -name accounting` empty → whole bcachefs block (gated on
   `bc_saved≥0`) vanished = "RB no longer showing".
 - Per-tier throughput sums `/proc/diskstats` sectors ($6 read, $10 written, ×512)
