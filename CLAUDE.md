@@ -94,6 +94,18 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   doesn't support HDR (0)" (EDID advertises no HDR EOTFs; TV shows "(7)").
   Likely cause: Smart HDR disabled in the Dell OSD → monitor omits HDR
   from EDID. Enable via OSD joystick, then re-check log/`hyprctl monitors`.
+- **Jul 13 window-destruction incident:** enabling DisplayHDR 600 in the
+  left Dell's OSD re-enumerated its TB hub (keyboard+mouse on monitor USB
+  dropped) and retrained the daisy chain → RIGHT Dell (Unknown-2) flapped
+  → ~25 windows died: GTK4 apps crash on output removal (Ghostty,
+  Nautilus); Chromium/Firefox/Bambu survive. Same app-crash pattern as
+  the Jul 1 HDMI incident. hdmi-force-on only pins the TV's connector.
+  OSD capability changes = hot-replug of monitor + downstream chain —
+  close/park GTK4 windows first.
+- HDR STILL srgb after the OSD change: EDID now has the PQ block
+  (verified via /sys/class/drm/.../edid) but the connector's HDR caps are
+  probed at connect-time — Unknown-4 itself never flapped, so the probe
+  stays "(0)". Needs a replug of THAT monitor (risks GTK4 windows again).
 - Workspaces pinned left→right: 4 (FCZKPF4), 5 (58ZKPF4), 6 (9FZKPF4),
   with `default:true, persistent:true` — they return home when a Dell
   reconnects and survive as empty workspaces.
