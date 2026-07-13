@@ -81,8 +81,8 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   connector name (robust against Unknown-N renumbering across reboots).
 - Physically rotated CCW (top edge on the left) → `transform = 3` (270°).
   transform 1 was upside down for this orientation.
-- monitorv2 block: 3840x2160@60, position 3840x0 (right of Samsung), scale 1.
-  Panel supports 120Hz (3840x2160@120) if ever wanted.
+- monitorv2 block: 3840x2160@120, position 3840x0 (right of Samsung),
+  scale 1.25 (logical 1728x3072 portrait; both dims divide cleanly at 1.25).
 
 ### Keyboard
 - ZSA Voyager (compact split, no arrow keys)
