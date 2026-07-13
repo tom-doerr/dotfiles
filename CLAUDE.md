@@ -104,6 +104,9 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   close/park GTK4 windows first.
   **Mitigated Jul 13:** hdmi-force-on.service now pins ALL connected
   connectors via `/usr/local/bin/drm-force-on` (see ~/CLAUDE.md).
+- Forced-connector side effect: power-cycled Dell = no signal (DP link
+  not retrained). Fix: `hyprctl dispatch dpms off Unknown-N` then
+  `dpms on Unknown-N` — modeset retrains the link, no window loss.
 - HDR STILL srgb after the OSD change: EDID now has the PQ block
   (verified via /sys/class/drm/.../edid) but the connector's HDR caps are
   probed at connect-time — Unknown-4 itself never flapped, so the probe
