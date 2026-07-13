@@ -107,10 +107,15 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 - Forced-connector side effect: power-cycled Dell = no signal (DP link
   not retrained). Fix: `hyprctl dispatch dpms off Unknown-N` then
   `dpms on Unknown-N` — modeset retrains the link, no window loss.
-- HDR STILL srgb after the OSD change: EDID now has the PQ block
-  (verified via /sys/class/drm/.../edid) but the connector's HDR caps are
-  probed at connect-time — Unknown-4 itself never flapped, so the probe
-  stays "(0)". Needs a replug of THAT monitor (risks GTK4 windows again).
+- **HDR on the Dells = DEAD END (Jul 13, driver limitation).** After a
+  fake replug (sysfs `echo off`/`detect`) Hyprland accepted `cm = hdr`
+  (EDID re-parse saw the PQ block) BUT the NVIDIA driver exposes
+  HDR_OUTPUT_METADATA only on HDMI, not DP/USB-C ("crtc doesn't support
+  HDR (0)" persists) → monitor decodes PQ as SDR = washed out/dim.
+  Reverted to srgb + bitdepth 10. Don't retry until the NVIDIA driver
+  supports DP HDR metadata. Fake-replug recipe (no cable pull needed):
+  `echo off > .../status; sleep 4; echo detect > .../status`, then
+  `systemctl restart hdmi-force-on` to re-arm forcing.
 - Workspaces pinned left→right: 4 (FCZKPF4), 5 (58ZKPF4), 6 (9FZKPF4),
   with `default:true, persistent:true` — they return home when a Dell
   reconnects and survive as empty workspaces.
