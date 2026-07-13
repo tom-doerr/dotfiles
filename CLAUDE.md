@@ -102,6 +102,8 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   the Jul 1 HDMI incident. hdmi-force-on only pins the TV's connector.
   OSD capability changes = hot-replug of monitor + downstream chain —
   close/park GTK4 windows first.
+  **Mitigated Jul 13:** hdmi-force-on.service now pins ALL connected
+  connectors via `/usr/local/bin/drm-force-on` (see ~/CLAUDE.md).
 - HDR STILL srgb after the OSD change: EDID now has the PQ block
   (verified via /sys/class/drm/.../edid) but the connector's HDR caps are
   probed at connect-time — Unknown-4 itself never flapped, so the probe
