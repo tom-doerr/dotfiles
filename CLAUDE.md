@@ -238,6 +238,17 @@ Requires NVIDIA driver 580.95.05 series.
 
 ## Waybar Spark Cluster Monitoring
 
+### Layout: 5 stacked bars on the MIDDLE Dell only (Jul 13 2026)
+Config (in `~/git/private/waybar/config`) defines 5 bars, all
+`"output": "Unknown-3"` (middle Dell, 1728px logical portrait):
+main (UI row, window title max-length 30), spark1, spark2, spark3, nas —
+one spark host per row since any pair (~275 chars) exceeds the ~221-char
+width at 13px. The nas row (214 chars) needs `window#waybar.nas *
+{ font-size: 12px; }` in style.css or it overflows by 12px.
+Bars no longer appear on the TV/outer Dells (they reserve no top space).
+**SIGUSR2 reloads CSS but NOT bar structure** — config changes (outputs,
+bar count) need a full waybar restart (`pkill -x waybar && waybar &`).
+
 Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
 `custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
 `spark.sh` parses a fixed **38-field** positional cache at `/tmp/spark_<host>`;

@@ -55,3 +55,8 @@ window#waybar {
 #custom-vast-instances {
     margin-right: 12px;
 }
+
+/* NAS row is 214 chars — 13px overflows the 1728px portrait Dell by 12px */
+window#waybar.nas * {
+    font-size: 12px;
+}
