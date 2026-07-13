@@ -248,6 +248,18 @@ width at 13px. The nas row (214 chars) needs `window#waybar.nas *
 Bars no longer appear on the TV/outer Dells (they reserve no top space).
 **SIGUSR2 reloads CSS but NOT bar structure** — config changes (outputs,
 bar count) need a full waybar restart (`pkill -x waybar && waybar &`).
+SIGUSR2 with the multi-bar config also logs "Cannot merge config" and
+later SEGFAULTed on hyprctl reload — avoid it, always full-restart.
+**Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
+socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
+without the symlink the workspaces/window modules silently get NO data.
+`exec-once = ln -sfn $XDG_RUNTIME_DIR/hypr /tmp/hypr` in hyprland.conf.
+
+### Cursor invisible wall on rotated Dells (fixed Jul 13)
+NVIDIA hw cursor plane rejects positions on transformed+fractional-scale
+outputs → mouse hits invisible walls (stuck at x=3888 mid-Dell; absolute
+warps worked, relative motion clamped). Fix: `cursor {
+no_hardware_cursors = true }` in hyprland.conf (SW cursor, negligible cost).
 
 Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
 `custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
