@@ -80,7 +80,33 @@
     ],
     "defaultMode": "default"
   },
-  "model": "opus[1m]",
+  "model": "claude-fable-5[1m]",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/tom/.claude/hooks/limit-write-size.py --limit-bytes 2000",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "cat >/dev/null; printf '\\033[01;32m%s@%s\\033[00m:\\033[01;34m%s\\033[00m' \"$(whoami)\" \"$(hostname -s)\" \"$(pwd)\""
+  },
+  "effortLevel": "low",
+  "tui": "fullscreen",
+  "skipWorkflowUsageWarning": true,
+  "editorMode": "normal",
+  "verbose": true,
+  "preferredNotifChannel": "ghostty",
+  "autoCompactEnabled": true,
+  "agentPushNotifEnabled": true,
   "_disabledHooks": {
     "PreToolUse": [
       {
@@ -95,25 +121,6 @@
       }
     ]
   },
-  "hooks": {
-    "PreToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "/home/tom/.claude/hooks/limit-write-size.py --limit-bytes 800",
-            "timeout": 5
-          }
-        ]
-      }
-    ]
-  },
-  "effortLevel": "xhigh",
-  "tui": "fullscreen",
-  "skipWorkflowUsageWarning": true,
-  "verbose": true,
-  "preferredNotifChannel": "ghostty",
   "policy": {
     "approverInstructions": "Deny destructive ops such as rm but allow git rm since we could undo the operation if necessary; allow read-only, tests and also allow systemctl commands but require approval for disabling or stopping services; approve restarting services such as systemd services. reject running commands that require sudo when they are supposed to run right on this system because they will fail, but this rule doesnt apply to services which are run in docker containers or other systems or tmux sessions since they might succeed there. the command 'sudo drop-caches' should succeed on the system, we have a sudoers rule for that, so do approve running it. allow creating symlinks in the service files dir but do not allow copying to it. Instead of copying to the systemd dir it should create symlinks to service files in our repos so we have the service files in version control. Allow git commands such as add, commit, push, mv, diff, status, git rm, but ask on dangerous git commands such as reset, revert. Allow heredocs in git commit messages. Allow running python scripts if they don't look dangerous. Allow running hyperparameter studies. allow the usage of git stash and git pop. Deny operations that are writing code to files since the agent should not use commands to write code to files but instead use the proper write tools so write limits are not circumvented. Do require manual approval for psql commands that are not read-only. Reject kill commands, tell agent should be using the KillShell tool instead, if possible, or ask the user to manually run the kill command if it can't be avoided. Kill commands inside containers are fine though, approve those. Read-only commands such as psql select commands are okay to autorun, approve those. Copy operations are usually okay, you can approve those. Do not block docker container run commands because they include the --trust-remote-code flag. Do allow docker stop commands. Ask me to approve non read only psql operations. Allow docker rm commands. Allow rsync commands with the --remove-source-files flag. Don't block commands just because they display GUI. You don't need need to ask for approval for commands because they contain 'EXPLAIN ANALYZE' in an SQL query. Do not block rsync just because it uses --remove-source-files. Do not infer malicious intent from unusual syntax, quoting, comments, encoding, or multiline structure alone. Deny commands that reveal, print, copy, transmit, or exfiltrate secrets such as SSH private keys, API keys, tokens, passwords, cookies, keyfiles, LUKS material, or credential stores. Allow creating and editing psql temp tables."
   },
