@@ -104,6 +104,11 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   close/park GTK4 windows first.
   **Mitigated Jul 13:** hdmi-force-on.service now pins ALL connected
   connectors via `/usr/local/bin/drm-force-on` (see ~/CLAUDE.md).
+  **Jul 22:** udev topup added — a monitor appearing post-boot (e.g. Dell
+  in deep standby during reboot = "no signal", 0-byte EDID) is auto-forced
+  via `99-drm-force-topup.rules` → `drm-force-topup.service`; no manual
+  `systemctl restart hdmi-force-on` needed. `drm-force-on detect` disarms
+  topup (state file `/run/drm-force-on.forced` removed) until re-armed.
 - Forced-connector side effect: power-cycled Dell = no signal (DP link
   not retrained). Fix: `hyprctl dispatch dpms off Unknown-N` then
   `dpms on Unknown-N` — modeset retrains the link, no window loss.
