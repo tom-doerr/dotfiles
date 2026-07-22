@@ -245,10 +245,12 @@ Requires NVIDIA driver 580.95.05 series.
 
 ### Layout: 6 bars on the MIDDLE Dell only (Jul 13, +vast Jul 22 2026)
 Config (in `~/git/private/waybar/config`) defines 6 bars, all
-`"output": "Unknown-3"` (middle Dell, 1728px logical portrait): 5 top +
-1 BOTTOM ("vast": credit + per-instance $/h, GPU util %, VRAM used/total
-G from the instances API gpu_util/vmem_usage(GB)/gpu_ram(MB), 30s poll).
-Top: main (UI row, window title max-length 30), spark1, spark2, spark3, nas —
+`"output": "Unknown-3"` (middle Dell, 1728px logical portrait), all
+stacked TOP in config order; last row = "vast" (credit + per-instance
+$/h, GPU util %, VRAM used/total G from the instances API
+gpu_util/vmem_usage(GB)/gpu_ram(MB), 30s poll; was position bottom
+briefly — screen-bottom is a meter away from the top stack, reverted).
+Rows: main (UI row, window title max-length 30), spark1, spark2, spark3, nas —
 one spark host per row since any pair (~275 chars) exceeds the ~221-char
 width at 13px. The nas row (214 chars) needs `window#waybar.nas *
 { font-size: 12px; }` in style.css or it overflows by 12px.
