@@ -1,0 +1,27 @@
+#!/bin/sh
+# Toggle: span the focused window across the 3 portrait Dells <-> restore.
+# Span region: 0,2160 5184x3072 (left edge FCZKPF4 -> right edge 9FZKPF4).
+# Previous floating geometry is saved per window address, restored on untoggle.
+SX=0; SY=2160; SW=5184; SH=3072
+d="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/span-toggle"
+mkdir -p "$d"
+eval "$(hyprctl activewindow -j | python3 -c 'import json,sys;w=json.load(sys.stdin);print("addr=%s fl=%d wx=%d wy=%d ww=%d wh=%d"%(w["address"],w["floating"],w["at"][0],w["at"][1],w["size"][0],w["size"][1]))' 2>/dev/null)"
+[ -z "${addr:-}" ] && { echo "no active window" >&2; exit 1; }
+f="$d/$addr"
+if [ "$wx" = "$SX" ] && [ "$wy" = "$SY" ] && [ "$ww" = "$SW" ]; then
+    if [ -s "$f" ]; then
+        read -r px py pw ph < "$f"
+        rm -f "$f"
+        hyprctl --batch "dispatch movewindowpixel exact $px $py,address:$addr; dispatch resizewindowpixel exact $pw $ph,address:$addr" >/dev/null
+    else
+        hyprctl dispatch togglefloating "address:$addr" >/dev/null
+    fi
+else
+    if [ "$fl" = 1 ]; then
+        echo "$wx $wy $ww $wh" > "$f"
+    else
+        rm -f "$f"
+        hyprctl dispatch togglefloating "address:$addr" >/dev/null
+    fi
+    hyprctl --batch "dispatch movewindowpixel exact $SX $SY,address:$addr; dispatch resizewindowpixel exact $SW $SH,address:$addr" >/dev/null
+fi

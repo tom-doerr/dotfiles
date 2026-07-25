@@ -1,0 +1,9 @@
+#!/bin/sh
+# Play a URL (YouTube etc. via yt-dlp) spanning the 3 Dell monitors.
+# The waybar rows on the middle Dell are layer "top" and would cover the
+# video, so hide waybar (SIGUSR1 = visibility toggle) while mpv runs.
+# In mpv: w/W adjusts panscan live (letterbox <-> crop-fill).
+[ -n "${1:-}" ] || { echo "usage: yt-span <url>" >&2; exit 1; }
+pkill -SIGUSR1 -x waybar
+mpv --no-border --title=yt-span --hwdec=auto "$@"
+pkill -SIGUSR1 -x waybar
