@@ -23,5 +23,7 @@ else
         rm -f "$f"
         hyprctl dispatch togglefloating "address:$addr" >/dev/null
     fi
-    hyprctl --batch "dispatch movewindowpixel exact $SX $SY,address:$addr; dispatch resizewindowpixel exact $SW $SH,address:$addr" >/dev/null
+    # keep the spanned window under other floating windows (z follows focus;
+    # bottom-of-stack means popups/floats opened later stay visible on top)
+    hyprctl --batch "dispatch movewindowpixel exact $SX $SY,address:$addr; dispatch resizewindowpixel exact $SW $SH,address:$addr; dispatch alterzorder bottom,address:$addr" >/dev/null
 fi
