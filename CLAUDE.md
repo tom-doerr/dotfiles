@@ -70,18 +70,24 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 
 ### Setup
 - Config: `~/git/dotfiles/hypr/hyprland.conf` (symlinked)
-- Display: Samsung S95D 55" OLED at 4K@120Hz
-- Secondary: 3x Dell U2725QE 27" 4K, portrait row below the TV (see below)
+- Displays: 3x Dell U2725QE 27" 4K portrait row (see below)
+- Samsung S95D TV GONE since Jul 29 2026 (physically unplugged for
+  good; its monitorv2 block removed from the config). HDMI-A-1 now =
+  RIGHTMOST Dell (9FZKPF4), moved from USB-C DP to an HDMI cable.
 - Terminal: Ghostty with frosted glass blur
 
 ### 3x Dell U2725QE Portrait Monitors (Jul 2026)
 - Connect as `Unknown-2/3/4` — NVIDIA driver on GB10 doesn't report proper
   connector type names for DP/USB-C outputs, so Hyprland shows "Unknown-N".
+  Exception since Jul 29 2026: rightmost Dell (9FZKPF4) is on an HDMI
+  cable → proper name `HDMI-A-1` (HDMI connectors ARE typed correctly).
 - Config matches on `desc:Dell Inc. DELL U2725QE <serial>` instead of the
   connector name (robust against Unknown-N renumbering across reboots).
-- Layout: portrait row BELOW the TV. Left→right: FCZKPF4 (0x2160),
-  58ZKPF4 (1728x2160), 9FZKPF4 (3456x2160); TV centered above at 672x0
-  (Dell row 5184 logical wide vs TV 3840).
+- Layout: portrait row, left→right: FCZKPF4 (0x2160), 58ZKPF4
+  (1728x2160), 9FZKPF4 (3456x2160). Positions kept at y=2160 even
+  though the TV above (672x0) is gone since Jul 29 2026 — nothing
+  occupies y<2160 now; renormalizing to y=0 would churn saved window
+  geometries for no gain.
 - All three: 3840x2160@120, scale 1.25 (logical 1728x3072, divides cleanly),
   `transform = 1` = top edge physically on the RIGHT. `transform = 3` = top
   on the LEFT (first Dell's original orientation before its 180° flip).
