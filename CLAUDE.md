@@ -115,6 +115,12 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
   via `99-drm-force-topup.rules` → `drm-force-topup.service`; no manual
   `systemctl restart hdmi-force-on` needed. `drm-force-on detect` disarms
   topup (state file `/run/drm-force-on.forced` removed) until re-armed.
+  (hdmi-force-on itself DISABLED Jul 29 2026 — TV gone; topup now a no-op.)
+- **Driver 580.173.02 (Jul 29 2026): power-button wake of a deep-standby
+  Dell no longer emits ANY hotplug** (the "appears post-boot" behavior
+  above was 580.159). USB-C DP alt-mode never negotiates when the Dell
+  slept through boot; fix = unplug/replug the USB-C cable with the
+  monitor powered ON. Details in ~/CLAUDE.md.
 - Forced-connector side effect: power-cycled Dell = no signal (DP link
   not retrained). Fix: `hyprctl dispatch dpms off Unknown-N` then
   `dpms on Unknown-N` — modeset retrains the link, no window loss.
