@@ -367,6 +367,17 @@ Fix: removed both — reuse the master, no aggressive keepalive. Dead-host detec
 still bounded by `timeout --kill-after=1s $ssh_timeout` + `ConnectTimeout`. NOT a
 network/DNS/auth issue (ping 1.7ms, bare ssh 0.01s, cmd runs 0.03s on the NAS).
 
+### Weather module (`waybar/weather.sh`)
+Open-Meteo (no API key), coords for Mering. **Boot-resilience fix (Jul 30
+2026):** after a reboot the module stayed BLANK >5 min — waybar's
+`interval:300` did NOT self-heal from the boot-time network gap (network
+not up when waybar ran the module at boot+1s). Fix = the script now retries
+the fetch up to 8×/5s (~35s) WITHIN one run, so the single boot invocation
+rides out the gap instead of relying on the interval. Still prints `wx ?`
+on genuine failure (no silent cache fallback — keeps failures visible).
+Broad `except Exception` narrowed to `(KeyError,ValueError,TypeError,
+JSONDecodeError)`. Manual recover if ever blank: `kill -USR2 $(pgrep -x waybar)`.
+
 ## Swappiness
 
 High iowait (70-80%) despite free RAM was caused by `vm.swappiness=190`.

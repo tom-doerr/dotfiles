@@ -3,7 +3,15 @@
 # Coordinate-based (48.265N, 10.984E) — more accurate than wttr.in's nearest-station.
 # Output: "<icon> <temp>", e.g. "☁️ +23°C".  "wx ?" on fetch/parse failure (not a silent fake).
 
-resp=$(curl -s -m 8 "https://api.open-meteo.com/v1/forecast?latitude=48.265&longitude=10.984&current=temperature_2m,weather_code,is_day&timezone=Europe/Berlin" 2>/dev/null)
+URL="https://api.open-meteo.com/v1/forecast?latitude=48.265&longitude=10.984&current=temperature_2m,weather_code,is_day&timezone=Europe/Berlin"
+# Retry ~35s so a boot-time network gap is ridden out within this single run —
+# waybar's 300s interval was seen NOT to self-heal after a reboot (stayed blank).
+resp=""; n=0
+while [ $n -lt 8 ]; do
+    resp=$(curl -s -m 5 "$URL" 2>/dev/null)
+    case "$resp" in *'"current"'*) break ;; esac
+    n=$((n + 1)); [ $n -lt 8 ] && sleep 5
+done
 export resp
 python3 <<'PYEOF'
 import os, json
@@ -26,6 +34,6 @@ try:
         icon = "\U0001f319"  # clear/mainly-clear at night -> moon
     sign = "+" if t >= 0 else ""
     print("%s %s%.1f°C" % (icon, sign, t))
-except Exception:
+except (KeyError, ValueError, TypeError, json.JSONDecodeError):
     print("wx ?")
 PYEOF
