@@ -1,0 +1,17 @@
+[Unit]
+Description=CyberPower PDU -> Prometheus textfile exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=PDU_INTERVAL=10
+Environment="PDU_OUTLET_MAP=1=spark-1,2=spark-2,3=spark-3"
+ExecStart=%h/git/dotfiles/scripts/pdu-exporter.py
+Restart=always
+RestartSec=5
+Nice=10
+UMask=0022
+
+[Install]
+WantedBy=default.target

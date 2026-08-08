@@ -1,6 +1,7 @@
 #!/bin/bash
 # Usage: spark.sh <hostname>
 host=${1:-spark-1}
+script_dir=$(dirname "$(readlink -f "$0")")
 if [[ "${SPARK_WAYBAR_INNER:-0}" != "1" ]]; then
   outer_timeout=4
   [[ "$host" == "nas" ]] && outer_timeout=8
@@ -132,7 +133,15 @@ else
     rate_dt=$((now - pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
   fi
 fi
-[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 150)")" && exit
+wallv=""
+if [[ "$host" =~ ^spark-[123]$ ]]; then
+  if wall_power=$("$script_dir/pdu-power.sh" "$host" 2>/dev/null); then
+    wallv=$(printf "AC:%3dW" "$wall_power")
+  else
+    wallv=$(red "AC:---W")
+  fi
+fi
+[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 20)")${wallv:+ $wallv}" && exit
 # Calculate age - show failure state clearly
 if [[ -z "$pt" ]]; then
   age=$(red "$(pad "FAIL" 5)"); dt=1
@@ -199,6 +208,7 @@ swapv=""
 [[ -n "$ncdv" ]] && swapv="${swapv:+$swapv }$ncdv"
 prefix="$host"
 [[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
+[[ -n "$wallv" ]] && prefix="$prefix $wallv"
 line="$prefix $cpuv $memv"
 [[ -n "$iopv" ]] && line="$line $iopv"
 [[ -n "$mdv" ]] && line="$line $mdv"
