@@ -13,6 +13,7 @@ stale readings for current power.
 from __future__ import annotations
 
 import argparse
+import fcntl
 import os
 import re
 import select
@@ -22,6 +23,8 @@ import subprocess
 import sys
 import tempfile
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
 
@@ -37,6 +40,11 @@ OUT = Path(
 )
 INTERVAL = float(os.environ.get("PDU_INTERVAL", "5"))
 COMMAND_TIMEOUT = float(os.environ.get("PDU_COMMAND_TIMEOUT", "10"))
+LOCK_FILE = Path(
+    os.environ.get(
+        "PDU_LOCK_FILE", os.path.expanduser("~/.local/state/pdu-command.lock")
+    )
+)
 PROMPT = b"CyberPower > "
 ANSI_RE = re.compile(r"\x1b\[[0-?]*[ -/]*[@-~]")
 
@@ -74,6 +82,18 @@ METRIC_HEADER = [
 
 class PduError(RuntimeError):
     """A PDU connection, command, or response error."""
+
+
+@contextmanager
+def pdu_lock(path: Path = LOCK_FILE) -> Iterator[None]:
+    """Serialize access to the PDU's single-session management controller."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a+", encoding="utf-8") as handle:
+        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
 def parse_outlet_map(value: str) -> dict[int, str]:
@@ -351,10 +371,14 @@ def collect(session: PduSession, outlet_map: dict[int, str]) -> tuple[str, float
 
 
 def run_once(stdout: bool) -> int:
-    session = PduSession(HOST, AUTH_FILE)
     try:
-        session.connect()
-        body, _ = collect(session, OUTLET_MAP)
+        with pdu_lock():
+            session = PduSession(HOST, AUTH_FILE)
+            try:
+                session.connect()
+                body, _ = collect(session, OUTLET_MAP)
+            finally:
+                session.close()
         if stdout:
             sys.stdout.write(body)
         else:
@@ -365,8 +389,6 @@ def run_once(stdout: bool) -> int:
         if not stdout:
             atomic_write(OUT, render_failure(0, 0))
         return 1
-    finally:
-        session.close()
 
 
 def run_forever() -> int:
@@ -382,17 +404,19 @@ def run_forever() -> int:
 
     while not stopping:
         attempt_started = time.monotonic()
-        session = PduSession(HOST, AUTH_FILE)
         try:
-            session.connect()
-            body, last_success = collect(session, OUTLET_MAP)
-            atomic_write(OUT, body)
+            with pdu_lock():
+                session = PduSession(HOST, AUTH_FILE)
+                try:
+                    session.connect()
+                    body, last_success = collect(session, OUTLET_MAP)
+                    atomic_write(OUT, body)
+                finally:
+                    session.close()
         except (OSError, PduError, ValueError) as exc:
             duration = max(0.0, time.monotonic() - attempt_started)
             sys.stderr.write(f"pdu-exporter: {exc}\n")
             atomic_write(OUT, render_failure(last_success, duration))
-        finally:
-            session.close()
         remaining = INTERVAL - (time.monotonic() - attempt_started)
         if not stopping and remaining > 0:
             time.sleep(remaining)

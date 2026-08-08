@@ -1,0 +1,17 @@
+[Unit]
+Description=Recover down Spark nodes through allowlisted PDU outlets
+After=network-online.target pdu-exporter.service
+Wants=network-online.target pdu-exporter.service
+
+[Service]
+Type=simple
+Environment=PYTHONUNBUFFERED=1
+ExecStart=%h/git/dotfiles/scripts/spark-pdu-watchdog.py
+Restart=always
+RestartSec=10
+Nice=10
+UMask=0077
+NoNewPrivileges=true
+
+[Install]
+WantedBy=default.target
