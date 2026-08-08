@@ -141,7 +141,14 @@ if [[ "$host" =~ ^spark-[123]$ ]]; then
     wallv=$(red "AC:---W")
   fi
 fi
-[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 20)")${wallv:+ $wallv}" && exit
+cyclev=""
+if [[ "$host" == "spark-2" || "$host" == "spark-3" ]]; then
+  if cycle_count=$("$script_dir/spark-cycle-count.sh" "$host" 2>/dev/null) \
+    && [[ "$cycle_count" =~ ^[0-9]+$ ]] && ((cycle_count > 0)); then
+    cyclev=$(red "CYC:$cycle_count")
+  fi
+fi
+[[ -z "$g" ]] && echo "$(red "$(pad "$host OFFLINE" 20)")${wallv:+ $wallv}${cyclev:+ $cyclev}" && exit
 # Calculate age - show failure state clearly
 if [[ -z "$pt" ]]; then
   age=$(red "$(pad "FAIL" 5)"); dt=1
@@ -209,6 +216,7 @@ swapv=""
 prefix="$host"
 [[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
 [[ -n "$wallv" ]] && prefix="$prefix $wallv"
+[[ -n "$cyclev" ]] && prefix="$prefix $cyclev"
 line="$prefix $cpuv $memv"
 [[ -n "$iopv" ]] && line="$line $iopv"
 [[ -n "$mdv" ]] && line="$line $mdv"

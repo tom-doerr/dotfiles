@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 import importlib.util
+import json
 import sys
 import unittest
 from contextlib import nullcontext
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 
@@ -150,6 +152,7 @@ class SparkPduWatchdogTest(unittest.TestCase):
 
         session = FakeSession()
         attempts = []
+        successes = []
         with self.assertLogs(WATCHDOG.LOGGER, level="WARNING"):
             with (
                 patch.object(WATCHDOG, "ping_target", return_value=False),
@@ -157,13 +160,63 @@ class SparkPduWatchdogTest(unittest.TestCase):
                 patch.object(WATCHDOG.PDU, "pdu_lock", return_value=nullcontext()),
             ):
                 WATCHDOG.cycle_target(
-                    self.target, self.settings, False, lambda: attempts.append(True)
+                    self.target,
+                    self.settings,
+                    False,
+                    lambda: attempts.append(True),
+                    lambda: successes.append(True),
                 )
         self.assertEqual(
             session.commands,
             ["oltsta show", "oltctrl index 2 act reboot"],
         )
         self.assertEqual(attempts, [True])
+        self.assertEqual(successes, [True])
+
+    def test_rejected_reboot_is_attempted_but_not_counted(self):
+        class FakeSession:
+            def connect(self):
+                pass
+
+            def command(self, value):
+                if value == "oltsta show":
+                    return "2 Outlet2              On     0.01    2\n"
+                return "Error: denied"
+
+            def close(self):
+                pass
+
+        attempts = []
+        successes = []
+        with (
+            patch.object(WATCHDOG, "ping_target", return_value=False),
+            patch.object(WATCHDOG.PDU, "PduSession", return_value=FakeSession()),
+            patch.object(WATCHDOG.PDU, "pdu_lock", return_value=nullcontext()),
+        ):
+            with self.assertRaises(WATCHDOG.SafetyError):
+                WATCHDOG.cycle_target(
+                    self.target,
+                    self.settings,
+                    False,
+                    lambda: attempts.append(True),
+                    lambda: successes.append(True),
+                )
+        self.assertEqual(attempts, [True])
+        self.assertEqual(successes, [])
+
+    def test_cycle_history_round_trips_in_state(self):
+        state = WATCHDOG.WatchdogState()
+        state.hosts["spark-3"].cycle_history = [200.5, 100.25]
+        with TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "state.json"
+            WATCHDOG.save_state(state, path)
+            raw = json.loads(path.read_text(encoding="utf-8"))
+            loaded = WATCHDOG.load_state(path)
+        self.assertEqual(raw["version"], 2)
+        self.assertEqual(
+            loaded.hosts["spark-3"].cycle_history, [100.25, 200.5]
+        )
+        self.assertEqual(loaded.hosts["spark-2"].cycle_history, [])
 
 
 if __name__ == "__main__":

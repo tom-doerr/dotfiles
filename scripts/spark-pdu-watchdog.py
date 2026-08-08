@@ -59,6 +59,7 @@ TARGETS = (
 )
 TARGET_BY_HOST = {target.host: target for target in TARGETS}
 ALLOWED_OUTLETS = frozenset({2, 3})
+CYCLE_HISTORY_LIMIT = 1024
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,7 @@ class Settings:
 class HostState:
     failures: int = 0
     last_cycle: float = 0.0
+    cycle_history: list[float] = field(default_factory=list)
 
 
 @dataclass
@@ -243,6 +245,20 @@ def snapshot_is_fresh(snapshot: Snapshot, now: float, max_age: float) -> bool:
     return snapshot.up and -5.0 <= age <= max_age
 
 
+def normalize_cycle_history(raw: object) -> list[float]:
+    if not isinstance(raw, list):
+        return []
+    timestamps = [
+        float(value)
+        for value in raw
+        if isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+        and float(value) >= 0
+    ]
+    return sorted(timestamps)[-CYCLE_HISTORY_LIMIT:]
+
+
 def load_state(path: Path = STATE_FILE) -> WatchdogState:
     state = WatchdogState()
     try:
@@ -257,6 +273,9 @@ def load_state(path: Path = STATE_FILE) -> WatchdogState:
             state.hosts[target.host] = HostState(
                 failures=max(0, int(raw_host.get("failures", 0))),
                 last_cycle=max(0.0, float(raw_host.get("last_cycle", 0))),
+                cycle_history=normalize_cycle_history(
+                    raw_host.get("cycle_history", [])
+                ),
             )
     except (AttributeError, TypeError, ValueError):
         return WatchdogState()
@@ -265,12 +284,15 @@ def load_state(path: Path = STATE_FILE) -> WatchdogState:
 
 def save_state(state: WatchdogState, path: Path = STATE_FILE) -> None:
     body = {
-        "version": 1,
+        "version": 2,
         "last_any_cycle": state.last_any_cycle,
         "hosts": {
             host: {
                 "failures": host_state.failures,
                 "last_cycle": host_state.last_cycle,
+                "cycle_history": normalize_cycle_history(
+                    host_state.cycle_history
+                ),
             }
             for host, host_state in sorted(state.hosts.items())
             if host in TARGET_BY_HOST
@@ -396,6 +418,7 @@ def cycle_target(
     settings: Settings,
     dry_run: bool,
     record_attempt: Callable[[], None],
+    record_success: Callable[[], None],
 ) -> None:
     command = build_reboot_command(target)
     if ping_target(target.host, settings):
@@ -423,6 +446,7 @@ def cycle_target(
                 raise SafetyError(
                     f"PDU rejected reboot command for {target.host}: {response.strip()}"
                 )
+            record_success()
             LOGGER.warning(
                 "CYCLED host=%s outlet=%d live_power=%gW command=%r",
                 target.host,
@@ -487,8 +511,17 @@ def run_check(
             state.last_any_cycle = attempted_at
             save_state(state)
 
+        def record_success(host_state: HostState = host_state) -> None:
+            host_state.cycle_history.append(time.time())
+            host_state.cycle_history = normalize_cycle_history(
+                host_state.cycle_history
+            )
+            save_state(state)
+
         try:
-            cycle_target(target, settings, dry_run, record_attempt)
+            cycle_target(
+                target, settings, dry_run, record_attempt, record_success
+            )
         except CycleCancelled as exc:
             host_state.failures = 0
             LOGGER.warning("cycle cancelled for %s: %s", target.host, exc)
