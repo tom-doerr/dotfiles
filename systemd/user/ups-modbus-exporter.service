@@ -4,7 +4,8 @@ After=network-online.target
 
 [Service]
 Type=simple
-Environment=UPS_INTERVAL=5
+Environment=UPS_SAMPLE_HZ=20
+Environment=UPS_WRITE_SEC=1
 ExecStart=/home/tom/git/dotfiles/scripts/ups-modbus-exporter.py
 Restart=always
 RestartSec=10
