@@ -19,16 +19,17 @@ write_fixture() {
 
 write_fixture 1 1786211400.750
 value=$(PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211420 "$root/waybar/pdu-power.sh" spark-2)
-[[ "$value" == "2" ]]
+[[ "$value" == "2 fresh" ]]
 
-if PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211421 "$root/waybar/pdu-power.sh" spark-2; then
-  echo "accepted a stale PDU sample" >&2
-  exit 1
-fi
+value=$(PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211421 "$root/waybar/pdu-power.sh" spark-2)
+[[ "$value" == "2 stale" ]]
 
 write_fixture 0 1786211400.750
-if PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211400 "$root/waybar/pdu-power.sh" spark-2; then
-  echo "accepted a failed PDU sample" >&2
+value=$(PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211420 "$root/waybar/pdu-power.sh" spark-2)
+[[ "$value" == "2 stale" ]]
+
+if PDU_PROM_FILE="$prom_file" PDU_NOW_EPOCH=1786211461 "$root/waybar/pdu-power.sh" spark-2; then
+  echo "accepted a PDU sample beyond the stale grace period" >&2
   exit 1
 fi
 

@@ -3,6 +3,7 @@ import importlib.util
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "pdu-exporter.py"
@@ -60,11 +61,62 @@ class PduExporterTest(unittest.TestCase):
             body,
         )
 
-    def test_failure_does_not_publish_stale_outlet_values(self):
-        body = PDU.render_failure(1234.0, 0.5)
+    def test_failure_retains_last_good_values_but_marks_them_down(self):
+        success = PDU.render_success(
+            PDU.parse_device_status(DEVICE_STATUS),
+            PDU.parse_outlet_status(OUTLET_STATUS),
+            {1: "spark-1", 2: "spark-2", 3: "spark-3"},
+            1234.0,
+            0.25,
+        )
+        body = PDU.render_failure(1234.0, 0.5, success)
         self.assertIn("pdu_up 0", body)
         self.assertIn("pdu_last_success_unixtime_seconds 1234.000", body)
+        self.assertIn("pdu_scrape_duration_seconds 0.500000", body)
+        self.assertIn(
+            'pdu_outlet_power_watts{outlet="2",name="spark-2",pdu_name="Outlet2"} 2.0',
+            body,
+        )
+
+    def test_failure_without_last_good_values_remains_empty(self):
+        body = PDU.render_failure(0.0, 0.5)
+        self.assertIn("pdu_up 0", body)
         self.assertNotIn("pdu_outlet_power_watts{", body)
+
+    def test_retry_uses_a_fresh_session(self):
+        class FakeSession:
+            def __init__(self, fail):
+                self.fail = fail
+                self.closed = False
+
+            def connect(self):
+                pass
+
+            def command(self, value):
+                if self.fail:
+                    raise PDU.PduError("session dropped")
+                if value == "devsta show":
+                    return DEVICE_STATUS
+                return OUTLET_STATUS
+
+            def close(self):
+                self.closed = True
+
+        first = FakeSession(True)
+        second = FakeSession(False)
+        with (
+            patch.object(PDU, "PduSession", side_effect=[first, second]),
+            patch.object(PDU.time, "sleep") as sleep,
+        ):
+            body, _ = PDU.collect_with_retries(
+                {1: "spark-1", 2: "spark-2", 3: "spark-3"},
+                attempts=2,
+                retry_delay=1,
+            )
+        self.assertIn("pdu_up 1", body)
+        self.assertTrue(first.closed)
+        self.assertTrue(second.closed)
+        sleep.assert_called_once_with(1)
 
     def test_rejects_bad_outlet_map(self):
         with self.assertRaises(ValueError):

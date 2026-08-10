@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """CyberPower PDU CLI -> Prometheus textfile exporter.
 
-Uses one short SSH command-shell session per sample because this PDU firmware
-closes its CLI session after status commands. Authentication is read from
-~/.config/pdu-admin (username on line 1, password on line 2).
+Uses short SSH command-shell sessions because this PDU firmware intermittently
+closes its CLI session after status commands. A failed poll is retried with a
+fresh session. Authentication is read from ~/.config/pdu-admin (username on
+line 1, password on line 2).
 
-On any connection, command, or parsing failure the textfile is replaced with
-pdu_up 0 and the outlet samples are omitted. Consumers therefore never mistake
-stale readings for current power.
+After all attempts fail, pdu_up is set to 0 while the last successful samples
+and timestamp are retained. Safety consumers must require pdu_up 1; display
+consumers may explicitly show those samples as briefly stale.
 """
 
 from __future__ import annotations
 
 import argparse
 import fcntl
+import math
 import os
 import re
 import select
@@ -40,6 +42,8 @@ OUT = Path(
 )
 INTERVAL = float(os.environ.get("PDU_INTERVAL", "5"))
 COMMAND_TIMEOUT = float(os.environ.get("PDU_COMMAND_TIMEOUT", "10"))
+POLL_ATTEMPTS = max(1, int(os.environ.get("PDU_POLL_ATTEMPTS", "2")))
+RETRY_DELAY = max(0.0, float(os.environ.get("PDU_RETRY_DELAY", "1")))
 LOCK_FILE = Path(
     os.environ.get(
         "PDU_LOCK_FILE", os.path.expanduser("~/.local/state/pdu-command.lock")
@@ -215,18 +219,58 @@ def render_success(
     return "\n".join(lines) + "\n"
 
 
-def render_failure(last_success: float, duration: float) -> str:
-    return (
-        "\n".join(
-            METRIC_HEADER
-            + [
-                "pdu_up 0",
-                f"pdu_last_success_unixtime_seconds {last_success:.3f}",
-                f"pdu_scrape_duration_seconds {duration:.6f}",
-            ]
+def render_failure(
+    last_success: float, duration: float, last_good_body: str = ""
+) -> str:
+    if not last_good_body:
+        return (
+            "\n".join(
+                METRIC_HEADER
+                + [
+                    "pdu_up 0",
+                    f"pdu_last_success_unixtime_seconds {last_success:.3f}",
+                    f"pdu_scrape_duration_seconds {duration:.6f}",
+                ]
+            )
+            + "\n"
         )
-        + "\n"
+
+    replacements = {
+        "pdu_up": "pdu_up 0",
+        "pdu_last_success_unixtime_seconds": (
+            f"pdu_last_success_unixtime_seconds {last_success:.3f}"
+        ),
+        "pdu_scrape_duration_seconds": (
+            f"pdu_scrape_duration_seconds {duration:.6f}"
+        ),
+    }
+    lines = [
+        replacements.get(line.split(" ", 1)[0], line)
+        for line in last_good_body.splitlines()
+    ]
+    return "\n".join(lines) + "\n"
+
+
+def load_last_good(path: Path) -> tuple[str, float]:
+    try:
+        body = path.read_text(encoding="utf-8")
+    except OSError:
+        return "", 0.0
+    if not re.search(r"^pdu_up [01]$", body, re.MULTILINE):
+        return "", 0.0
+    if not re.search(r"^pdu_outlet_power_watts\{", body, re.MULTILINE):
+        return "", 0.0
+    match = re.search(
+        r"^pdu_last_success_unixtime_seconds ([0-9]+(?:\.[0-9]+)?)$",
+        body,
+        re.MULTILINE,
     )
+    if not match:
+        return "", 0.0
+    last_success = float(match.group(1))
+    if not math.isfinite(last_success) or last_success < 0:
+        return "", 0.0
+    return body, last_success
 
 
 def atomic_write(path: Path, body: str) -> None:
@@ -370,15 +414,41 @@ def collect(session: PduSession, outlet_map: dict[int, str]) -> tuple[str, float
     )
 
 
+def collect_with_retries(
+    outlet_map: dict[int, str],
+    attempts: int = POLL_ATTEMPTS,
+    retry_delay: float = RETRY_DELAY,
+) -> tuple[str, float]:
+    if attempts < 1:
+        raise ValueError("PDU poll attempts must be at least one")
+    last_error: OSError | PduError | ValueError | None = None
+    for attempt in range(1, attempts + 1):
+        session = PduSession(HOST, AUTH_FILE)
+        try:
+            session.connect()
+            return collect(session, outlet_map)
+        except (OSError, PduError, ValueError) as exc:
+            last_error = exc
+            if attempt < attempts:
+                sys.stderr.write(
+                    "pdu-exporter: poll attempt "
+                    f"{attempt}/{attempts} failed: {exc}; retrying\n"
+                )
+                if retry_delay > 0:
+                    time.sleep(retry_delay)
+        finally:
+            session.close()
+    raise PduError(
+        f"PDU poll failed after {attempts} attempts: {last_error}"
+    ) from last_error
+
+
 def run_once(stdout: bool) -> int:
+    attempt_started = time.monotonic()
+    last_good_body, last_success = load_last_good(OUT)
     try:
         with pdu_lock():
-            session = PduSession(HOST, AUTH_FILE)
-            try:
-                session.connect()
-                body, _ = collect(session, OUTLET_MAP)
-            finally:
-                session.close()
+            body, _ = collect_with_retries(OUTLET_MAP)
         if stdout:
             sys.stdout.write(body)
         else:
@@ -387,12 +457,15 @@ def run_once(stdout: bool) -> int:
     except (OSError, PduError, ValueError) as exc:
         sys.stderr.write(f"pdu-exporter: {exc}\n")
         if not stdout:
-            atomic_write(OUT, render_failure(0, 0))
+            duration = max(0.0, time.monotonic() - attempt_started)
+            atomic_write(
+                OUT, render_failure(last_success, duration, last_good_body)
+            )
         return 1
 
 
 def run_forever() -> int:
-    last_success = 0.0
+    last_good_body, last_success = load_last_good(OUT)
     stopping = False
 
     def stop(_signum: int, _frame: object) -> None:
@@ -406,17 +479,15 @@ def run_forever() -> int:
         attempt_started = time.monotonic()
         try:
             with pdu_lock():
-                session = PduSession(HOST, AUTH_FILE)
-                try:
-                    session.connect()
-                    body, last_success = collect(session, OUTLET_MAP)
-                    atomic_write(OUT, body)
-                finally:
-                    session.close()
+                body, last_success = collect_with_retries(OUTLET_MAP)
+                last_good_body = body
+                atomic_write(OUT, body)
         except (OSError, PduError, ValueError) as exc:
             duration = max(0.0, time.monotonic() - attempt_started)
             sys.stderr.write(f"pdu-exporter: {exc}\n")
-            atomic_write(OUT, render_failure(last_success, duration))
+            atomic_write(
+                OUT, render_failure(last_success, duration, last_good_body)
+            )
         remaining = INTERVAL - (time.monotonic() - attempt_started)
         if not stopping and remaining > 0:
             time.sleep(remaining)

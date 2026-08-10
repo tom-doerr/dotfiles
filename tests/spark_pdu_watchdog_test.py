@@ -54,6 +54,13 @@ class SparkPduWatchdogTest(unittest.TestCase):
             WATCHDOG.snapshot_is_fresh(self.snapshot, 1786212420, 30)
         )
 
+    def test_failed_poll_with_retained_samples_is_never_safe(self):
+        snapshot = WATCHDOG.parse_snapshot(
+            METRICS.replace("pdu_up 1", "pdu_up 0")
+        )
+        self.assertEqual(snapshot.outlets["spark-2"].power_watts, 2)
+        self.assertFalse(WATCHDOG.snapshot_is_fresh(snapshot, 1786212420, 30))
+
     def test_requires_consecutive_ping_and_low_power_failures(self):
         state = WATCHDOG.WatchdogState()
         first = WATCHDOG.evaluate_target(

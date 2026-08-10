@@ -11,6 +11,7 @@ bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; 
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 pad() { printf "%-${2}s" "$1"; }
 red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
+yellow() { printf "<span color='#f1fa8c'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
 
 cmd='if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits | head -1; else echo "-1 0"; fi
@@ -135,8 +136,15 @@ else
 fi
 wallv=""
 if [[ "$host" =~ ^spark-[123]$ ]]; then
-  if wall_power=$("$script_dir/pdu-power.sh" "$host" 2>/dev/null); then
-    wallv=$(printf "AC:%3dW" "$wall_power")
+  if wall_sample=$("$script_dir/pdu-power.sh" "$host" 2>/dev/null); then
+    read -r wall_power wall_state <<< "$wall_sample"
+    if [[ "$wall_power" =~ ^[0-9]+$ && "$wall_state" == "fresh" ]]; then
+      wallv=$(printf "AC:%3dW" "$wall_power")
+    elif [[ "$wall_power" =~ ^[0-9]+$ && "$wall_state" == "stale" ]]; then
+      wallv=$(yellow "$(printf "AC:%3dW~" "$wall_power")")
+    else
+      wallv=$(red "AC:---W")
+    fi
   else
     wallv=$(red "AC:---W")
   fi
