@@ -1,0 +1,14 @@
+[Unit]
+Description=prediction-server /stats -> Prometheus textfile exporter
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=PREDSERVER_INTERVAL=15
+ExecStart=/home/tom/git/dotfiles/scripts/predserver-exporter.py
+Restart=always
+RestartSec=30
+Nice=15
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=Outdoor weather -> Prometheus textfile exporter (Open-Meteo)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=WEATHER_INTERVAL=60
+ExecStart=/home/tom/git/dotfiles/scripts/weather-exporter.py
+Restart=always
+RestartSec=30
+Nice=15
+
+[Install]
+WantedBy=default.target
