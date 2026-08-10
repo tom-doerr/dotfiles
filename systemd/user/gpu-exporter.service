@@ -1,0 +1,14 @@
+[Unit]
+Description=NVIDIA GPU -> Prometheus textfile exporter (nvidia-smi)
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=GPU_INTERVAL=5
+ExecStart=%h/.local/bin/gpu-exporter.py
+Restart=always
+RestartSec=30
+Nice=15
+
+[Install]
+WantedBy=default.target
