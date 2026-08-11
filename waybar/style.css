@@ -60,7 +60,7 @@ window#waybar {
    px (not config min-length, which would miscount the Pango markup) keeps
    the bar from shifting when a figure gains a digit. */
 #custom-revenue {
-    min-width: 260px;
+    min-width: 430px;
     margin-right: 20px;
 }
 
