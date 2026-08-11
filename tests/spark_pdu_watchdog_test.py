@@ -109,6 +109,59 @@ class SparkPduWatchdogTest(unittest.TestCase):
         self.assertEqual(decision.reason, "host cycle cooldown")
         self.assertEqual(state.hosts["spark-2"].failures, 0)
 
+    def test_unconfirmed_cycle_retries_long_before_the_full_cooldown(self):
+        """A dropped PDU session must not cost a full 30 min of downtime.
+
+        Regression for Aug 11 2026: the session closed after the attempt
+        was recorded, so spark-2 sat down for the whole cooldown.
+        """
+        state = WATCHDOG.WatchdogState()
+        host = state.hosts["spark-2"]
+        host.failures = 20
+        host.last_cycle = 100
+        host.last_cycle_confirmed = False
+        # 200s in: past the 120s unconfirmed window, far short of 1800s.
+        decision = WATCHDOG.evaluate_target(
+            self.target, self.snapshot, False, state, self.settings, 300, 0
+        )
+        self.assertTrue(decision.cycle)
+
+    def test_unconfirmed_cycle_still_waits_briefly(self):
+        """Retry soon, but never hammer the outlet back-to-back."""
+        state = WATCHDOG.WatchdogState()
+        host = state.hosts["spark-2"]
+        host.failures = 20
+        host.last_cycle = 100
+        host.last_cycle_confirmed = False
+        decision = WATCHDOG.evaluate_target(
+            self.target, self.snapshot, False, state, self.settings, 160, 0
+        )
+        self.assertFalse(decision.cycle)
+        self.assertEqual(decision.reason, "unconfirmed cycle cooldown")
+
+    def test_confirmed_cycle_keeps_the_full_cooldown(self):
+        state = WATCHDOG.WatchdogState()
+        host = state.hosts["spark-2"]
+        host.failures = 20
+        host.last_cycle = 100
+        host.last_cycle_confirmed = True
+        decision = WATCHDOG.evaluate_target(
+            self.target, self.snapshot, False, state, self.settings, 300, 0
+        )
+        self.assertFalse(decision.cycle)
+        self.assertEqual(decision.reason, "host cycle cooldown")
+
+    def test_legacy_state_without_the_flag_is_treated_as_confirmed(self):
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.json"
+            path.write_text(json.dumps({
+                "version": 2, "last_any_cycle": 100,
+                "hosts": {"spark-2": {"failures": 0, "last_cycle": 100,
+                                      "cycle_history": []}},
+            }), encoding="utf-8")
+            state = WATCHDOG.load_state(path)
+        self.assertTrue(state.hosts["spark-2"].last_cycle_confirmed)
+
     def test_command_builder_only_allows_literal_outlets_two_and_three(self):
         self.assertEqual(
             WATCHDOG.build_reboot_command(WATCHDOG.TARGET_BY_HOST["spark-2"]),

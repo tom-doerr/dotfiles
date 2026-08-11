@@ -70,6 +70,12 @@ class Settings:
     down_max_watts: float = 5.0
     metric_max_age_seconds: float = 30.0
     host_cycle_cooldown_seconds: float = 1800.0
+    # An attempt is recorded before the reboot command is acknowledged, so a
+    # session that drops mid-command leaves us unsure whether the outlet
+    # actually cycled. We still record it (the command may have landed) but
+    # retry far sooner — the full cooldown once cost spark-2 30 minutes of
+    # downtime after 'PDU SSH session closed unexpectedly'.
+    unconfirmed_cycle_cooldown_seconds: float = 120.0
     global_cycle_gap_seconds: float = 300.0
     ping_count: int = 2
     ping_timeout_seconds: int = 2
@@ -79,6 +85,7 @@ class Settings:
 class HostState:
     failures: int = 0
     last_cycle: float = 0.0
+    last_cycle_confirmed: bool = True
     cycle_history: list[float] = field(default_factory=list)
 
 
@@ -157,6 +164,9 @@ def load_settings() -> Settings:
         host_cycle_cooldown_seconds=float(
             os.environ.get("SPARK_WATCHDOG_HOST_COOLDOWN", "1800")
         ),
+        unconfirmed_cycle_cooldown_seconds=float(
+            os.environ.get("SPARK_WATCHDOG_UNCONFIRMED_COOLDOWN", "120")
+        ),
         global_cycle_gap_seconds=float(
             os.environ.get("SPARK_WATCHDOG_GLOBAL_GAP", "300")
         ),
@@ -171,6 +181,7 @@ def load_settings() -> Settings:
         settings.down_max_watts,
         settings.metric_max_age_seconds,
         settings.host_cycle_cooldown_seconds,
+        settings.unconfirmed_cycle_cooldown_seconds,
         settings.global_cycle_gap_seconds,
         settings.ping_count,
         settings.ping_timeout_seconds,
@@ -273,6 +284,11 @@ def load_state(path: Path = STATE_FILE) -> WatchdogState:
             state.hosts[target.host] = HostState(
                 failures=max(0, int(raw_host.get("failures", 0))),
                 last_cycle=max(0.0, float(raw_host.get("last_cycle", 0))),
+                # Absent in v2 state: assume confirmed, so an upgrade never
+                # shortens the cooldown for a cycle that did succeed.
+                last_cycle_confirmed=bool(
+                    raw_host.get("last_cycle_confirmed", True)
+                ),
                 cycle_history=normalize_cycle_history(
                     raw_host.get("cycle_history", [])
                 ),
@@ -290,6 +306,7 @@ def save_state(state: WatchdogState, path: Path = STATE_FILE) -> None:
             host: {
                 "failures": host_state.failures,
                 "last_cycle": host_state.last_cycle,
+                "last_cycle_confirmed": host_state.last_cycle_confirmed,
                 "cycle_history": normalize_cycle_history(
                     host_state.cycle_history
                 ),
@@ -333,11 +350,18 @@ def evaluate_target(
         host_state.failures = 0
         return Decision(False, f"power draw {sample.power_watts:g}W is not down")
 
-    if host_state.last_cycle and (
-        now - host_state.last_cycle < settings.host_cycle_cooldown_seconds
-    ):
+    cooldown = (
+        settings.host_cycle_cooldown_seconds
+        if host_state.last_cycle_confirmed
+        else settings.unconfirmed_cycle_cooldown_seconds
+    )
+    if host_state.last_cycle and (now - host_state.last_cycle < cooldown):
         host_state.failures = 0
-        return Decision(False, "host cycle cooldown")
+        return Decision(
+            False,
+            "host cycle cooldown" if host_state.last_cycle_confirmed
+            else "unconfirmed cycle cooldown",
+        )
     if state.last_any_cycle and (
         now - state.last_any_cycle < settings.global_cycle_gap_seconds
     ):
@@ -508,10 +532,12 @@ def run_check(
             attempted_at = time.time()
             host_state.failures = 0
             host_state.last_cycle = attempted_at
+            host_state.last_cycle_confirmed = False
             state.last_any_cycle = attempted_at
             save_state(state)
 
         def record_success(host_state: HostState = host_state) -> None:
+            host_state.last_cycle_confirmed = True
             host_state.cycle_history.append(time.time())
             host_state.cycle_history = normalize_cycle_history(
                 host_state.cycle_history
