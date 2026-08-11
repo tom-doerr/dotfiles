@@ -52,6 +52,15 @@ window#waybar {
     margin-right: 20px;
 }
 
+/* Revenue carries three label/value pairs, so it needs a wider gap to its
+   neighbours than the 2 spaces separating the pairs inside it. min-width in
+   px (not config min-length, which would miscount the Pango markup) keeps
+   the bar from shifting when a figure gains a digit. */
+#custom-revenue {
+    min-width: 260px;
+    margin-right: 20px;
+}
+
 #custom-vast-instances {
     margin-right: 12px;
 }
