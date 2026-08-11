@@ -7,6 +7,6 @@
 # posts; see x_twitter/services/revenue_model.py and CLAUDE.md).
 # Output: "IMP ?" on failure — visible, never a fake number.
 
-cd /home/tom/git/x_twitter_production 2>/dev/null || { echo "IMP ?"; exit 0; }
+cd /home/tom/git/x_twitter_production 2>/dev/null || { echo "<span color='#6c7086'>IMP</span> ?"; exit 0; }
 PYTHONPATH=. .venv/bin/python -m x_twitter.services.revenue_model \
-    --waybar-impressions 2>/dev/null || echo "IMP ?"
+    --waybar-impressions 2>/dev/null || echo "<span color='#6c7086'>IMP</span> ?"

@@ -48,7 +48,10 @@ window#waybar {
     margin-right: 6px;
 }
 
+/* min-width in px, not config min-length — the latter would count the
+   Pango markup characters and pad the module far too wide. */
 #custom-impressions {
+    min-width: 120px;
     margin-right: 20px;
 }
 
