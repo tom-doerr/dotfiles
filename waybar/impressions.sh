@@ -1,14 +1,12 @@
 #!/bin/sh
-# Waybar module: sum of impressions on tweets posted in the last 24h (latest snapshot per post).
-# Source: twitter DB post_analytics, deduped by post_id (newest fetched_at); local peer auth.
-# Output: "IMP <humanized>" e.g. "IMP 541.5k". "IMP ?" on DB error (visible, not a silent fake).
+# Waybar module: impressions of tweets posted in the last 24h — the total
+# so far, and the projection of what that cohort will have at one week of
+# age ("IMP 532k→1.1M").
+# The projection divides each post's latest snapshot by the share of its
+# 7-day impressions expected at that age (accrual curve measured on 10.6k
+# posts; see x_twitter/services/revenue_model.py and CLAUDE.md).
+# Output: "IMP ?" on failure — visible, never a fake number.
 
-sum=$(psql -d twitter -tAc "SELECT COALESCE(SUM(impressions),0) FROM (SELECT DISTINCT ON (post_id) impressions FROM post_analytics WHERE post_created_at >= NOW() - INTERVAL '24 hours' ORDER BY post_id, fetched_at DESC) t;" 2>/dev/null)
-if [ $? -ne 0 ] || [ -z "$sum" ]; then
-    echo "IMP ?"
-    exit 0
-fi
-echo "$sum" | awk '{n=$1;
-  if (n>=1000000) printf "IMP %.1fM\n", n/1000000;
-  else if (n>=1000) printf "IMP %.1fk\n", n/1000;
-  else printf "IMP %d\n", n}'
+cd /home/tom/git/x_twitter_production 2>/dev/null || { echo "IMP ?"; exit 0; }
+PYTHONPATH=. .venv/bin/python -m x_twitter.services.revenue_model \
+    --waybar-impressions 2>/dev/null || echo "IMP ?"
