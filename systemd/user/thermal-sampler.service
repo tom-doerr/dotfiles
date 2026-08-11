@@ -1,0 +1,19 @@
+[Unit]
+Description=High-rate SoC thermal sampler (100 Hz -> UDP collector)
+Documentation=https://github.com/tom-doerr/dotfiles
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=THERMAL_HZ=100
+Environment=THERMAL_COLLECTOR=spark-1:5601
+ExecStart=%h/git/dotfiles/scripts/thermal-sampler.py
+# The sampler exists to observe heavy ML load, so it must not be starved by
+# it. Non-fatal: the sudoers renice rule may not exist on every host.
+ExecStartPost=-/usr/bin/sudo -n /usr/bin/renice -n -10 -p $MAINPID
+Restart=always
+RestartSec=5
+MemoryMax=256M
+
+[Install]
+WantedBy=default.target

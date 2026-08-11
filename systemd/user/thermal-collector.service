@@ -1,0 +1,20 @@
+[Unit]
+Description=High-rate thermal sample collector (UDP -> Postgres telemetry)
+Documentation=https://github.com/tom-doerr/dotfiles
+After=network-online.target postgresql.service
+
+[Service]
+Type=simple
+Environment=THERMAL_PORT=5601
+Environment=THERMAL_DSN=dbname=telemetry
+Environment=THERMAL_FLUSH_MS=200
+ExecStart=%h/git/dotfiles/scripts/thermal-collector.py
+Restart=always
+RestartSec=5
+# Never let this be OOM-killed: it holds the only copy of samples from a
+# spark that has already stopped responding.
+OOMScoreAdjust=-500
+MemoryMax=1G
+
+[Install]
+WantedBy=default.target
