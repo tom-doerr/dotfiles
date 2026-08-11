@@ -8,6 +8,6 @@
 # fortnight at that pace (hypothetical run rate); and the payout now
 # accruing. "REV ? RUN ? NXT ?" on failure (never a fake number).
 
-cd /home/tom/git/x_twitter_production 2>/dev/null || { echo "REV ?  RUN ?  NXT ?"; exit 0; }
+cd /home/tom/git/x_twitter_production 2>/dev/null || { echo '{"text":"REV ?  RUN ?  NXT ?","tooltip":"revenue_model unavailable"}'; exit 0; }
 PYTHONPATH=. .venv/bin/python -m x_twitter.services.revenue_model --waybar 2>/dev/null \
-    || echo "REV ?  RUN ?  NXT ?"
+    || echo '{"text":"REV ?  RUN ?  NXT ?","tooltip":"revenue_model unavailable"}'
