@@ -15,6 +15,7 @@ Env: THERMAL_PORT (5601), THERMAL_DSN, THERMAL_FLUSH_MS (200),
 import collections
 import datetime
 import os
+import re
 import socket
 import threading
 import time
@@ -33,6 +34,11 @@ SQL = (f"INSERT INTO thermal_samples ({','.join(COLS)}) "
 
 buf = collections.deque(maxlen=MAXBUF)
 stats = {"rx": 0, "written": 0, "dropped": 0, "errors": 0}
+
+
+def _safe_dsn(dsn):
+    """Never let the DSN password reach the journal."""
+    return re.sub(r"://([^:/@]+):[^@]*@", r"://\1:***@", dsn)
 
 
 def parse(raw):
@@ -92,7 +98,7 @@ def main():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 8 << 20)
     sock.bind(("0.0.0.0", PORT))
     threading.Thread(target=writer, daemon=True).start()
-    print(f"listening udp/{PORT} -> {DSN}", flush=True)
+    print(f"listening udp/{PORT} -> {_safe_dsn(DSN)}", flush=True)
     last = time.time()
     while True:
         raw, _ = sock.recvfrom(2048)
