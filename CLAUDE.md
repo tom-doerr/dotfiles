@@ -268,6 +268,20 @@ one spark host per row since any pair (~275 chars) exceeds the ~221-char
 width at 13px. The nas row (214 chars) needs `window#waybar.nas *
 { font-size: 12px; }` in style.css or it overflows by 12px.
 Bars no longer appear on the TV/outer Dells (they reserve no top space).
+**NAS row font 12px → 10px (Aug 13 2026)** — adding the RCL group pushed it to 323
+chars and 12px silently CLIPPED the trailing staleness age (the one field that tells
+you the probe is dead, so this is a bad thing to lose quietly). Measure width
+empirically instead of guessing at em-ratios — screenshot the row with
+`grim -g "1728,2256 1728x26"` (bar rows are 24 LOGICAL px from the monitor's y:
+main 2160, spark1 2184, spark2 2208, spark3 2232, nas 2256, vast 2280) and find the
+rightmost lit column with PIL. Measured px/char on the 1728px portrait Dell (2149px
+usable): 8px=4.81, 10px=5.77, 11px=6.57, 12px=6.67 → capacity 447/372/327/322 chars.
+**11px and 12px nearly tie** (hinting snaps the advance), so 11px bought only 4 chars
+and would re-clip the moment rates go 4-digit; 10px keeps ~49 spare. `#custom-nas`
+also burns 28 logical px on `padding: 0 8px` + `margin-right: 12px` (~5 chars) if more
+room is ever needed. Gotcha: screenshot in a SEPARATE tool call from the waybar
+relaunch — grim fired immediately after `hyprctl dispatch exec waybar` caught a frame
+rendered before the new CSS applied, which read as "the selector doesn't work".
 **SIGUSR2 reloads CSS but NOT bar structure** — config changes (outputs,
 bar count) need a full waybar restart (`pkill -x waybar && waybar &`).
 SIGUSR2 with the multi-bar config also logs "Cannot merge config" and
@@ -311,7 +325,11 @@ background→hdd; 2× replicas; lz4+zstd).
 - `md1`/`md2` RAID devices are gone (only `md127`, the read-only old RAID6). The
   NAS module packs **16 bcachefs metrics** into the cache: slots 20-23 = `bc_saved`
   (compression saved GiB), `du` (cumulative `data_update`+`reconcile_data` bytes → DST rate),
-  `bc_ratio` (blended ratio ×100), `bc_backlog` (vestigial — RB dropped from display); slots 26-32
+  `bc_ratio` (blended ratio ×100), `bc_backlog` (**re-used Aug 13 2026 for the RCL group** —
+  was vestigial after RB was dropped; now holds `bcachefs fs usage` "Pending reconcile"
+  bytes packed `replicas|compression|target|other|metadata`, the `d`-field `pct|used|ssd`
+  packing trick reused so the field count stayed 38 and no `case wc -w` arm changed);
+  slots 26-32
   (grew format 26→33) = SSD/HDD tier cumulative sectors r/w (throughput), HDD
   writes-completed & ms-writing (write await, diskstats fields 8/11), and summed
   per-drive `dev-*/io_errors` (read+write+checksum, creation-section → `errs`); slots 33-37
@@ -319,7 +337,12 @@ background→hdd; 2× replicas; lz4+zstd).
   lz4/zstd logical-GiB + ratio×100, incompressible logical-GiB).
   Displayed (NAS only): `CMP:<saved>/<ratio>x lz4 <log>T/<r>x zstd <log>T/<r>x inc <log>T DST:<rate>M`
   (overall saved/ratio kept, PLUS per-algo logical size + ratio; lz4=pending-zstd-recompress,
-  inc=incompressible) then
+  inc=incompressible) then `RCL r<repl> c<cmpr> t<tgt>` (Aug 13 2026 — bcachefs
+  **Pending reconcile** backlog: r=extra copies owed by the 3x build, c=awaiting
+  lz4→zstd recompress, t=on the wrong target device i.e. SSD→HDD destage; a yellow
+  `+<n>` appends if any other category — checksum/erasure_code/high_priority/pending/
+  stripes — or the metadata column goes nonzero, so unusual states surface without
+  spending width when they are zero) then
   `SSD <w>↓<r>↑MB HDD <w>↓<r>↑MB <await>ms` — writes↓ on the LEFT, reads↑ on the RIGHT
   (user pref; note this is OPPOSITE the network rx/tx ↓↑ at the bar's end), fixed-width
   %4d MB/s columns so digits change in place without shifting layout, + HDD write await.
@@ -334,8 +357,18 @@ background→hdd; 2× replicas; lz4+zstd).
   "since mount" summed (DST = background-movement rate: copygc + reconcile). **RB was
   DROPPED (Jul 8):** `reconcile_scan_pending` (its old source) tracks only the SCAN queue
   — it stays 0 once the scan has found the work, NOT pending bytes — so it read 0 while
-  reconcile churned 8T of `reconcile_data`. Misleading; this bcachefs version exposes no
-  clean rebalance-backlog counter, and `reconcile_data` in DST captures the activity instead.
+  reconcile churned 8T of `reconcile_data`. Misleading; `reconcile_data` in DST captures
+  the activity instead. **"exposes no clean rebalance-backlog counter" was WRONG (fixed
+  Aug 13 2026)** — it is not in sysfs, but the **CLI** has it: `bcachefs fs usage /pool`
+  prints a `Pending reconcile:` section (`data`/`metadata` columns × up to 8 category
+  rows: replicas, checksum, erasure_code, compression, target, high_priority, pending,
+  stripes). That IS the real backlog, and it is now the RCL group. Parse gotchas: only
+  **nonzero rows are printed**, so the parser must be name-keyed and treat absent rows
+  as 0 (never positional); plain `fs usage` gives raw bytes (format client-side), `-h`
+  gives `864M`/`2.36T`; the section ends at the first blank line. Both NAS builds
+  (`/usr/local/sbin/bcachefs`, `~/.local/bin/bcachefs`) agree. Costs 70-95 ms and the
+  probe **already ran it** for the SSD fill %, so the call is hoisted into `$FU` and
+  both consumers read that — no extra remote work.
   Symptom of the break: `find -name accounting` empty → whole bcachefs block (gated on
   `bc_saved≥0`) vanished = "RB no longer showing".
 - Per-tier throughput sums `/proc/diskstats` sectors ($6 read, $10 written, ×512)
@@ -346,7 +379,12 @@ background→hdd; 2× replicas; lz4+zstd).
   when idle → 10s-100s ms under load; measures device-ack, NOT platter durability
   unless the write is FUA/flush). Sparks emit defaults
   (constant field count) and gate the whole block off (`host==nas`).
-- **bcachefs CLI:** NOT installed. Debian 13 (trixie) **dropped `bcachefs-tools`**
+- **bcachefs CLI: INSTALLED since Jul 2026 — the "NOT installed" note below is STALE**
+  (kept for the why-no-apt-package reasoning). Two builds exist on the NAS:
+  `/usr/local/sbin/bcachefs` (root, Jul 3) and `~/.local/bin/bcachefs` →
+  `~/bcachefs-tools/bcachefs` (Jul 5, the one `spark.sh` calls; the probe tests
+  `-x ~/.local/bin/bcachefs`). Output identical between them. Historical reason it
+  had to be built by hand: Debian 13 (trixie) **dropped `bcachefs-tools`**
   (2025 upstream/Rust-version split), so no apt package. Build deps ARE present
   (cargo 1.85, rustc, libclang-dev). Install = build from source:
   `git clone --depth 1 https://github.com/koverstreet/bcachefs-tools && cd
@@ -366,6 +404,26 @@ When codex's recovery copy loaded the NAS, the bar sat stale for 20+ min
 Fix: removed both — reuse the master, no aggressive keepalive. Dead-host detection
 still bounded by `timeout --kill-after=1s $ssh_timeout` + `ConnectTimeout`. NOT a
 network/DNS/auth issue (ping 1.7ms, bare ssh 0.01s, cmd runs 0.03s on the NAS).
+
+### OpenRouter module (`waybar/openrouter.sh`)
+Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
+**API map — what is actually available with a NORMAL key:**
+- `GET /api/v1/credits` → `total_credits`, `total_usage` (ACCOUNT-wide). Balance = diff.
+- `GET /api/v1/key` (also reachable as `/api/v1/auth/key`) → `usage_daily`,
+  `usage_weekly`, `usage_monthly`, the `byok_usage_*` quartet, `limit` /
+  `limit_reset` / `limit_remaining`, `is_free_tier`, `label`. **PER-KEY**, and BYOK
+  spend is excluded from the credit figures (it costs no credits).
+- `GET /api/v1/activity` → **403 "Only management keys can fetch activity"**. Needs a
+  management/provisioning key from openrouter.ai settings; even then it is grouped by
+  UTC day over the last 30 *completed* days, so it still can't give a rolling window.
+**★ `usage_daily` is CALENDAR, not rolling.** Docs: "OpenRouter credit usage (in USD)
+for the current UTC day" (week = current UTC Mon-Sun, month = current UTC month) —
+it resets at UTC midnight, matching `limit_reset`'s documented daily/weekly/monthly
+cycles. So `d$` is *today so far*, NOT the last 24 h; near UTC midnight it drops to
+~0 without spending having stopped. A genuine rolling 24 h would have to be
+reconstructed locally by sampling the cumulative `usage` field (the module already
+polls every 300 s, so differencing against a ~24 h-old sample would work) — not built.
+Balance is colored red under 1 day of the current day's burn, yellow under 3.
 
 ### Weather module (`waybar/weather.sh`)
 Open-Meteo (no API key), coords for Mering. **Boot-resilience fix (Jul 30

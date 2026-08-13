@@ -68,7 +68,13 @@ window#waybar {
     margin-right: 12px;
 }
 
-/* NAS row is 214 chars — 13px overflows the 1728px portrait Dell by 12px */
+/* NAS row grew to ~323 chars with the RCL (pending-reconcile) group and 12px
+   started clipping the trailing staleness age. Measured capacity on the 1728px
+   portrait Dell (rightmost lit pixel column, 2149px usable):
+     8px = 4.81 px/char (447 chars)   10px = 5.77 (372)
+    11px = 6.57 px/char (327 chars)   12px = 6.67 (322)  <- was clipping
+   11px leaves only 4 chars spare, which load-time widening (4-digit MB/s rates,
+   4-digit HDD await, DST gaining digits) eats immediately. 10px keeps ~49. */
 window#waybar.nas * {
-    font-size: 12px;
+    font-size: 10px;
 }
