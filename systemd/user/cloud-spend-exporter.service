@@ -1,0 +1,14 @@
+[Unit]
+Description=OpenRouter + Vast.ai spend/instances -> Prometheus textfile
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=CLOUD_SPEND_INTERVAL=60
+ExecStart=/home/tom/git/dotfiles/scripts/cloud-spend-exporter.py
+Restart=always
+RestartSec=30
+Nice=15
+
+[Install]
+WantedBy=default.target

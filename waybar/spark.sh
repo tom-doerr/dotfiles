@@ -234,6 +234,16 @@ swapv=""
 [[ -n "$nvv" ]] && swapv="${swapv:+$swapv }$nvv"
 [[ -n "$sfv" ]] && swapv="${swapv:+$swapv }$sfv"
 [[ -n "$ncdv" ]] && swapv="${swapv:+$swapv }$ncdv"
+# The NAS carries far more than a spark (bcachefs compression, reconcile backlog,
+# per-tier throughput) and outgrew one 1728px row. Split it: the storage groups go
+# to a SECOND bar, rendered here and handed to `custom/nas2` via this file, so the
+# NAS is still probed ONCE per cycle rather than twice.
+if [[ "$host" == "nas" ]]; then
+  row2=""
+  for v in "$mdv" "$rclv" "$errv" "$tputv"; do [[ -n "$v" ]] && row2="${row2:+$row2 }$v"; done
+  printf '%s\n' "$row2" > "$cache.row2"
+  mdv=""; rclv=""; errv=""; tputv=""
+fi
 prefix="$host"
 [[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
 [[ -n "$wallv" ]] && prefix="$prefix $wallv"

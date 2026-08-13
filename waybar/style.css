@@ -64,17 +64,21 @@ window#waybar {
     margin-right: 20px;
 }
 
-#custom-vast-instances {
+/* Adjacent GTK labels have no gap of their own — without these the vast row runs
+   together as "m$202.89VAST $26.44 30hvast: 1xRTX5090". */
+#custom-openrouter, #custom-vast, #custom-vast-instances {
     margin-right: 12px;
 }
 
-/* NAS row grew to ~323 chars with the RCL (pending-reconcile) group and 12px
-   started clipping the trailing staleness age. Measured capacity on the 1728px
-   portrait Dell (rightmost lit pixel column, 2149px usable):
-     8px = 4.81 px/char (447 chars)   10px = 5.77 (372)
-    11px = 6.57 px/char (327 chars)   12px = 6.67 (322)  <- was clipping
-   11px leaves only 4 chars spare, which load-time widening (4-digit MB/s rates,
-   4-digit HDD await, DST gaining digits) eats immediately. 10px keeps ~49. */
-window#waybar.nas * {
-    font-size: 10px;
+/* The NAS used to need its own smaller font because everything shared one row:
+   at ~323 chars even 12px clipped the trailing staleness age. Measured capacity
+   on the 1728px portrait Dell (rightmost lit pixel column, 2149px usable) was
+   8px=4.81 px/char (447 chars), 10px=5.77 (372), 11px=6.57 (327), 12px=6.67
+   (322) — note 11px and 12px nearly tie because hinting snaps the advance.
+   Since Aug 13 2026 the NAS is split across two bars (nas = system, nas2 =
+   bcachefs/storage), ~130 chars each, so BOTH fit at the global 13px and the
+   override is gone. Re-add one here only if a row passes ~290 chars. */
+#custom-nas2 {
+    padding: 0 8px;
+    margin-right: 12px;
 }

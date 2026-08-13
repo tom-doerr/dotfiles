@@ -255,7 +255,7 @@ Requires NVIDIA driver 580.95.05 series.
 
 ## Waybar Spark Cluster Monitoring
 
-### Layout: 6 bars on the MIDDLE Dell only (Jul 13, +vast Jul 22 2026)
+### Layout: 7 bars on the MIDDLE Dell only (Jul 13, +vast Jul 22, +nas2 Aug 13 2026)
 Config (in `~/git/private/waybar/config`) defines 6 bars, all
 `"output": "Unknown-3"` (middle Dell, 1728px logical portrait), all
 stacked TOP in config order; last row = "vast" (OR credit, vast credit
@@ -263,23 +263,38 @@ stacked TOP in config order; last row = "vast" (OR credit, vast credit
 $/h, GPU util %, VRAM used/total G from the instances API
 gpu_util/vmem_usage(GB)/gpu_ram(MB), 30s poll; was position bottom
 briefly — screen-bottom is a meter away from the top stack, reverted).
-Rows: main (UI row, window title max-length 30), spark1, spark2, spark3, nas —
-one spark host per row since any pair (~275 chars) exceeds the ~221-char
-width at 13px. The nas row (214 chars) needs `window#waybar.nas *
-{ font-size: 12px; }` in style.css or it overflows by 12px.
+Rows: main (UI row, window title max-length 30), spark1, spark2, spark3,
+**nas, nas2**, vast — one spark host per row since any pair (~275 chars)
+exceeds the ~221-char width at 13px. The nas row USED to need
+`window#waybar.nas * { font-size: 12px; }`; that override is GONE since the
+Aug 13 2026 split (below).
 Bars no longer appear on the TV/outer Dells (they reserve no top space).
-**NAS row font 12px → 10px (Aug 13 2026)** — adding the RCL group pushed it to 323
-chars and 12px silently CLIPPED the trailing staleness age (the one field that tells
-you the probe is dead, so this is a bad thing to lose quietly). Measure width
+**★ NAS SPLIT ACROSS TWO ROWS (Aug 13 2026) — shrinking the font was the wrong fix.**
+Adding the RCL group pushed the nas row to 323 chars; 12px silently CLIPPED the
+trailing staleness age (the one field that tells you the probe is dead, so a bad
+thing to lose quietly). First attempt dropped the font to 10px; user's call was to
+put the font BACK UP and add a row instead — correct, since the row would just
+re-outgrow any font. Now: **`nas` = system (CPU/MEM/IO/swap/DSK/net/age),
+`nas2` = bcachefs storage (CMP + per-algo, DST, RCL, ERR, SSD/HDD throughput)**,
+~130 chars each, both at the global 13px with no per-bar override.
+**Only ONE SSH probe still runs:** `spark.sh nas` renders both rows and writes the
+storage half to `/tmp/spark_nas.row2`; `waybar/nas-row2.sh` (module `custom/nas2`)
+only displays that file and shows red if it is missing or >30s stale. Do NOT give
+nas2 its own probe — the NAS answers slowly under pool load and this would double
+the SSH pressure on it. Adjacent GTK labels have NO gap of their own, so any module
+sharing a bar needs an explicit `margin-right` (the vast row rendered as
+`m$202.89VAST $26.44 30hvast:` until `#custom-openrouter, #custom-vast` got one).
+Width-measuring recipe kept because it is reusable. Measure width
 empirically instead of guessing at em-ratios — screenshot the row with
 `grim -g "1728,2256 1728x26"` (bar rows are 24 LOGICAL px from the monitor's y:
-main 2160, spark1 2184, spark2 2208, spark3 2232, nas 2256, vast 2280) and find the
+main 2160, spark1 2184, spark2 2208, spark3 2232, nas 2256, nas2 2280, vast 2304)
+and find the
 rightmost lit column with PIL. Measured px/char on the 1728px portrait Dell (2149px
 usable): 8px=4.81, 10px=5.77, 11px=6.57, 12px=6.67 → capacity 447/372/327/322 chars.
-**11px and 12px nearly tie** (hinting snaps the advance), so 11px bought only 4 chars
-and would re-clip the moment rates go 4-digit; 10px keeps ~49 spare. `#custom-nas`
-also burns 28 logical px on `padding: 0 8px` + `margin-right: 12px` (~5 chars) if more
-room is ever needed. Gotcha: screenshot in a SEPARATE tool call from the waybar
+**11px and 12px nearly tie** (hinting snaps the advance) — so shaving a font size is
+often worth ~nothing; add a row instead. `#custom-nas`/`#custom-nas2` also burn 28
+logical px each on `padding: 0 8px` + `margin-right: 12px` (~5 chars) if more room is
+ever needed. Gotcha: screenshot in a SEPARATE tool call from the waybar
 relaunch — grim fired immediately after `hyprctl dispatch exec waybar` caught a frame
 rendered before the new CSS applied, which read as "the selector doesn't work".
 **SIGUSR2 reloads CSS but NOT bar structure** — config changes (outputs,
@@ -424,6 +439,26 @@ cycles. So `d$` is *today so far*, NOT the last 24 h; near UTC midnight it drops
 reconstructed locally by sampling the cumulative `usage` field (the module already
 polls every 300 s, so differencing against a ~24 h-old sample would work) — not built.
 Balance is colored red under 1 day of the current day's burn, yellow under 3.
+**Rolling 24h IS shown (`24h$`), computed locally (Aug 13 2026):** each 300 s run
+appends `epoch usage` (the cumulative per-key counter) to
+`~/.local/state/waybar-openrouter/usage.tsv`, prunes past 30 h, and differences
+against the NEWEST sample that is still ≥24 h old. Prune horizon is 30 h not 24 h
+so the reference sample survives short gaps. Shows `24h—` until the history is
+long enough — never a partial window passed off as a full day — and red `24h!` if
+the state file can't be written (distinct failure from "no history yet"). Once
+`cloud-spend-exporter` has run a day, `increase(openrouter_usage_total_usd[24h])`
+in Prometheus gives the same number without the local file; the module keeps its
+own copy so the bar does not depend on Prometheus being up.
+
+### Vast module (`waybar/vast.sh`)
+`VAST $<credit> <runway>h`, e.g. `VAST $26.34 30h`. **Colour is driven by RUNWAY,
+not a flat dollar threshold** (Aug 13 2026) — Vast DESTROYS instances when credit
+hits zero, so $20 is comfortable at $0.10/h and nearly spent at $2/h. Runway =
+credit / Σ`dph_total` over instances with `actual_status == "running"`, which
+means the module now hits BOTH `users/current/` and `instances/`. Red under 12 h,
+yellow under 48 h, and red at any balance under $5 (too low to start anything even
+when idle). The runway suffix is omitted while nothing is running — an idle
+account has no meaningful runway.
 
 ### Weather module (`waybar/weather.sh`)
 Open-Meteo (no API key), coords for Mering. **Boot-resilience fix (Jul 30
@@ -435,6 +470,17 @@ rides out the gap instead of relying on the interval. Still prints `wx ?`
 on genuine failure (no silent cache fallback — keeps failures visible).
 Broad `except Exception` narrowed to `(KeyError,ValueError,TypeError,
 JSONDecodeError)`. Manual recover if ever blank: `kill -USR2 $(pgrep -x waybar)`.
+
+## ★ `scripts/` and `systemd/` are BLANKET-GITIGNORED — new files need `git add -f`
+
+`.gitignore:24-25` ignores `systemd/` and `scripts/` wholesale ("Local/generated
+config trees"), yet every real exporter/unit in them IS tracked — each was force-added.
+So a new script lands in the working tree, runs fine, gets referenced from CLAUDE.md,
+and is **silently absent from every commit**; `git status` won't even list it as
+untracked. Always `git add -f scripts/<new> systemd/user/<new>` and verify with
+`git ls-files scripts systemd`. Same class of trap as the gitignored
+`tests/keymapp_install_test.sh` that rotted unnoticed — if git can't see it, nothing
+will tell you it is missing.
 
 ## Swappiness
 
