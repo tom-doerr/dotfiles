@@ -29,6 +29,3 @@ nvim-bin/
 i3/analytics.log
 kglobalshortcutsrc
 nvidia_container_runtime_config.toml
-
-# Local machine-specific tests
-tests/keymapp_install_test.sh
