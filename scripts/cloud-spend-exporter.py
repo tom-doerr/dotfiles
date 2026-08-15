@@ -15,6 +15,8 @@ they are declared counters where that holds and gauges where it does not.
 Fails loud per provider: openrouter_up / vast_up go 0 and that provider's series
 are omitted, so one dead API never fakes the other's numbers.
 """
+import calendar
+import collections
 import json
 import os
 import sys
@@ -22,6 +24,7 @@ import tempfile
 import time
 import urllib.request
 
+ENV_FILE = os.path.expanduser("~/.env_api_keys")
 OR_KEY_FILE = os.path.expanduser("~/.config/openrouter/key")
 VAST_KEY_FILE = os.path.expanduser("~/.config/vastai/vast_api_key")
 OUT = os.environ.get(
@@ -30,6 +33,31 @@ OUT = os.environ.get(
 )
 INTERVAL = float(os.environ.get("CLOUD_SPEND_INTERVAL", "60"))
 TIMEOUT = float(os.environ.get("CLOUD_SPEND_TIMEOUT", "15"))
+# /activity only ever moves once a day, so polling it at INTERVAL would be waste.
+ACTIVITY_INTERVAL = float(os.environ.get("CLOUD_SPEND_ACTIVITY_INTERVAL", "900"))
+_activity_cache = {"at": 0.0, "lines": None}
+
+
+def env_key(name):
+    """NAME from the environment, else from ~/.env_api_keys (plain KEY=value).
+
+    Reads the one variable rather than pulling the whole file into the service
+    environment via EnvironmentFile -- no reason for a spend exporter to hold
+    eighteen unrelated provider secrets. Missing file = key not configured;
+    any other OSError (e.g. permissions) is left to propagate loudly.
+    """
+    val = os.environ.get(name)
+    if val:
+        return val.strip()
+    try:
+        with open(ENV_FILE) as fh:
+            for line in fh:
+                k, _, v = line.partition("=")
+                if k.strip() == name:
+                    return v.strip().strip("\"'")
+    except FileNotFoundError:
+        return None
+    return None
 
 
 def read_key(env, path):
@@ -70,6 +98,60 @@ def openrouter():
     limit = k.get("limit")
     if limit is not None:
         out.append("openrouter_key_limit_usd %.6f" % float(limit))
+    return out
+
+
+def openrouter_activity():
+    """Per-model spend from /api/v1/activity (needs the MANAGEMENT key).
+
+    ** These are NOT today's numbers. ** The endpoint serves only COMPLETED UTC
+    days -- at 09:56 UTC on Aug 15, with $2.53 already spent that day, its latest
+    row was still Aug 14. So the per-model series describe the last complete day,
+    and openrouter_activity_day_timestamp_seconds says which day that is: graph
+    against it, and alert on it going stale rather than trusting the freshness of
+    a gauge scraped now. Today's total (no model breakdown) is usage_period_usd
+    {period="day"}.
+
+    Returns None when no management key is configured -- a normal key 403s here.
+    """
+    key = env_key("OPENROUTER_MANAGEMENT_API_KEY")
+    if not key:
+        return None
+    rows = get("https://openrouter.ai/api/v1/activity",
+               {"Authorization": "Bearer " + key})["data"]
+    if not rows:
+        raise ValueError("activity returned no rows")
+    last = max(r["date"][:10] for r in rows)
+    days = {r["date"][:10] for r in rows}
+    out = [
+        "openrouter_activity_day_timestamp_seconds %d"
+        % calendar.timegm(time.strptime(last, "%Y-%m-%d")),
+        "openrouter_activity_window_days %d" % len(days),
+    ]
+    return out + _activity_series(rows, last)
+
+
+def _activity_series(rows, last):
+    """Per-model series: last complete day in detail, plus whole-window totals."""
+    out = []
+    window = collections.Counter()
+    day = collections.defaultdict(collections.Counter)
+    for r in rows:
+        window[r["model"]] += r["usage"]
+        if r["date"].startswith(last):
+            acc = day[r["model"]]
+            acc["usage"] += r["usage"]
+            acc["requests"] += r["requests"]
+            for kind in ("prompt", "completion", "reasoning"):
+                acc[kind] += r.get(kind + "_tokens") or 0
+    for model, acc in sorted(day.items()):
+        lbl = 'model="%s"' % model
+        out.append("openrouter_model_usage_usd{%s} %.6f" % (lbl, acc["usage"]))
+        out.append("openrouter_model_requests{%s} %d" % (lbl, acc["requests"]))
+        for kind in ("prompt", "completion", "reasoning"):
+            out.append('openrouter_model_tokens{%s,kind="%s"} %d' % (lbl, kind, acc[kind]))
+    for model, usd in sorted(window.items()):
+        out.append('openrouter_model_usage_window_usd{model="%s"} %.6f' % (model, usd))
     return out
 
 
@@ -116,7 +198,25 @@ TYPES = [
     ("vast_runway_hours", "gauge", "Credit divided by burn; instances die at zero."),
     ("vast_instances_running", "gauge", "Instances in actual_status=running."),
     ("vast_instance_dph_usd", "gauge", "Per-instance dollars per hour."),
+    ("openrouter_model_usage_usd", "gauge",
+     "Per-model spend on the LAST COMPLETE UTC day (see activity_day_timestamp)."),
+    ("openrouter_model_requests", "gauge", "Per-model requests on that same day."),
+    ("openrouter_model_tokens", "gauge", "Per-model tokens on that same day."),
+    ("openrouter_model_usage_window_usd", "gauge",
+     "Per-model spend summed over the whole activity window (~30 complete days)."),
+    ("openrouter_activity_day_timestamp_seconds", "gauge",
+     "UTC midnight of the day the per-model series describe; alert if it goes stale."),
+    ("openrouter_activity_window_days", "gauge", "Distinct days present in /activity."),
 ]
+
+
+def activity_lines():
+    """Cached /activity render -- the upstream data only changes once a day."""
+    now = time.time()
+    if _activity_cache["lines"] is None or now - _activity_cache["at"] >= ACTIVITY_INTERVAL:
+        _activity_cache["lines"] = openrouter_activity()
+        _activity_cache["at"] = now
+    return _activity_cache["lines"]
 
 
 def build():
@@ -132,6 +232,16 @@ def build():
         except (OSError, ValueError, KeyError, TypeError) as exc:
             sys.stderr.write("cloud-spend-exporter: %s: %s\n" % (name, exc))
             lines.append("%s_up 0" % name)
+    lines.append("# TYPE openrouter_activity_up gauge")
+    try:
+        series = activity_lines()
+        # None = no management key configured, which is a config state, not a
+        # failure -- but still 0, so it is never mistaken for "nothing was spent".
+        lines.extend(series or [])
+        lines.append("openrouter_activity_up %d" % (1 if series else 0))
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        sys.stderr.write("cloud-spend-exporter: activity: %s\n" % exc)
+        lines.append("openrouter_activity_up 0")
     return "\n".join(lines) + "\n"
 
 

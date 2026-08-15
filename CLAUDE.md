@@ -428,9 +428,15 @@ Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only)
   `usage_weekly`, `usage_monthly`, the `byok_usage_*` quartet, `limit` /
   `limit_reset` / `limit_remaining`, `is_free_tier`, `label`. **PER-KEY**, and BYOK
   spend is excluded from the credit figures (it costs no credits).
-- `GET /api/v1/activity` → **403 "Only management keys can fetch activity"**. Needs a
-  management/provisioning key from openrouter.ai settings; even then it is grouped by
-  UTC day over the last 30 *completed* days, so it still can't give a rolling window.
+- `GET /api/v1/activity` → 403 with a normal key. **UNLOCKED Aug 15 2026**: the key
+  `OPENROUTER_MANAGEMENT_API_KEY` in `~/.env_api_keys` works. Returns one row per
+  **UTC day × model × endpoint × provider**: `usage`, `requests`, `prompt_tokens`,
+  `completion_tokens`, `reasoning_tokens`, `byok_*`, `model`, `model_permaslug`,
+  `provider_name`, `endpoint_id`. This is the ONLY per-model spend source.
+  **Still not a rolling window, and not even today**: COMPLETED UTC days only (a
+  `?date=<today>` filter is rejected: "Date must be within the last 30 (completed)
+  UTC days"). Exported by `scripts/cloud-spend-exporter.py`; see `~/CLAUDE.md` for
+  the metric names and the timestamp series that says which day they describe.
 **★ `usage_daily` is CALENDAR, not rolling.** Docs: "OpenRouter credit usage (in USD)
 for the current UTC day" (week = current UTC Mon-Sun, month = current UTC month) —
 it resets at UTC midnight, matching `limit_reset`'s documented daily/weekly/monthly
