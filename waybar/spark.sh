@@ -219,10 +219,14 @@ fi
 # threshold, so lexar1 vs lexar2 percentages are not directly comparable.
 cgvv=""
 if [[ "$host" == "nas" && "${cgv:-}" == *:* ]]; then
-  cgvv=$(awk -v s="$cgv" 'BEGIN{n=split(s,a,"|"); for(i=1;i<=n;i++){split(a[i],f,":"); if(f[1]=="lexar1"){c1=f[2];r1=f[3]} else if(f[1]=="lexar2"){c2=f[2];r2=f[3]}} printf "CG:%d/%d%% rd%.1f/%.1fms", c1, c2, r1/1000, r2/1000; if(c1>=50||c2>=50||r1>=3000||r2>=3000) exit 1}')
-  [[ $? -eq 1 ]] && cgvv=$(red "$cgvv")
+  for part in $(tr '|' '\n' <<< "$cgv" | sort); do
+    IFS=':' read -r cgn cgc cgr <<< "$part"
+    seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{printf "%s congested %3d%% read %4.1fms", n, c, r/1000}')
+    [[ ${cgc:--1} -ge 50 || ${cgr:--1} -ge 3000 ]] && seg=$(red "$seg")
+    cgvv="${cgvv:+$cgvv }$seg"
+  done
 elif [[ "$host" == "nas" ]]; then
-  cgvv=$(red "CG:?")
+  cgvv=$(red "congestion:?")
 fi
 tputv=""
 if [[ "$host" == "nas" && -n "$psrd" ]]; then

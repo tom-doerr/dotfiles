@@ -365,9 +365,14 @@ background→hdd; 2× replicas; lz4+zstd).
 - **CG group added Aug 17 2026 (cache format 38→39 fields).** Field 39 = `cgv`,
   packed `lexar1:<congested%>:<median_read_us>|lexar2:...` from bcachefs
   `dev-*/congested` (lines `current: NN%` + `median read latency: <v> <us|ms|s>`,
-  units normalized to µs remote-side). Rendered on nas2 as
-  `CG:<l1>/<l2>% rd<l1>/<l2>ms`, red when either congested ≥50% or median read
-  ≥3 ms; red `CG:?` when the sysfs read fails (non-silent). Motivation: `IO:%`
+  units normalized to µs remote-side). Rendered on nas2 as verbose PER-DRIVE
+  segments (user request Aug 17: no mental decoding): `lexar1 congested  89%
+  read  2.0ms lexar2 congested  77% read  3.0ms`, each segment individually
+  red when ITS congested ≥50% or median read ≥3 ms (the sick drive lights up,
+  not the group); red `congestion:?` when the sysfs read fails (non-silent).
+  Segments sort by label so lexar1 always leads (glob order is dev-1=lexar2
+  first). Row measured 196 visible chars, 193 physical px margin via the grim
+  recipe — fits with room for the stale suffix. Motivation: `IO:%`
   (io-PSI avg60) reads the same for busy-and-fine vs congested, and the NAS
   kernel 7.1.3 diskstats bug poisons w_await/aqu-sz (see ~/CLAUDE.md) — the
   bcachefs congested score is a latency-over-threshold vote by the fs itself and
