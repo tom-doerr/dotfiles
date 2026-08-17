@@ -362,6 +362,20 @@ background→hdd; 2× replicas; lz4+zstd).
   (user pref; note this is OPPOSITE the network rx/tx ↓↑ at the bar's end), fixed-width
   %4d MB/s columns so digits change in place without shifting layout, + HDD write await.
   Plus a red `ERR:<n>` shown only when summed drive io_errors > 0 (silent when healthy).
+- **CG group added Aug 17 2026 (cache format 38→39 fields).** Field 39 = `cgv`,
+  packed `lexar1:<congested%>:<median_read_us>|lexar2:...` from bcachefs
+  `dev-*/congested` (lines `current: NN%` + `median read latency: <v> <us|ms|s>`,
+  units normalized to µs remote-side). Rendered on nas2 as
+  `CG:<l1>/<l2>% rd<l1>/<l2>ms`, red when either congested ≥50% or median read
+  ≥3 ms; red `CG:?` when the sysfs read fails (non-silent). Motivation: `IO:%`
+  (io-PSI avg60) reads the same for busy-and-fine vs congested, and the NAS
+  kernel 7.1.3 diskstats bug poisons w_await/aqu-sz (see ~/CLAUDE.md) — the
+  bcachefs congested score is a latency-over-threshold vote by the fs itself and
+  the median read latency is the actual congestion mechanism (btree read
+  pressure). NB the % is relative to each device's OWN adaptive threshold —
+  lexar1 vs lexar2 percentages are not directly comparable; the rd ms are.
+  Sparks emit `-1` for the field (constant count); old 38-word caches still
+  parse via the kept 38 arm.
   Dropped the old `bc_ssd` SSD-share (redundant with DSK-field `SSD:<fill>%`) and the RB field.
 - **Sysfs sources changed with the DKMS bcachefs upgrade (Jul 2026):** the old
   monolithic `internal/accounting` file is GONE — `rebalance` → `reconcile` refactor.

@@ -55,12 +55,15 @@ awk -v s="$sdevs" -v h="$hdevs" "BEGIN{n=split(s,S,\" \");for(i=1;i<=n;i++)ss[S[
 errs=0
 for d in "$BASE"/dev-*; do e=$(awk "/IO errors since filesystem creation/{f=1;next} /IO errors since/{f=0;next} f&&/read:|write:|checksum:/{n=\$0;sub(/.*:/,\"\",n);gsub(/[^0-9]/,\"\",n);s+=n} END{print s+0}" "$d/io_errors" 2>/dev/null); errs=$((errs + ${e:-0})); done
 echo "$errs"
-if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi'
+if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi
+CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l#ssd.}:${cg:--1}:${mr:--1}"; done
+if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 # NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog="Pending reconcile" bytes packed replicas|compression|target|other|metadata (was reconcile_scan_pending GiB, dropped Jul 8 as meaningless). md1/md2 RAID devices no longer exist post-reinstall.
 cached=$(cat "$cache" 2>/dev/null)
 case $(echo "$cached" | wc -w) in
+  39) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv _ <<< "$cached" ;;
   38) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog _ <<< "$cached" ;;
   33) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs _ <<< "$cached" ;;
   32) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt _ <<< "$cached" ;;
@@ -100,11 +103,11 @@ else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" 
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog <<< "$(echo "$data" | tr ',\n' '  ')"
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog cgv <<< "$(echo "$data" | tr ',\n' '  ')"
   p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}
   bc_saved=${bc_saved:--1}; du=${du:-0}; bc_ratio=${bc_ratio:--1}; bc_backlog=${bc_backlog:--1}
   srd=${srd:-0}; swr=${swr:-0}; hrd=${hrd:-0}; hwr=${hwr:-0}; hwc=${hwc:-0}; hwt=${hwt:-0}; errs=${errs:-0}
-  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}
+  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}; cgv=${cgv:--1}
   rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
   if [[ -n "$prev_pt" ]]; then
     rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
@@ -127,7 +130,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} ${cgv:--1} _" > "$cache"
   pt=$now; fetch_ok=1
 else
   rx=$prx; tx=$ptx
@@ -209,6 +212,18 @@ if [[ "$host" == "nas" && "${bc_backlog:-}" == *"|"* ]]; then
 elif [[ "$host" == "nas" && "${bc_backlog:-}" == "-1" ]]; then
   rclv=$(red "RCL:?")
 fi
+# CG = bcachefs per-device congestion (dev-*/congested "current" %) + median read
+# latency for the two Lexars — the device-health signal IO-PSI can't give (PSI/%util
+# read the same for busy-and-fine vs congested; congested is a latency-over-threshold
+# vote by bcachefs itself). NB the % is relative to each device's OWN adaptive
+# threshold, so lexar1 vs lexar2 percentages are not directly comparable.
+cgvv=""
+if [[ "$host" == "nas" && "${cgv:-}" == *:* ]]; then
+  cgvv=$(awk -v s="$cgv" 'BEGIN{n=split(s,a,"|"); for(i=1;i<=n;i++){split(a[i],f,":"); if(f[1]=="lexar1"){c1=f[2];r1=f[3]} else if(f[1]=="lexar2"){c2=f[2];r2=f[3]}} printf "CG:%d/%d%% rd%.1f/%.1fms", c1, c2, r1/1000, r2/1000; if(c1>=50||c2>=50||r1>=3000||r2>=3000) exit 1}')
+  [[ $? -eq 1 ]] && cgvv=$(red "$cgvv")
+elif [[ "$host" == "nas" ]]; then
+  cgvv=$(red "CG:?")
+fi
 tputv=""
 if [[ "$host" == "nas" && -n "$psrd" ]]; then
   tputv=$(printf "SSD %4d↓%4d↑MB HDD %4d↓%4d↑MB %4dms" "${ssd_w:-0}" "${ssd_r:-0}" "${hdd_w:-0}" "${hdd_r:-0}" "${hdd_wa:-0}")
@@ -240,9 +255,9 @@ swapv=""
 # NAS is still probed ONCE per cycle rather than twice.
 if [[ "$host" == "nas" ]]; then
   row2=""
-  for v in "$mdv" "$rclv" "$errv" "$tputv"; do [[ -n "$v" ]] && row2="${row2:+$row2 }$v"; done
+  for v in "$mdv" "$rclv" "$cgvv" "$errv" "$tputv"; do [[ -n "$v" ]] && row2="${row2:+$row2 }$v"; done
   printf '%s\n' "$row2" > "$cache.row2"
-  mdv=""; rclv=""; errv=""; tputv=""
+  mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
 prefix="$host"
 [[ -n "$gpuv" ]] && prefix="$prefix $gpuv"
