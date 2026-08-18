@@ -29,7 +29,7 @@ OUT = os.environ.get(
     os.path.expanduser("~/.local/share/node_exporter/textfile/nas_bcachefs.prom"),
 )
 INTERVAL = float(os.environ.get("NAS_BCACHEFS_INTERVAL", "60"))
-TIMEOUT = float(os.environ.get("NAS_BCACHEFS_TIMEOUT", "20"))
+TIMEOUT = float(os.environ.get("NAS_BCACHEFS_TIMEOUT", "55"))
 
 
 def fetch():
