@@ -1,0 +1,122 @@
+#!/usr/bin/env bash
+# Toggle Claude Code's voice recording from anywhere, without stealing focus.
+#
+# Bound to F13, which the Voyager's VOICE_TOG thumb key emits and nothing else
+# does. Delivers a single space to the most recently used Claude Code window
+# via `hyprctl dispatch sendshortcut`, which addresses a window directly -- so
+# there is no focus switch to race against and no timing constant anywhere.
+# Claude Code must be in `tap` voice mode; `hold` ignores a tap.
+#
+#   claude-voice-toggle          send the toggle
+#   claude-voice-toggle probe    show the target it would pick, send nothing
+#
+# Measured constraint: sendshortcut only reaches windows on a workspace that
+# is currently VISIBLE on some monitor. A window parked on a hidden workspace
+# silently receives nothing, so those are skipped, and only if no visible
+# Claude window exists do we fall back to focusing one (see below).
+set -euo pipefail
+
+LOG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/claude-voice-toggle.log"
+
+log() { printf '%s %s\n' "$(date +%H:%M:%S.%3N)" "$*" >> "$LOG"; }
+
+die() {
+  log "FAIL $1"
+  notify-send -u critical "claude-voice-toggle" "$1" 2>/dev/null || true
+  echo "claude-voice-toggle: $1" >&2
+  exit 1
+}
+
+ppid_of() {
+  local s
+  read -r s < "/proc/$1/stat" || return 1
+  s=${s##*") "}
+  s=${s#* }
+  printf '%s' "${s%% *}"
+}
+
+load_windows() {
+  local vis
+  vis=$(hyprctl monitors -j | jq -r '[.[].activeWorkspace.id]|join(",")')
+  # focusHistoryID 0 is focused, ascending is further back. `visible` marks
+  # windows sendshortcut can actually reach.
+  mapfile -t ROWS < <(hyprctl clients -j | jq -r --argjson v "[${vis}]" '
+    sort_by(.focusHistoryID)[] |
+    "\(.pid)\t\(.address)\t\((.workspace.id as $w | $v | index($w)) != null)\t\(.title)"')
+  [ "${#ROWS[@]}" -gt 0 ] || die "hyprctl returned no windows"
+  declare -gA IS_WINDOW=()
+  local row
+  for row in "${ROWS[@]}"; do IS_WINDOW["${row%%$'\t'*}"]=1; done
+}
+
+# Which windows host a Claude session. From the session registry plus /proc
+# ancestry, never from titles: other TUI agents wear the same spinner glyphs
+# (`⠏ agent_private` is not Claude). The walk stops at the first ancestor that
+# is itself a window, so shared ancestors are not mistaken for a session's own.
+declare -A IS_CLAUDE=()
+collect_claude_windows() {
+  local f line pid hops
+  for f in "$HOME"/.claude/sessions/*.json; do
+    [ -e "$f" ] || continue
+    pid=""
+    # `|| [ -n "$line" ]`: these files have no trailing newline, so read
+    # returns non-zero on the only line and the body would never run.
+    while read -r line || [ -n "$line" ]; do
+      if [[ $line =~ \"pid\"[[:space:]]*:[[:space:]]*([0-9]+) ]]; then
+        pid="${BASH_REMATCH[1]}"; break
+      fi
+    done < "$f"
+    [ -n "$pid" ] && [ -d "/proc/$pid" ] || continue
+    hops=0
+    while [ -n "$pid" ] && [ "$pid" -gt 1 ] && [ "$hops" -lt 12 ]; do
+      if [ -n "${IS_WINDOW[$pid]:-}" ]; then IS_CLAUDE["$pid"]=1; break; fi
+      pid=$(ppid_of "$pid") || break
+      hops=$((hops + 1))
+    done
+  done
+}
+
+pick_target() {
+  local row pid addr visible title
+  TARGET=""; TARGET_TITLE=""; TARGET_VISIBLE=""
+  for row in "${ROWS[@]}"; do
+    IFS=$'\t' read -r pid addr visible title <<<"$row"
+    [ -n "${IS_CLAUDE[$pid]:-}" ] || continue
+    if [ "$visible" = "true" ]; then
+      TARGET="$addr"; TARGET_TITLE="$title"; TARGET_VISIBLE=1; return 0
+    fi
+    # Remember the first hidden one as a fallback, keep looking for a visible.
+    [ -n "$TARGET" ] || { TARGET="$addr"; TARGET_TITLE="$title"; }
+  done
+  [ -n "$TARGET" ] || die "no Claude Code window found"
+}
+
+load_windows
+collect_claude_windows
+pick_target
+
+if [ "${1:-}" = "probe" ]; then
+  printf 'target : %s\n' "$TARGET_TITLE"
+  printf 'address: %s\n' "$TARGET"
+  if [ -n "$TARGET_VISIBLE" ]; then
+    printf 'visible: yes (sendshortcut reaches it, no focus change)\n'
+  else
+    printf 'visible: no (hidden workspace, would need a focus switch)\n'
+  fi
+  printf 'claude windows: %s of %s\n' "${#IS_CLAUDE[@]}" "${#ROWS[@]}"
+  exit 0
+fi
+
+if [ -n "$TARGET_VISIBLE" ]; then
+  hyprctl dispatch sendshortcut ",space,address:$TARGET" > /dev/null
+  log "sent to $TARGET ($TARGET_TITLE)"
+else
+  # Only reachable when every Claude window sits on a hidden workspace.
+  # sendshortcut cannot reach those, so the window has to be brought into
+  # view; we put focus back afterwards. Synchronous, so nothing races.
+  back=$(hyprctl activewindow -j | jq -r '.address // empty')
+  log "no visible Claude window; focusing $TARGET ($TARGET_TITLE)"
+  hyprctl dispatch focuswindow "address:$TARGET" > /dev/null
+  hyprctl dispatch sendshortcut ",space,address:$TARGET" > /dev/null
+  [ -n "$back" ] && hyprctl dispatch focuswindow "address:$back" > /dev/null
+fi
