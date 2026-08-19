@@ -1,0 +1,130 @@
+#!/usr/bin/env bash
+# Focus helper for the Voyager's VOICE_TOG key (left inner thumb).
+#
+# The keyboard taps F13, waits VOICE_FOCUS_DELAY_MS, taps a real space, then
+# taps F14. Hyprland grabs F13/F14 and runs this; the space goes to whatever
+# window this left focused. So:
+#
+#   focus  -> already on a Claude window? do nothing, record into that session.
+#             otherwise remember where we are and jump to the most recently
+#             used Claude window.
+#   back   -> return to the remembered window, so recording keeps running while
+#             you carry on working where you were.
+#   probe  -> print what focus would do, without moving anything.
+#
+# Hard budget: everything here must finish inside the keyboard's 80ms wait, so
+# no per-file forks. Measure with: time claude-voice-focus probe
+set -euo pipefail
+
+STATE="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/claude-voice-focus.addr"
+
+die() {
+  notify-send -u critical "claude-voice-focus" "$1" 2>/dev/null || true
+  echo "claude-voice-focus: $1" >&2
+  exit 1
+}
+
+# Parent of a pid, no forks. /proc/<pid>/stat cannot be split on whitespace
+# naively -- comm is parenthesised and may itself contain spaces or parens --
+# but everything after the LAST ") " is plain numeric fields.
+ppid_of() {
+  local s
+  read -r s < "/proc/$1/stat" || return 1
+  s=${s##*") "}
+  s=${s#* }
+  printf '%s' "${s%% *}"
+}
+
+# One hyprctl call supplies both the focus order and the window pids.
+# focusHistoryID 0 is the focused window; ascending is further back.
+load_windows() {
+  mapfile -t ROWS < <(hyprctl clients -j |
+    jq -r 'sort_by(.focusHistoryID)[] | "\(.pid)\t\(.address)\t\(.title)"')
+  [ "${#ROWS[@]}" -gt 0 ] || die "hyprctl returned no windows"
+  declare -gA IS_WINDOW=()
+  local pid rest
+  for rest in "${ROWS[@]}"; do
+    pid=${rest%%$'\t'*}
+    IS_WINDOW["$pid"]=1
+  done
+}
+
+# Which windows host a Claude session. Derived from the session registry plus
+# /proc ancestry, not from window titles: other TUI agents wear the same
+# spinner glyphs (`⠏ agent_private` is not Claude), so titles are a guess.
+# Walking stops at the first ancestor that is itself a window, so shared
+# ancestors further up (the shell Hyprland exec'd, and beyond) are never
+# mistaken for the session's own window.
+declare -A IS_CLAUDE=()
+collect_claude_windows() {
+  local f line pid hops
+  for f in "$HOME"/.claude/sessions/*.json; do
+    [ -e "$f" ] || continue
+    pid=""
+    # `|| [ -n "$line" ]`: these files carry no trailing newline, so read
+    # returns non-zero on the only line and the body would never run.
+    while read -r line || [ -n "$line" ]; do
+      if [[ $line =~ \"pid\"[[:space:]]*:[[:space:]]*([0-9]+) ]]; then
+        pid="${BASH_REMATCH[1]}"; break
+      fi
+    done < "$f"
+    [ -n "$pid" ] && [ -d "/proc/$pid" ] || continue
+    hops=0
+    while [ -n "$pid" ] && [ "$pid" -gt 1 ] && [ "$hops" -lt 12 ]; do
+      if [ -n "${IS_WINDOW[$pid]:-}" ]; then IS_CLAUDE["$pid"]=1; break; fi
+      pid=$(ppid_of "$pid") || break
+      hops=$((hops + 1))
+    done
+  done
+}
+
+case "${1:-}" in
+  focus)
+    load_windows
+    collect_claude_windows
+    [ "${#IS_CLAUDE[@]}" -gt 0 ] || die "no Claude Code window found"
+
+    IFS=$'\t' read -r active_pid active_addr _ <<<"${ROWS[0]}"
+    # Already on Claude: leave focus alone and drop any stale return address so
+    # the F14 that follows is a no-op and the space lands right here.
+    if [ -n "${IS_CLAUDE[$active_pid]:-}" ]; then
+      rm -f "$STATE"
+      exit 0
+    fi
+
+    target=""
+    for row in "${ROWS[@]:1}"; do
+      IFS=$'\t' read -r pid addr _ <<<"$row"
+      if [ -n "${IS_CLAUDE[$pid]:-}" ]; then target="$addr"; break; fi
+    done
+    [ -n "$target" ] || die "no Claude Code window on this Hyprland instance"
+
+    printf '%s' "$active_addr" > "$STATE"
+    hyprctl dispatch focuswindow "address:$target" > /dev/null
+    ;;
+
+  back)
+    # No state file means focus was never moved (we were already on Claude).
+    # That is the designed no-op, not a swallowed error.
+    [ -f "$STATE" ] || exit 0
+    addr=$(<"$STATE")
+    rm -f "$STATE"
+    [ -n "$addr" ] || die "empty return address"
+    hyprctl dispatch focuswindow "address:$addr" > /dev/null
+    ;;
+
+  probe)
+    load_windows
+    collect_claude_windows
+    for i in "${!ROWS[@]}"; do
+      IFS=$'\t' read -r pid addr title <<<"${ROWS[$i]}"
+      if [ -n "${IS_CLAUDE[$pid]:-}" ]; then mark=CLAUDE; else mark="      "; fi
+      printf '%2d %s %-7s %s\n' "$i" "$mark" "$pid" "${title:0:52}"
+    done
+    ;;
+
+  *)
+    echo "usage: ${0##*/} focus|back|probe" >&2
+    exit 2
+    ;;
+esac
