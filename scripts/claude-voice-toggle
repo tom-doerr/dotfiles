@@ -91,6 +91,7 @@ pick_target() {
   [ -n "$TARGET" ] || die "no Claude Code window found"
 }
 
+log "invoked ${1:-send}"
 load_windows
 collect_claude_windows
 pick_target
