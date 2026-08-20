@@ -44,12 +44,54 @@ def fetch():
     ).stdout.decode("utf-8", "replace")
 
 
+# Second probe: sysfs values `fs usage` does not expose. journal_flush_write is
+# the fsync cost (an fsync IS one journal flush write); btree_cache_size and the
+# per-device bucket split are the fragmentation/tier-composition signals.
+SYSFS_CMD = r"""set -- /sys/fs/bcachefs/*-*-*-*-*; U=$1
+for s in journal_flush_write journal_flush_seq btree_node_write; do
+  [ -f "$U/time_stats/$s" ] || continue
+  awk -v n=$s '/duration of events/{d=1} d&&/mean:/{print "ts",n,$4,$5;exit}' "$U/time_stats/$s"
+done
+read c < "$U/btree_cache_size"; echo "cache $c"
+for d in "$U"/dev-*; do read l < "$d/label"
+  awk -v l="$l" '/^(free|cached|user|btree)[ \t]/{print "bucket",l,$1,$2,$4}' "$d/alloc_debug"
+done"""
+
+UNIT_S = {"ns": 1e-9, "us": 1e-6, "ms": 1e-3, "s": 1.0}
+UNIT_B = {"k": 1024, "M": 1024 ** 2, "G": 1024 ** 3, "T": 1024 ** 4}
+
+
 # "hdd.exos1 (device 2):  sdg  rw  27992446201856  24663088046080  88%  [leaving]"
 DEV_RE = re.compile(
     r"^(?P<label>\S+)\s+\(device\s+(?P<idx>\d+)\):\s+(?P<dev>\S+)\s+(?P<state>\S+)\s+"
     r"(?P<size>\d+)\s+(?P<used>\d+)\s+(?P<pct>\d+)%\s*(?P<leaving>\d+)?\s*$"
 )
 KV_RE = re.compile(r"^([A-Za-z_0-9][\w ]*):\s+([\d\s]+)$")
+
+
+def sysfs_lines():
+    """Prometheus lines from the sysfs probe. Raises on SSH/parse failure."""
+    text = subprocess.run(
+        ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", HOST, SYSFS_CMD],
+        check=True, timeout=TIMEOUT,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+    ).stdout.decode("utf-8", "replace")
+    out = []
+    for line in text.splitlines():
+        f = line.split()
+        if f[:1] == ["ts"] and len(f) == 4:
+            out.append('%s_time_stat_seconds{fs="pool",stat="%s"} %g'
+                       % (P, f[1], float(f[2]) * UNIT_S[f[3]]))
+        elif f[:1] == ["cache"] and len(f) == 2:
+            out.append('%s_btree_cache_bytes{fs="pool"} %d'
+                       % (P, float(f[1][:-1]) * UNIT_B[f[1][-1]]))
+        elif f[:1] == ["bucket"] and len(f) == 5:
+            lbl = 'fs="pool",label="%s",type="%s"' % (f[1], f[2])
+            out.append("%s_device_buckets{%s} %s" % (P, lbl, f[3]))
+            out.append("%s_device_fragmented_sectors{%s} %s" % (P, lbl, f[4]))
+    if not out:
+        raise ValueError("sysfs probe returned nothing parseable")
+    return out
 
 
 def parse(text):
@@ -101,6 +143,11 @@ HELP = [
     (P + "_device_size_bytes", "Per-device capacity."),
     (P + "_device_used_bytes", "Per-device used."),
     (P + "_device_leaving_bytes", "Per-device data still to be evacuated."),
+    (P + "_time_stat_seconds", "bcachefs internal op latency, recent mean "
+                               "(journal_flush_write == the fsync cost)."),
+    (P + "_btree_cache_bytes", "Resident btree node cache."),
+    (P + "_device_buckets", "Per-device buckets by data type."),
+    (P + "_device_fragmented_sectors", "Per-device stranded sectors by data type."),
 ]
 
 
@@ -136,6 +183,7 @@ def build():
         if not totals or not devices:
             raise ValueError("no totals/devices parsed - output format changed?")
         lines.extend(render(totals, replication, pending, devices))
+        lines.extend(sysfs_lines())
         lines.append("%s_up 1" % P)
     except (OSError, ValueError, subprocess.SubprocessError) as exc:
         sys.stderr.write("nas-bcachefs-exporter: %s\n" % exc)
