@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+# service-endpoints — rewrite hard-coded service URLs across the checkouts on
+# this box to the canonical (movable) endpoint names.
+#
+# Why: vLLM / infinity / qwen-metric used to be addressed by the HOST they ran
+# on (spark-2, 192.168.110.2, ...). Every move meant a grep-and-sed over ~60
+# files. The canonical names are Tailscale Services (svc:vllm, svc:infinity,
+# svc:qwen-metric -> <name>.tail620cfa.ts.net), which follow the service to
+# whichever node advertises it. Until the services are approved in the admin
+# console (hosts must be TAGGED, see ~/CLAUDE.md "Service endpoints"), the
+# "hosts" phase points at the node MagicDNS names instead.
+#
+# Usage:
+#   service-endpoints [--phase hosts|tailscale] [--apply] [--root DIR]...
+#     default: --phase tailscale, DRY RUN (prints unified diffs, writes nothing)
+#   service-endpoints --phase hosts --apply     # interim: node names
+#   service-endpoints --phase tailscale --apply # final: svc names
+#
+# Idempotent: running the same phase twice changes nothing; the tailscale phase
+# also subsumes the hosts phase, so you can go straight from IPs to svc names.
+#
+# NOT rewritten on purpose (host-management tooling that must bypass the
+# overlay and hit the engine directly): llm/vllm-watchdog.sh, llm/poll_redeploy.sh,
+# llm/vllm-monitor.sh, llm/benchmark_vllm.py, llm/deploy-*.sh, and anything
+# under dotfiles/tests, plus *.bak*, *.orig, .git, worktrees, data dirs.
+set -euo pipefail
+
+PHASE="tailscale"
+APPLY=0
+ROOTS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --phase) PHASE="$2"; shift 2 ;;
+        --apply) APPLY=1; shift ;;
+        --root) ROOTS+=("$2"); shift 2 ;;
+        -h|--help) sed -n '2,24p' "$0"; exit 0 ;;
+        *) echo "unknown arg: $1" >&2; exit 2 ;;
+    esac
+done
+[ ${#ROOTS[@]} -gt 0 ] || ROOTS=(
+    "$HOME/git" "$HOME/llm" "$HOME/bin" "$HOME/.local/bin" "$HOME/.config"
+    "$HOME/.exports" "$HOME/.zshrc" "$HOME/.bashrc"
+)
+
+TS_SUFFIX="tail620cfa.ts.net"
+TS_RE="${TS_SUFFIX//./\\.}"
+# Final names (Tailscale Services). Change HERE if a service is renamed.
+VLLM_SVC="vllm.${TS_SUFFIX}:8000"
+INFINITY_SVC="infinity.${TS_SUFFIX}:7997"
+QWEN_METRIC_SVC="qwen-metric.${TS_SUFFIX}:8420"
+# Interim names (node MagicDNS names of the CURRENT hosts).
+VLLM_HOST="spark-2:8000"
+INFINITY_HOST="spark-3:7997"
+QWEN_METRIC_HOST="spark-3:8420"
+
+case "$PHASE" in
+    hosts)     VLLM=$VLLM_HOST;  INFINITY=$INFINITY_HOST; QWEN_METRIC=$QWEN_METRIC_HOST ;;
+    tailscale) VLLM=$VLLM_SVC;   INFINITY=$INFINITY_SVC;  QWEN_METRIC=$QWEN_METRIC_SVC ;;
+    *) echo "bad --phase $PHASE (hosts|tailscale)" >&2; exit 2 ;;
+esac
+
+# Every historical spelling of each service's endpoint. The port is part of
+# the match so node-exporter (spark-2:9100) and friends are never touched.
+VLLM_FROM="(192\\.168\\.110\\.2|192\\.168\\.111\\.2|192\\.168\\.102\\.11|192\\.168\\.8\\.164|100\\.76\\.30\\.90|spark-2\\.${TS_RE}|spark-2|vllm\\.${TS_RE}):8000"
+INFINITY_FROM="(192\\.168\\.110\\.2|192\\.168\\.102\\.11|spark-2\\.${TS_RE}|spark-2|spark-3\\.${TS_RE}|spark-3|infinity\\.${TS_RE}):7997"
+QWEN_METRIC_FROM="(192\\.168\\.110\\.2|192\\.168\\.102\\.11|spark-2\\.${TS_RE}|spark-2|spark-3\\.${TS_RE}|spark-3|qwen-metric\\.${TS_RE}):8420"
+ANY_FROM="(${VLLM_FROM}|${INFINITY_FROM}|${QWEN_METRIC_FROM})"
+
+EXCLUDE_DIRS=(.git node_modules .venv venv venvs __pycache__ .cache site-packages
+    crash-logs crash_logs benchmark_results logs log agent_private_worktrees
+    worktrees .claude dist build target data datasets mlruns episodes traces
+    artifacts runs outputs checkpoints results demos recordings dspy_programs
+    .pytest_cache .mypy_cache .svelte-kit)
+EXCLUDE_GLOBS=('*.jsonl' '*.log' '*.md' '*.txt' '*.orig' '*.bak' '*.bak-*' '*.rej'
+    '*.csv' '*.ipynb' '*.html' '*.svg' '*.lock' '*.map' '*.min.js' '*.pt' '*.bin'
+    '*.safetensors' '*.png' '*.jpg' '*.mp4' '*.pkl' '*.npy' '*.parquet' '*.db'
+    '*.sqlite' '*.po')
+# Host-management tooling that must keep hitting the engine directly.
+SKIP_FILES_RE='(/llm/vllm-watchdog\.sh|/llm/poll_redeploy\.sh|/llm/vllm-monitor\.sh|/llm/benchmark_vllm\.py|/llm/deploy-[^/]*\.sh|/llm/spark2-status-log[^/]*\.sh|/dotfiles/tests/|/dotfiles/scripts/service-endpoints$|\.bak-[0-9]|/\.claude/)'
+
+grep_args=(-rIlE)
+for d in "${EXCLUDE_DIRS[@]}"; do grep_args+=("--exclude-dir=$d"); done
+for g in "${EXCLUDE_GLOBS[@]}"; do grep_args+=("--exclude=$g"); done
+
+mapfile -t FILES < <(grep "${grep_args[@]}" -- "$ANY_FROM" "${ROOTS[@]}" 2>/dev/null \
+    | grep -vE "$SKIP_FILES_RE" | sort -u)
+
+changed=0
+for f in "${FILES[@]}"; do
+    [ -L "$f" ] && continue   # symlinks: the target is edited when it is under a root
+    tmp=$(mktemp)
+    sed -E \
+        -e "s#${VLLM_FROM}#${VLLM}#g" \
+        -e "s#${INFINITY_FROM}#${INFINITY}#g" \
+        -e "s#${QWEN_METRIC_FROM}#${QWEN_METRIC}#g" \
+        "$f" > "$tmp"
+    if ! cmp -s "$f" "$tmp"; then
+        changed=$((changed+1))
+        if [ "$APPLY" = 1 ]; then
+            cat "$tmp" > "$f"   # keep mode/owner/inode (symlinked configs!)
+            echo "rewrote $f"
+        else
+            diff -u --label "a/$f" --label "b/$f" "$f" "$tmp" || true
+        fi
+    fi
+    rm -f "$tmp"
+done
+
+if [ "$APPLY" = 1 ]; then
+    echo "phase=$PHASE: $changed file(s) rewritten"
+else
+    echo "phase=$PHASE: $changed file(s) WOULD change (dry run; add --apply)"
+fi
