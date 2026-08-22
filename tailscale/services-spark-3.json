@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "services": {
+    "svc:infinity":    { "endpoints": { "tcp:7997": "tcp://127.0.0.1:7997" } },
+    "svc:qwen-metric": { "endpoints": { "tcp:8420": "tcp://127.0.0.1:8420" } }
+  }
+}

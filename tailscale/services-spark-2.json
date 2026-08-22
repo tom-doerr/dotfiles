@@ -1,0 +1,8 @@
+{
+  "version": "0.0.1",
+  "services": {
+    "svc:vllm": {
+      "endpoints": { "tcp:8000": "tcp://127.0.0.1:8000" }
+    }
+  }
+}
