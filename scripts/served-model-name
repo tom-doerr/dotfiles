@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+# served-model-name OLD NEW [--apply] — rewrite a hard-coded served model id
+# (e.g. Qwen/Qwen3.6-35B-A3B-FP8 -> Qwen/Qwen3.8-27B-FP8) in client code/configs.
+# Dry run by default (prints the would-be edits). Same roots/excludes as
+# service-endpoints; vast.ai deploy configs are skipped (they pick their own
+# model for rented GPUs, not the spark-2 server).
+set -euo pipefail
+OLD="${1:?old model id}"; NEW="${2:?new model id}"; APPLY=0; [ "${3:-}" = "--apply" ] && APPLY=1
+ROOTS=("$HOME/git" "$HOME/llm" "$HOME/bin" "$HOME/.local/bin" "$HOME/.config" "$HOME/.exports" "$HOME/.zshrc" "$HOME/.bashrc")
+EX=(--exclude-dir=.git --exclude-dir=node_modules --exclude-dir=.venv --exclude-dir=venv --exclude-dir=venvs
+    --exclude-dir=__pycache__ --exclude-dir=.cache --exclude-dir=site-packages --exclude-dir=crash-logs
+    --exclude-dir=crash_logs --exclude-dir=benchmark_results --exclude-dir=logs --exclude-dir=log
+    --exclude-dir=agent_private_worktrees --exclude-dir=worktrees --exclude-dir=.claude --exclude-dir=dist
+    --exclude-dir=build --exclude-dir=data --exclude-dir=datasets --exclude-dir=mlruns --exclude-dir=episodes
+    --exclude-dir=traces --exclude-dir=artifacts --exclude-dir=runs --exclude-dir=outputs --exclude-dir=checkpoints
+    --exclude-dir=results --exclude-dir=demos --exclude-dir=recordings --exclude-dir=dspy_programs
+    --exclude-dir=spark-vllm-docker --exclude-dir=vllm --exclude-dir=scratch_probe
+    --exclude='*.jsonl' --exclude='*.log' --exclude='*.md' --exclude='*.txt' --exclude='*.orig' --exclude='*.bak*'
+    --exclude='*.csv' --exclude='*.ipynb' --exclude='*.html' --exclude='*.lock' --exclude='*.min.js' --exclude='*.json'
+    --exclude='deploy-qwen*' --exclude='qwen3.*.yaml' --exclude='download_qwen*')
+mapfile -t FILES < <(grep -rlIF "${EX[@]}" -- "$OLD" "${ROOTS[@]}" 2>/dev/null | grep -viE 'vast|/tests?/test_|/llm/CLAUDE|served-model-name$' | sort -u)
+n=0
+for f in "${FILES[@]}"; do
+    [ -L "$f" ] && continue
+    n=$((n+1))
+    if [ $APPLY = 1 ]; then sed -i "s#${OLD//\//\\/}#${NEW//\//\\/}#g" "$f"; echo "rewrote $f"
+    else grep -nF "$OLD" "$f" | sed "s#^#$f:#" | cut -c1-180; fi
+done
+echo "$n file(s) $([ $APPLY = 1 ] && echo rewritten || echo 'would change (add --apply)')"
