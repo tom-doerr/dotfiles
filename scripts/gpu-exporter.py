@@ -19,7 +19,14 @@ INTERVAL = float(os.environ.get("GPU_INTERVAL", "5"))
 
 FIELDS = [
     ("utilization.gpu", "gpu_utilization_percent", "GPU compute utilization %.", 1),
-    ("utilization.memory", "gpu_memory_bus_percent", "GPU memory-bus utilization %.", 1),
+    # utilization.memory is NOT reported as [N/A] on GB10 -- it returns a hard
+    # "0 %" while the GPU is genuinely busy, so the N/A skip below cannot catch
+    # it and it would publish a SILENT ZERO that reads as real data. GB10 has
+    # no usable memory-bandwidth counter at all (DCGM unsupported, no Grace
+    # C2C/SCF PMUs), so this field is dropped on that SoC and the signal comes
+    # from gpu-headroom-exporter.py instead. Re-enable only if a future
+    # driver reports a real value.
+    # ("utilization.memory", "gpu_memory_bus_percent", "GPU memory-bus util %.", 1),
     ("memory.used", "gpu_memory_used_bytes", "GPU memory used.", 1024 * 1024),
     ("memory.total", "gpu_memory_total_bytes", "GPU memory total.", 1024 * 1024),
     ("temperature.gpu", "gpu_temperature_celsius", "GPU temperature.", 1),

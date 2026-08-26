@@ -1,0 +1,19 @@
+[Unit]
+Description=GPU headroom probe -> Prometheus textfile (fixed GEMM contention probe)
+After=network-online.target
+
+[Service]
+Type=simple
+# 30 s between probes; each probe is ~7 ms of GPU => ~0.02% duty cycle.
+Environment=GPU_HEADROOM_INTERVAL=30
+Environment=GPU_HEADROOM_MATRIX=2048
+Environment=GPU_HEADROOM_ITERS=30
+Environment=GPU_HEADROOM_DTYPE=bfloat16
+ExecStart=%h/.local/bin/gpu-headroom-exporter.py
+Restart=always
+RestartSec=60
+# Nice only affects the CPU side; the GPU has no priority knob without MPS.
+Nice=15
+
+[Install]
+WantedBy=default.target
