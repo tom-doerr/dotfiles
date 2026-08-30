@@ -57,12 +57,15 @@ for d in "$BASE"/dev-*; do e=$(awk "/IO errors since filesystem creation/{f=1;ne
 echo "$errs"
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l#ssd.}:${cg:--1}:${mr:--1}"; done
-if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi'
+if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
+DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d\", \$4,\$8,\$6,\$10; f=1; exit} END{if(!f)printf \"0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in optane.*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/^optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/^optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 # NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog="Pending reconcile" bytes packed replicas|compression|target|other|metadata (was reconcile_scan_pending GiB, dropped Jul 8 as meaningless). md1/md2 RAID devices no longer exist post-reinstall.
 cached=$(cat "$cache" 2>/dev/null)
 case $(echo "$cached" | wc -w) in
+  41) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv pdevs optv _ <<< "$cached" ;;
   39) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv _ <<< "$cached" ;;
   38) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog _ <<< "$cached" ;;
   33) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs _ <<< "$cached" ;;
@@ -103,11 +106,11 @@ else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" 
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog cgv <<< "$(echo "$data" | tr ',\n' '  ')"
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog cgv devs optv <<< "$(echo "$data" | tr ',\n' '  ')"
   p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}
   bc_saved=${bc_saved:--1}; du=${du:-0}; bc_ratio=${bc_ratio:--1}; bc_backlog=${bc_backlog:--1}
   srd=${srd:-0}; swr=${swr:-0}; hrd=${hrd:-0}; hwr=${hwr:-0}; hwc=${hwc:-0}; hwt=${hwt:-0}; errs=${errs:-0}
-  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}; cgv=${cgv:--1}
+  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}; cgv=${cgv:--1}; devs=${devs:--1}; optv=${optv:--1}
   rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
   if [[ -n "$prev_pt" ]]; then
     rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
@@ -130,7 +133,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} ${cgv:--1} _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} ${cgv:--1} ${devs:--1} ${optv:--1} _" > "$cache"
   pt=$now; fetch_ok=1
 else
   rx=$prx; tx=$ptx
@@ -253,14 +256,68 @@ swapv=""
 [[ -n "$nvv" ]] && swapv="${swapv:+$swapv }$nvv"
 [[ -n "$sfv" ]] && swapv="${swapv:+$swapv }$sfv"
 [[ -n "$ncdv" ]] && swapv="${swapv:+$swapv }$ncdv"
+# Per-device storage stats, grouped BY METRIC rather than by device: rendering
+# "opt 40MB SSD 10MB" on one line made the Optane figure read as the SSD's. Each
+# group (BW / IOPS / LAT / FILL+TEMP) gets its own row, aggregate-by-type first,
+# then per device. Deltas are against the previous cycle, so the first sample
+# after a cache miss shows zeros rather than a since-boot average.
+bwv=""; iopsv=""; latv=""; occv=""
+if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
+  mapfile -t _drow < <(awk -v cur="$devs" -v prv="$pdevs" -v dt="${rate_dt:-1}" 'BEGIN{
+    if(dt<1)dt=1
+    n=split(prv,P,"|"); for(i=1;i<=n;i++){k=index(P[i],":"); if(k)p[substr(P[i],1,k-1)]=substr(P[i],k+1)}
+    m=split(cur,C,"|"); cnt=0
+    for(i=1;i<=m;i++){
+      k=index(C[i],":"); if(!k) continue
+      l=substr(C[i],1,k-1); split(substr(C[i],k+1),F,":")
+      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.lexar/,"l",t); sub(/^optane\..*$/,"op",t)
+      grp=(l ~ /^hdd/)?"hdd":((l ~ /^ssd/)?"ssd":"opt")
+      fill[t]=F[5]+0; lat[t]=F[6]+0; tmp[t]=F[7]+0
+      if(l in p){split(p[l],Q,":")
+        rd=(F[1]-Q[1])/dt; wr=(F[2]-Q[2])/dt; if(rd<0)rd=0; if(wr<0)wr=0
+        br=(F[3]-Q[3])*512/dt/1048576; bw=(F[4]-Q[4])*512/dt/1048576; if(br<0)br=0; if(bw<0)bw=0
+      } else {rd=0;wr=0;br=0;bw=0}
+      dr[t]=rd; dw[t]=wr; dbr[t]=br; dbw[t]=bw
+      tr[grp]+=rd; tw[grp]+=wr; tbr[grp]+=br; tbw[grp]+=bw; seen[grp]=1
+      if(lat[t]>=0){ls[grp]+=lat[t]; lc[grp]++}
+      order[++cnt]=t
+    }
+    for(i=1;i<=cnt;i++)for(j=i+1;j<=cnt;j++)if(order[j]<order[i]){x=order[i];order[i]=order[j];order[j]=x}
+    B="BW"; I="IOPS"; L="LAT"; O="FILL/TEMP"
+    split("opt ssd hdd",G," ")
+    for(i=1;i<=3;i++){k=G[i]; if(!(k in seen))continue
+      B=B sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", k, tbr[k]+0.5, tbw[k]+0.5)
+      I=I sprintf("  %s %5d/%-5d", k, tr[k]+0.5, tw[k]+0.5)
+      L=L sprintf("  %s %5.1f", k, (lc[k]?ls[k]/lc[k]:0)/1000)
+    }
+    B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L "ms \xe2\x94\x82"
+    for(i=1;i<=cnt;i++){t=order[i]
+      B=B sprintf("  %s %3d/%-3d", t, dbr[t]+0.5, dbw[t]+0.5)
+      I=I sprintf("  %s %4d/%-4d", t, dr[t]+0.5, dw[t]+0.5)
+      if(lat[t]>=0) L=L sprintf("  %s %4.1f", t, lat[t]/1000)
+      O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
+    }
+    print B; print I; print L; print O
+  }')
+  bwv="${_drow[0]}"; iopsv="${_drow[1]}"; latv="${_drow[2]}"; occv="${_drow[3]}"
+fi
 # The NAS carries far more than a spark (bcachefs compression, reconcile backlog,
 # per-tier throughput) and outgrew one 1728px row. Split it: the storage groups go
 # to a SECOND bar, rendered here and handed to `custom/nas2` via this file, so the
 # NAS is still probed ONCE per cycle rather than twice.
 if [[ "$host" == "nas" ]]; then
-  row2=""
-  for v in "$mdv" "$rclv" "$cgvv" "$errv" "$tputv"; do [[ -n "$v" ]] && row2="${row2:+$row2 }$v"; done
-  printf '%s\n' "$row2" > "$cache.row2"
+  optd=""
+  if [[ "${optv:-}" == *"|"* ]]; then
+    IFS='|' read -r oused osize _ot <<< "$optv"
+    optd=$(awk -v u="${oused:-0}" -v z="${osize:-0}" 'BEGIN{printf "OPTuse %.1fG/%.0fG", u/1073741824, z/1073741824}')
+  fi
+  printf '%s\n' "${bwv:-BW n/a}"   > "$cache.row2"
+  printf '%s\n' "${iopsv:-IOPS n/a}" > "$cache.row3"
+  printf '%s\n' "${latv:-LAT n/a}"  > "$cache.row4"
+  printf '%s\n' "${occv:-FILL n/a}${optd:+  $optd}" > "$cache.row5"
+  row6=""
+  for v in "$mdv" "$rclv" "$cgvv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
+  printf '%s\n' "$row6" > "$cache.row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
 prefix="$host"
