@@ -261,6 +261,8 @@ swapv=""
 # group (BW / IOPS / LAT / FILL+TEMP) gets its own row, aggregate-by-type first,
 # then per device. Deltas are against the previous cycle, so the first sample
 # after a cache miss shows zeros rather than a since-boot average.
+# Arrow convention (device view, matching the old SSD/HDD row and net rx/tx):
+# ↓ = writes INTO the device, ↑ = reads served FROM it. Write printed first.
 bwv=""; iopsv=""; latv=""; occv=""
 if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
   mapfile -t _drow < <(awk -v cur="$devs" -v prv="$pdevs" -v dt="${rate_dt:-1}" 'BEGIN{
@@ -286,14 +288,14 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     B="BW"; I="IOPS"; L="LAT"; O="FILL/TEMP"
     split("opt ssd hdd",G," ")
     for(i=1;i<=3;i++){k=G[i]; if(!(k in seen))continue
-      B=B sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", k, tbr[k]+0.5, tbw[k]+0.5)
-      I=I sprintf("  %s %5d/%-5d", k, tr[k]+0.5, tw[k]+0.5)
+      B=B sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", k, tbw[k]+0.5, tbr[k]+0.5)
+      I=I sprintf("  %s %5d\xe2\x86\x93%5d\xe2\x86\x91", k, tw[k]+0.5, tr[k]+0.5)
       L=L sprintf("  %s %5.1f", k, (lc[k]?ls[k]/lc[k]:0)/1000)
     }
     B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L "ms \xe2\x94\x82"
     for(i=1;i<=cnt;i++){t=order[i]
-      B=B sprintf("  %s %3d/%-3d", t, dbr[t]+0.5, dbw[t]+0.5)
-      I=I sprintf("  %s %4d/%-4d", t, dr[t]+0.5, dw[t]+0.5)
+      B=B sprintf("  %s %3d\xe2\x86\x93%3d\xe2\x86\x91", t, dbw[t]+0.5, dbr[t]+0.5)
+      I=I sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", t, dw[t]+0.5, dr[t]+0.5)
       if(lat[t]>=0) L=L sprintf("  %s %4.1f", t, lat[t]/1000)
       O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
     }
