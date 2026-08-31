@@ -59,7 +59,7 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l#ssd.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d\", \$4,\$8,\$6,\$10; f=1; exit} END{if(!f)printf \"0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in optane.*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/^optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/^optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi'
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 # NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog="Pending reconcile" bytes packed replicas|compression|target|other|metadata (was reconcile_scan_pending GiB, dropped Jul 8 as meaningless). md1/md2 RAID devices no longer exist post-reinstall.
@@ -270,8 +270,8 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     for(i=1;i<=m;i++){
       k=index(C[i],":"); if(!k) continue
       l=substr(C[i],1,k-1); split(substr(C[i],k+1),F,":")
-      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.lexar/,"l",t); sub(/^optane\..*$/,"op",t)
-      grp=(l ~ /^hdd/)?"hdd":((l ~ /^ssd/)?"ssd":"opt")
+      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.lexar/,"l",t); if(t ~ /optane/)t="op"
+      grp=(l ~ /optane/)?"opt":((l ~ /^hdd/)?"hdd":"ssd")
       fill[t]=F[5]+0; lat[t]=F[6]+0; tmp[t]=F[7]+0
       if(l in p){split(p[l],Q,":")
         rd=(F[1]-Q[1])/dt; wr=(F[2]-Q[2])/dt; if(rd<0)rd=0; if(wr<0)wr=0
