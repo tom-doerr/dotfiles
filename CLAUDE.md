@@ -277,11 +277,23 @@ put the font BACK UP and add a row instead — correct, since the row would just
 re-outgrow any font. Now: **`nas` = system (CPU/MEM/IO/swap/DSK/net/age),
 `nas2` = bcachefs storage (CMP + per-algo, DST, RCL, ERR, SSD/HDD throughput)**,
 ~130 chars each, both at the global 13px with no per-bar override.
-**Only ONE SSH probe still runs:** `spark.sh nas` renders both rows and writes the
-storage half to `/tmp/spark_nas.row2`; `waybar/nas-row2.sh` (module `custom/nas2`)
-only displays that file and shows red if it is missing or >30s stale. Do NOT give
-nas2 its own probe — the NAS answers slowly under pool load and this would double
-the SSH pressure on it. Adjacent GTK labels have NO gap of their own, so any module
+**★ RE-SPLIT INTO SIX ROWS, GROUPED BY METRIC (Aug 31-Sep 1 2026).** The
+device-grouped row read "opt 40MB SSD 10MB" — the Optane figure LOOKED like
+the SSD's. Rows now: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=CMP+RCL; each =
+by-type aggregate (opt/ssd/hdd) then `│` then per device (e1-e8 l1 l2 op);
+display order comes from the CONFIG (private repo), not the numbers.
+Arrows follow the into-device convention (w↓ r↑, write first — matches net
+rx↓/tx↑; row2/3 had it inverted for a day). UTIL ≥90% renders red.
+Optane matched by `/optane/` SUBSTRING, never a `^ssd`/label prefix — its
+label moved optane.meta1 → ssd.optane1 (so `metadata_target=ssd` spans it)
+and prefix matching silently folded it into the ssd aggregate.
+NVMe temp = `device/hwmonN/temp1_input`; SATA drivetemp NESTS it at
+`device/hwmon/hwmonN/` — the probe globs both.
+**Only ONE SSH probe still runs:** `spark.sh nas` renders all rows and writes
+`/tmp/spark_nas.rowN`; the generic `waybar/nas-row.sh <n>` (nas-row2.sh is
+GONE) displays one file and shows red if missing or >30s stale. Do NOT give
+any nas row its own probe — the NAS answers slowly under pool load and this
+would multiply the SSH pressure on it. Adjacent GTK labels have NO gap of their own, so any module
 sharing a bar needs an explicit `margin-right` (the vast row rendered as
 `m$202.89VAST $26.44 30hvast:` until `#custom-openrouter, #custom-vast` got one).
 Width-measuring recipe kept because it is reusable. Measure width
@@ -314,9 +326,15 @@ no_hardware_cursors = true }` in hyprland.conf (SW cursor, negligible cost).
 
 Active module is **`spark.sh <host>`** for all bars (`custom/spark1|2|3` and
 `custom/nas`). The `spark1.sh`/`spark2.sh`/`spark3.sh` symlinks are legacy/unused.
-`spark.sh` parses a fixed **38-field** positional cache at `/tmp/spark_<host>`;
-changing emitted fields means updating `cmd`, the success `read`, the cache
-`echo`, and the `case $(... wc -w)` blocks — fragile, so prefer repurposing slots.
+`spark.sh` parses a fixed positional cache at `/tmp/spark_<host>` (**41
+fields on the NAS since Aug 31** — appended `devs` = per-bcachefs-device
+`label:reads:writes:sec_rd:sec_wr:io_ticks:fill%:lat_us:temp_mC` packed
+`|`-list, and `optv` = optane used|size|temp; older hosts still hit the
+38/39-field cases); changing emitted fields means updating `cmd`, the
+success `read`, the cache `echo`, and the `case $(... wc -w)` blocks —
+fragile, so prefer repurposing slots. One transition cycle after a field
+change computes garbage deltas from the old cache layout — clamp, don't
+trust, the first sample.
 
 ### CPU Calculation
 Must count `iowait` ($6) as idle, not just `idle` ($5):
