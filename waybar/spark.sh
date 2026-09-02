@@ -48,7 +48,7 @@ TB="function tb(s,  n,u){n=s+0;u=substr(s,length(s),1);if(u==\"k\")n*=1024;else 
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"||\$1==\"zstd\"{c+=tb(\$2);u+=tb(\$3)} END{if(u>c)print int((u-c)/1073741824);else print 0}" "$CS"; else echo -1; fi
 DUV=0; for F in "$DU" "$RC"; do [ -r "$F" ] && DUV=$((DUV + $(awk "$TB /since mount:/{print int(tb(\$NF));f=1;exit} END{if(!f)print 0}" "$F"))); done; echo "$DUV"
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"||\$1==\"zstd\"||\$1==\"incompressible\"{c+=tb(\$2);u+=tb(\$3)} END{if(c>0)print int(u*100/c);else print -1}" "$CS"; else echo -1; fi
-if [ -n "$FU" ]; then printf "%s\n" "$FU" | awk "/^Pending reconcile:/{f=1;next} f&&NF<2{f=0} f{n=\$1;sub(/:\$/,\"\",n); if(n==\"replicas\")r=\$2; else if(n==\"compression\")c=\$2; else if(n==\"target\")t=\$2; else o+=\$2; m+=\$3} END{printf \"%d|%d|%d|%d|%d\n\",r,c,t,o,m}"; else echo -1; fi
+if [ -n "$FU" ]; then printf "%s\n" "$FU" | awk "/^Pending reconcile:/{f=1;next} f&&NF<2{f=0} f{n=\$1;sub(/:\$/,\"\",n); if(n==\"replicas\")r=\$2; else if(n==\"erasure_code\")e=\$2; else if(n==\"high_priority\"){} else if(n==\"compression\")c=\$2; else if(n==\"target\")t=\$2; else o+=\$2; m+=\$3} END{printf \"%d|%d|%d|%d|%d|%d\n\",r,e,c,t,o,m}"; else echo -1; fi
 sdevs=""; hdevs=""
 for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); case "$l" in ssd.*) sdevs="$sdevs $b";; hdd.*) hdevs="$hdevs $b";; esac; done
 awk -v s="$sdevs" -v h="$hdevs" "BEGIN{n=split(s,S,\" \");for(i=1;i<=n;i++)ss[S[i]]=1;m=split(h,H,\" \");for(i=1;i<=m;i++)hh[H[i]]=1} {if(\$3 in ss){sr+=\$6;sw+=\$10}else if(\$3 in hh){hr+=\$6;hw+=\$10;hc+=\$8;ht+=\$11}} END{printf \"%d %d %d %d %d %d\n\",sr,sw,hr,hw,hc,ht}" /proc/diskstats
@@ -59,12 +59,14 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l#ssd.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi'
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi
+PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 # NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog="Pending reconcile" bytes packed replicas|compression|target|other|metadata (was reconcile_scan_pending GiB, dropped Jul 8 as meaningless). md1/md2 RAID devices no longer exist post-reinstall.
 cached=$(cat "$cache" 2>/dev/null)
 case $(echo "$cached" | wc -w) in
+  42) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv pdevs optv pprom _ <<< "$cached" ;;
   41) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv pdevs optv _ <<< "$cached" ;;
   39) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog cgv _ <<< "$cached" ;;
   38) read -r g p c m d prx ptx pt zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved pdu bc_ratio bc_backlog pci pct psrd pswr phrd phwr phwc phwt errs lz4log lz4r zstdlog zstdr inclog _ <<< "$cached" ;;
@@ -106,17 +108,18 @@ else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" 
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
-  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog cgv devs optv <<< "$(echo "$data" | tr ',\n' '  ')"
+  read -r g p ci ct m d rx tx zd zc zse zs zw nv nvs sf sfs ncd iop bc_saved du bc_ratio bc_backlog srd swr hrd hwr hwc hwt errs lz4log lz4r zstdlog zstdr inclog cgv devs optv promv <<< "$(echo "$data" | tr ',\n' '  ')"
   p=${p%.*}; nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}; ncd=${ncd:--1}; iop=${iop:--1}
   bc_saved=${bc_saved:--1}; du=${du:-0}; bc_ratio=${bc_ratio:--1}; bc_backlog=${bc_backlog:--1}
   srd=${srd:-0}; swr=${swr:-0}; hrd=${hrd:-0}; hwr=${hwr:-0}; hwc=${hwc:-0}; hwt=${hwt:-0}; errs=${errs:-0}
-  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}; cgv=${cgv:--1}; devs=${devs:--1}; optv=${optv:--1}
+  lz4log=${lz4log:-0}; lz4r=${lz4r:-0}; zstdlog=${zstdlog:-0}; zstdr=${zstdr:-0}; inclog=${inclog:-0}; cgv=${cgv:--1}; devs=${devs:--1}; optv=${optv:--1}; promv=${promv:-0}
   rate_prx=${prev_rx:-$rx}; rate_ptx=${prev_tx:-$tx}
   if [[ -n "$prev_pt" ]]; then
     rate_dt=$((now - prev_pt)); [[ $rate_dt -lt 1 ]] && rate_dt=1
   fi
   # bcachefs rates: destage (data_update delta) + per-tier throughput (diskstats sectors delta), MB/s
   dst=0; [[ -n "$pdu" && ${du:-0} -ge ${pdu:-0} ]] && dst=$(( (du - pdu) / rate_dt / 1048576 ))
+  promo=0; [[ -n "$pprom" && ${promv:-0} -ge ${pprom:-0} ]] && promo=$(( (promv - pprom) / rate_dt ))
   ssd_r=0; ssd_w=0; hdd_r=0; hdd_w=0
   [[ -n "$psrd" && ${srd:-0} -ge ${psrd:-0} ]] && ssd_r=$(( (srd - psrd) * 512 / rate_dt / 1048576 ))
   [[ -n "$pswr" && ${swr:-0} -ge ${pswr:-0} ]] && ssd_w=$(( (swr - pswr) * 512 / rate_dt / 1048576 ))
@@ -133,7 +136,7 @@ if [[ -n "$data" ]]; then
     fi
   fi
   : ${c:=0}
-  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} ${cgv:--1} ${devs:--1} ${optv:--1} _" > "$cache"
+  echo "$g $p $c $m $d $rx $tx $now $zd $zc ${zse:-N} ${zs:-0} ${zw:-0} $nv $nvs $sf $sfs ${ncd:--1} ${iop:--1} ${bc_saved:--1} ${du:-0} ${bc_ratio:--1} ${bc_backlog:--1} $ci $ct ${srd:-0} ${swr:-0} ${hrd:-0} ${hwr:-0} ${hwc:-0} ${hwt:-0} ${errs:-0} ${lz4log:-0} ${lz4r:-0} ${zstdlog:-0} ${zstdr:-0} ${inclog:-0} ${cgv:--1} ${devs:--1} ${optv:--1} ${promv:-0} _" > "$cache"
   pt=$now; fetch_ok=1
 else
   rx=$prx; tx=$ptx
@@ -198,22 +201,24 @@ iopv=""; iop_pct=$(awk -v p="${iop:--1}" 'BEGIN{if(p<0)print -1; else printf "%d
 if [[ $iop_pct -ge 0 ]]; then iopv=$(printf "%-7s" "IO:${iop_pct}%"); [[ $iop_pct -ge 20 ]] && iopv=$(red "$iopv"); fi
 mdv=""
 if [[ "$host" == "nas" && ${bc_saved:--1} -ge 0 ]]; then
-  # bcachefs: overall CMP (saved/ratio) + per-algo logical+ratio (lz4=pending zstd / zstd=done / inc) + DST
+  # compression totals (lz4 = written awaiting zstd recompress, zstd = done,
+  # raw = incompressible) + mover throughput + promote rate
   cmpsz=$(awk -v g="${bc_saved:-0}" 'BEGIN{if(g>=1024)printf "%.1fT",g/1024; else printf "%dG",g}')
   oratio=$(awk -v r="${bc_ratio:--1}" 'BEGIN{if(r<0)print "?"; else printf "%.2f", r/100}')
-  cmpv=$(awk -v a="${lz4log:-0}" -v ar="${lz4r:-0}" -v b="${zstdlog:-0}" -v br="${zstdr:-0}" -v c="${inclog:-0}" 'BEGIN{printf "lz4 %4.1fT/%.2fx zstd %4.1fT/%.2fx inc %4.1fT", a/1024,ar/100,b/1024,br/100,c/1024}')
-  mdv="CMP:${cmpsz}/${oratio}x $cmpv DST:${dst:-0}M"
+  cmpv=$(awk -v a="${lz4log:-0}" -v ar="${lz4r:-0}" -v b="${zstdlog:-0}" -v br="${zstdr:-0}" -v c="${inclog:-0}" 'BEGIN{printf "lz4 %.1fT@%.2fx zstd %.1fT@%.2fx raw %.1fT", a/1024,ar/100,b/1024,br/100,c/1024}')
+  mdv="cmp saved ${cmpsz}@${oratio}x ($cmpv)  moved ${dst:-0}M/s  promoted $(hb ${promo:-0})/s"
 fi
-# RCL = bcachefs "Pending reconcile" backlog (bytes, data column) packed as
-# replicas|compression|target|other|metadata. r=extra copies owed (3x build),
-# c=recompress lz4->zstd, t=wrong target device (SSD->HDD destage).
+# backlog = bcachefs "Pending reconcile" queues (bytes, data column) packed
+# replicas|erasure_code|compression|target|other|metadata (high_priority is
+# skipped: it mirrors replicas). repl=extra copies owed, ec=awaiting stripe,
+# recmpr=lz4->zstd, destage=wrong device (SSD->HDD moves).
 rclv=""
 if [[ "$host" == "nas" && "${bc_backlog:-}" == *"|"* ]]; then
-  IFS='|' read -r rcr rcc rct rco rcm <<< "$bc_backlog"
-  rclv=$(printf "RCL r%4s c%4s t%4s" "$(hb "$rcr")" "$(hb "$rcc")" "$(hb "$rct")")
-  [[ $((${rco:-0} + ${rcm:-0})) -gt 0 ]] && rclv="$rclv$(yellow "+$(hb $((rco + rcm)))")"
+  IFS='|' read -r rcr rce rcc rct rco rcm <<< "$bc_backlog"
+  rclv=$(printf "backlog: repl %s  ec %s  recmpr %s  destage %s" "$(hb "$rcr")" "$(hb "${rce:-0}")" "$(hb "$rcc")" "$(hb "$rct")")
+  [[ $((${rco:-0} + ${rcm:-0})) -gt 0 ]] && rclv="$rclv$(yellow " +misc $(hb $((rco + rcm)))")"
 elif [[ "$host" == "nas" && "${bc_backlog:-}" == "-1" ]]; then
-  rclv=$(red "RCL:?")
+  rclv=$(red "backlog:?")
 fi
 # CG = bcachefs per-device congestion (dev-*/congested "current" %) + median read
 # latency for the two Lexars — the device-health signal IO-PSI can't give (PSI/%util
@@ -224,7 +229,7 @@ cgvv=""
 if [[ "$host" == "nas" && "${cgv:-}" == *:* ]]; then
   for part in $(tr '|' '\n' <<< "$cgv" | sort); do
     IFS=':' read -r cgn cgc cgr <<< "$part"
-    seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{printf "%s congested %3d%% read %4.1fms", n, c, r/1000}')
+    seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{printf "%s cong %d%% rd %.1fms", n, c, r/1000}')
     [[ ${cgc:--1} -ge 50 || ${cgr:--1} -ge 3000 ]] && seg=$(red "$seg")
     cgvv="${cgvv:+$cgvv }$seg"
   done
