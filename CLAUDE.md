@@ -279,7 +279,11 @@ re-outgrow any font. Now: **`nas` = system (CPU/MEM/IO/swap/DSK/net/age),
 ~130 chars each, both at the global 13px with no per-bar override.
 **★ RE-SPLIT INTO SIX ROWS, GROUPED BY METRIC (Aug 31-Sep 1 2026).** The
 device-grouped row read "opt 40MB SSD 10MB" — the Optane figure LOOKED like
-the SSD's. Rows now: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=CMP+RCL; each =
+the SSD's. Rows now: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=cmp+backlog
+(Sep 3: relabeled explicit — "cmp saved X@Yx (lz4/zstd/raw)  moved N M/s
+promoted N/s  backlog: repl/ec/recmpr/destage +misc  <dev> cong N% rd Nms";
+the promote rate needs a data_read_promote counter the probe now ships,
+cache 41→42 fields); each =
 by-type aggregate (opt/ssd/hdd) then `│` then per device (e1-e8 l1 l2 op);
 display order comes from the CONFIG (private repo), not the numbers.
 Arrows follow the into-device convention (w↓ r↑, write first — matches net
