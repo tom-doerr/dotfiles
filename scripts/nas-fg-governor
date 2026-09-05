@@ -1,0 +1,321 @@
+#!/usr/bin/env python3
+"""bcachefs foreground-target governor for the NAS pool.
+
+Deployed to nas:/usr/local/sbin/nas-fg-governor, run by nas-fg-governor.service
+(root; Requires/After pool-mount.service).
+
+Why this exists
+---------------
+bcachefs 1.39 has no "foreground target is nearly full" logic. Reconcile runs
+high-priority replica work strictly before destage (static phase table in
+fs/data/reconcile/work.c), so during any replica campaign the SSD write tier
+fills at the foreground inflow rate until the allocator blocks on it — the
+fg=ssd free=0 trap (see ~/CLAUDE.md on spark-1). This daemon supplies the
+missing logic from userspace:
+
+  * every INTERVAL seconds read free+cached buckets ("headroom") of every
+    user-data device in the SSD group (cached copies are evictable, so they
+    are headroom the allocator will reclaim before it blocks);
+  * foreground_target == SSD group and ANY device below LOW_PCT of its
+    buckets            -> write foreground_target = HDD group   (safety, immediate)
+  * foreground_target == HDD group and EVERY device above HIGH_PCT, no
+    high_priority reconcile work pending, DWELL seconds since the last flip
+                        -> write foreground_target = SSD group  (recovery)
+
+Flipping foreground_target is cheap: it is not one of the six reconcile-
+tracked options, so it only steers NEW writes (no rescan). Per-directory
+foreground_target overrides are untouched; only the pool default moves.
+
+Operational notes
+-----------------
+  * HOLD_FILE present -> log and take no action (manual work in progress).
+  * Every sysfs write is read back; a mismatch raises -> the unit fails and
+    restarts, and the metrics file goes stale (alert on staleness).
+  * `bcachefs fs usage` (the only source of pending high_priority bytes) is
+    run only when a flip back to SSD is being considered; if it fails the
+    flip back is refused and nas_fg_governor_usage_ok is 0 — never a silent
+    default.
+  * State (flip counters, last flip) lives in STATE_DIR/state.json so the
+    Prometheus counters survive restarts.
+"""
+
+import argparse
+import json
+import os
+import subprocess
+import sys
+import time
+
+UUID = os.environ.get("NAS_FG_UUID", "3ab5c853-6fc9-4df8-b5f5-46a65dfa313d")
+SYSFS = os.environ.get("NAS_FG_SYSFS", f"/sys/fs/bcachefs/{UUID}")
+POOL = os.environ.get("NAS_FG_POOL", "/pool")
+BCACHEFS = os.environ.get("NAS_FG_BCACHEFS", "/usr/local/sbin/bcachefs")
+SSD_GROUP = os.environ.get("NAS_FG_SSD_GROUP", "ssd")
+HDD_GROUP = os.environ.get("NAS_FG_HDD_GROUP", "hdd")
+LOW_PCT = float(os.environ.get("NAS_FG_LOW_PCT", "5"))
+HIGH_PCT = float(os.environ.get("NAS_FG_HIGH_PCT", "9"))
+INTERVAL = float(os.environ.get("NAS_FG_INTERVAL", "30"))
+DWELL = float(os.environ.get("NAS_FG_DWELL", "600"))
+TEXTFILE = os.environ.get(
+    "NAS_FG_TEXTFILE", "/var/lib/prometheus/node-exporter/nas_fg_governor.prom")
+STATE_DIR = os.environ.get("STATE_DIRECTORY") or os.environ.get(
+    "NAS_FG_STATE_DIR", "/var/lib/nas-fg-governor")
+HOLD_FILE = os.environ.get("NAS_FG_HOLD_FILE", "/run/nas-fg-governor/hold")
+
+
+def log(msg):
+    print(f"nas-fg-governor: {msg}", flush=True)
+
+
+# --------------------------------------------------------------------------
+# pure logic (unit-tested)
+# --------------------------------------------------------------------------
+
+def parse_alloc_debug(text):
+    """First column ("buckets") of every row of dev-N/alloc_debug."""
+    out = {}
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            out[parts[0]] = int(parts[1])
+    return out
+
+
+def headroom_pct(free, cached, nbuckets):
+    if nbuckets <= 0:
+        raise ValueError(f"nbuckets={nbuckets}")
+    return (free + cached) * 100.0 / nbuckets
+
+
+def parse_hipri_pending(usage_text):
+    """Bytes of pending high_priority reconcile work from `bcachefs fs usage`.
+
+    Raises if the row is absent: the caller must treat that as unknown.
+    """
+    for line in usage_text.splitlines():
+        parts = line.split()
+        if parts and parts[0] == "high_priority:":
+            return int(parts[1])
+    raise ValueError("no 'high_priority:' row in bcachefs fs usage output")
+
+
+def decide(current, min_pct, low_pct, high_pct, hipri_pending, now, last_flip, dwell,
+           ssd_group=SSD_GROUP, hdd_group=HDD_GROUP):
+    """Return (new_target or None, reason).
+
+    hipri_pending: int bytes, or None when unknown (fs usage failed) — unknown
+    always refuses the flip back to SSD.
+    """
+    if current == ssd_group:
+        if min_pct < low_pct:
+            return hdd_group, f"min headroom {min_pct:.2f}% < low {low_pct}%"
+        return None, f"on {ssd_group}, min headroom {min_pct:.2f}% >= low {low_pct}%"
+    if current == hdd_group:
+        if min_pct < high_pct:
+            return None, f"on {hdd_group}, min headroom {min_pct:.2f}% < high {high_pct}%"
+        if hipri_pending is None:
+            return None, "headroom ok but high_priority pending UNKNOWN (fs usage failed)"
+        if hipri_pending > 0:
+            return None, f"headroom ok but high_priority pending = {hipri_pending} B (destage paused)"
+        if now - last_flip < dwell:
+            return None, f"headroom ok, hipri 0, but dwell {now - last_flip:.0f}s < {dwell:.0f}s"
+        return ssd_group, f"min headroom {min_pct:.2f}% >= high {high_pct}%, hipri 0, dwell ok"
+    return None, f"foreground_target is '{current}' (neither {ssd_group} nor {hdd_group}) — not managed"
+
+
+# --------------------------------------------------------------------------
+# I/O
+# --------------------------------------------------------------------------
+
+def read(path):
+    with open(path) as f:
+        return f.read()
+
+
+def read_devices():
+    """User-data devices in the SSD group: [(name, label, nbuckets, free, cached)]."""
+    devs = []
+    for entry in sorted(os.listdir(SYSFS)):
+        if not entry.startswith("dev-"):
+            continue
+        base = os.path.join(SYSFS, entry)
+        label = read(f"{base}/label").strip()
+        if not label.startswith(SSD_GROUP + "."):
+            continue
+        allowed = read(f"{base}/data_allowed").replace("\n", ",").split(",")
+        if "user" not in [a.strip() for a in allowed]:
+            continue
+        nbuckets = int(read(f"{base}/nbuckets").strip())
+        alloc = parse_alloc_debug(read(f"{base}/alloc_debug"))
+        if "free" not in alloc or "cached" not in alloc:
+            raise RuntimeError(f"{entry}: alloc_debug lacks free/cached rows: {sorted(alloc)}")
+        devs.append((entry, label, nbuckets, alloc["free"], alloc["cached"]))
+    if not devs:
+        raise RuntimeError(f"no user-data devices with label '{SSD_GROUP}.*' under {SYSFS}")
+    return devs
+
+
+def get_target():
+    return read(f"{SYSFS}/options/foreground_target").strip()
+
+
+def set_target(value, dry_run):
+    path = f"{SYSFS}/options/foreground_target"
+    if dry_run:
+        log(f"DRY RUN: would write '{value}' to {path}")
+        return
+    with open(path, "w") as f:
+        f.write(value + "\n")
+    got = get_target()
+    if got != value:
+        raise RuntimeError(f"wrote foreground_target='{value}', read back '{got}'")
+
+
+def hipri_pending():
+    """int bytes, or None (logged) when fs usage is unavailable."""
+    try:
+        out = subprocess.run([BCACHEFS, "fs", "usage", POOL], capture_output=True,
+                             text=True, timeout=120, check=True).stdout
+        return parse_hipri_pending(out)
+    except (subprocess.SubprocessError, OSError, ValueError) as e:
+        log(f"ERROR: bcachefs fs usage failed: {e!r}")
+        return None
+
+
+def load_state():
+    path = os.path.join(STATE_DIR, "state.json")
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {"flips": {SSD_GROUP: 0, HDD_GROUP: 0}, "last_flip_ts": 0.0,
+                "last_flip_to": None, "last_reason": None}
+
+
+def save_state(state):
+    os.makedirs(STATE_DIR, exist_ok=True)
+    path = os.path.join(STATE_DIR, "state.json")
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(state, f, indent=1)
+    os.replace(tmp, path)
+
+
+def write_metrics(current, devs, state, usage_ok, hold, reason):
+    lines = [
+        "# HELP nas_fg_governor_up 1 while the governor loop is running.",
+        "# TYPE nas_fg_governor_up gauge",
+        "nas_fg_governor_up 1",
+        "# HELP nas_fg_governor_foreground_target 1 for the pool's current foreground_target group.",
+        "# TYPE nas_fg_governor_foreground_target gauge",
+    ]
+    for g in (SSD_GROUP, HDD_GROUP):
+        lines.append(f'nas_fg_governor_foreground_target{{target="{g}"}} {int(current == g)}')
+    lines += [
+        "# HELP nas_fg_governor_headroom_buckets free+cached buckets per SSD user-data device.",
+        "# TYPE nas_fg_governor_headroom_buckets gauge",
+        "# HELP nas_fg_governor_headroom_percent free+cached as percent of the device's buckets.",
+        "# TYPE nas_fg_governor_headroom_percent gauge",
+        "# HELP nas_fg_governor_free_buckets free buckets per SSD user-data device.",
+        "# TYPE nas_fg_governor_free_buckets gauge",
+    ]
+    for name, label, nb, free, cached in devs:
+        lines.append(f'nas_fg_governor_headroom_buckets{{dev="{name}",label="{label}"}} {free + cached}')
+        lines.append(f'nas_fg_governor_headroom_percent{{dev="{name}",label="{label}"}} '
+                     f'{headroom_pct(free, cached, nb):.3f}')
+        lines.append(f'nas_fg_governor_free_buckets{{dev="{name}",label="{label}"}} {free}')
+    lines += [
+        "# HELP nas_fg_governor_flips_total foreground_target flips performed, by destination group.",
+        "# TYPE nas_fg_governor_flips_total counter",
+    ]
+    for g, n in state["flips"].items():
+        lines.append(f'nas_fg_governor_flips_total{{to="{g}"}} {n}')
+    lines += [
+        "# HELP nas_fg_governor_last_flip_timestamp_seconds Unix time of the last flip (0 = never).",
+        "# TYPE nas_fg_governor_last_flip_timestamp_seconds gauge",
+        f"nas_fg_governor_last_flip_timestamp_seconds {state['last_flip_ts']:.0f}",
+        "# HELP nas_fg_governor_usage_ok 1 if the last `bcachefs fs usage` call succeeded (only run when a flip back is considered).",
+        "# TYPE nas_fg_governor_usage_ok gauge",
+        f"nas_fg_governor_usage_ok {int(usage_ok)}",
+        "# HELP nas_fg_governor_hold 1 while the hold file suspends actions.",
+        "# TYPE nas_fg_governor_hold gauge",
+        f"nas_fg_governor_hold {int(hold)}",
+        "# HELP nas_fg_governor_thresholds_percent configured low/high watermarks.",
+        "# TYPE nas_fg_governor_thresholds_percent gauge",
+        f'nas_fg_governor_thresholds_percent{{kind="low"}} {LOW_PCT}',
+        f'nas_fg_governor_thresholds_percent{{kind="high"}} {HIGH_PCT}',
+        "# HELP nas_fg_governor_last_check_timestamp_seconds Unix time of the last loop iteration.",
+        "# TYPE nas_fg_governor_last_check_timestamp_seconds gauge",
+        f"nas_fg_governor_last_check_timestamp_seconds {time.time():.0f}",
+        f"# last decision: {reason}",
+        "",
+    ]
+    tmp = TEXTFILE + ".tmp"
+    with open(tmp, "w") as f:
+        f.write("\n".join(lines))
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, TEXTFILE)
+
+
+# --------------------------------------------------------------------------
+# main loop
+# --------------------------------------------------------------------------
+
+def one_cycle(state, dry_run):
+    current = get_target()
+    devs = read_devices()
+    min_pct = min(headroom_pct(free, cached, nb) for _, _, nb, free, cached in devs)
+    hold = os.path.exists(HOLD_FILE)
+    usage_ok = True
+    hipri = None
+
+    # only pay for `bcachefs fs usage` when a flip back is on the table
+    if current == HDD_GROUP and min_pct >= HIGH_PCT and not hold:
+        hipri = hipri_pending()
+        usage_ok = hipri is not None
+
+    now = time.time()
+    target, reason = decide(current, min_pct, LOW_PCT, HIGH_PCT, hipri, now,
+                            state["last_flip_ts"], DWELL)
+    if hold and target is not None:
+        reason = f"HOLD file {HOLD_FILE} present — NOT acting on: {reason}"
+        target = None
+
+    detail = " ".join(f"{label}:free={free},cached={cached},{headroom_pct(free, cached, nb):.1f}%"
+                      for _, label, nb, free, cached in devs)
+    if target is not None:
+        log(f"FLIP {current} -> {target}: {reason} [{detail}]")
+        set_target(target, dry_run)
+        if not dry_run:
+            state["flips"][target] = state["flips"].get(target, 0) + 1
+            state["last_flip_ts"] = now
+            state["last_flip_to"] = target
+            current = target
+    elif state.get("last_reason") != reason:
+        # log only on change to keep the journal quiet
+        log(f"{reason} [{detail}]")
+    state["last_reason"] = reason
+    save_state(state)
+    write_metrics(current, devs, state, usage_ok, hold, reason)
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--dry-run", action="store_true", help="log decisions, never write sysfs")
+    ap.add_argument("--once", action="store_true", help="run one cycle and exit")
+    args = ap.parse_args()
+
+    if LOW_PCT >= HIGH_PCT:
+        raise SystemExit(f"NAS_FG_LOW_PCT ({LOW_PCT}) must be < NAS_FG_HIGH_PCT ({HIGH_PCT})")
+    log(f"start: sysfs={SYSFS} groups {SSD_GROUP}/{HDD_GROUP} low={LOW_PCT}% high={HIGH_PCT}% "
+        f"interval={INTERVAL}s dwell={DWELL}s dry_run={args.dry_run}")
+    state = load_state()
+    while True:
+        one_cycle(state, args.dry_run)
+        if args.once:
+            return 0
+        time.sleep(INTERVAL)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

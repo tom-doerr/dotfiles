@@ -1,0 +1,26 @@
+# Deployed to nas:/etc/systemd/system/nas-fg-governor.service
+# Source: ~/git/dotfiles/systemd/nas/ + scripts/nas-fg-governor
+#
+# Flips the pool's foreground_target between the ssd and hdd groups based on
+# free+cached headroom of the SSD user-data devices (Lexars). Supplies the
+# "foreground target is nearly full" logic bcachefs 1.39 lacks.
+#
+# Manual override: `touch /run/nas-fg-governor/hold` suspends actions
+# (logged, nas_fg_governor_hold=1); remove the file to resume.
+# Tunables via Environment= (NAS_FG_LOW_PCT / NAS_FG_HIGH_PCT / NAS_FG_DWELL ...).
+[Unit]
+Description=bcachefs foreground-target governor for /pool (ssd<->hdd on Lexar headroom)
+Requires=pool-mount.service
+After=pool-mount.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/nas-fg-governor
+Restart=always
+RestartSec=30
+StateDirectory=nas-fg-governor
+RuntimeDirectory=nas-fg-governor
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=pool-mount.service
