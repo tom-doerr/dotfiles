@@ -1,0 +1,33 @@
+#!/bin/sh
+# Apply runtime-only bcachefs tunables to /pool after it is mounted.
+# Deployed to nas:/usr/local/sbin/bcachefs-pool-tunables, run by
+# bcachefs-pool-tunables.service (Requires/After pool-mount.service).
+#
+# Why: move_ios_in_flight / move_bytes_in_flight carry OPT_MOUNT|OPT_RUNTIME
+# but NOT OPT_SB in bcachefs 1.39, so they cannot be stored in the superblock
+# and reset to 64 / 64M on every mount. Lower queue depth was A/B'd Sep 5 2026:
+# reconcile drain rate unchanged, journal_flush_write mean down, IO PSI flat.
+# A 4+2 EC stripe is ~12 MiB, so 16M ~= one stripe per mover context.
+#
+# Every write is read back and compared; a mismatch is a hard failure
+# (no silent fallback).
+set -eu
+
+UUID=3ab5c853-6fc9-4df8-b5f5-46a65dfa313d
+d=/sys/fs/bcachefs/$UUID/options
+
+[ -d "$d" ] || { echo "bcachefs-pool-tunables: $d missing (pool not mounted?)" >&2; exit 1; }
+
+set_opt() {
+    name=$1 write=$2 expect=$3
+    echo "$write" > "$d/$name"
+    got=$(cat "$d/$name")
+    if [ "$got" != "$expect" ]; then
+        echo "bcachefs-pool-tunables: $name: wrote '$write', read back '$got', expected '$expect'" >&2
+        exit 1
+    fi
+    echo "bcachefs-pool-tunables: $name=$got"
+}
+
+set_opt move_ios_in_flight   8   8
+set_opt move_bytes_in_flight 16M 16.0M
