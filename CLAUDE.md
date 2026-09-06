@@ -277,9 +277,17 @@ put the font BACK UP and add a row instead — correct, since the row would just
 re-outgrow any font. Now: **`nas` = system (CPU/MEM/IO/swap/DSK/net/age),
 `nas2` = bcachefs storage (CMP + per-algo, DST, RCL, ERR, SSD/HDD throughput)**,
 ~130 chars each, both at the global 13px with no per-bar override.
+**★ Sep 6 2026: SEVEN rows — `fg:<target>` added, congestion split out.** Row 6
+now ends with the pool-wide `foreground_target` (`fg:ssd` plain, `fg:hdd`
+yellow = the governor or a human parked writes on HDD, red `fg:?` unreadable),
+carried as the 4th `|` slot of the `optv` field so the 42-field cache format
+did not change. The per-device congestion segment moved to a NEW row 8
+(`nas-row.sh 8`, bar `nas8` placed directly ABOVE `nas6` in the private
+config) so the last row is pure bcachefs stats (user request). Display order:
+2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 8=congestion 6=cmp+backlog+fg.
 **★ RE-SPLIT INTO SIX ROWS, GROUPED BY METRIC (Aug 31-Sep 1 2026).** The
 device-grouped row read "opt 40MB SSD 10MB" — the Optane figure LOOKED like
-the SSD's. Rows now: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=cmp+backlog
+the SSD's. Rows then: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=cmp+backlog
 (Sep 3: relabeled explicit — "cmp saved X@Yx (lz4/zstd/raw)  moved N M/s
 promoted N/s  backlog: repl/ec/recmpr/destage +misc  <dev> cong N% rd Nms";
 the promote rate needs a data_read_promote counter the probe now ships,
