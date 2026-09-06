@@ -1,0 +1,29 @@
+# Deployed to nas:/etc/systemd/system/nas-replica-raiser.service
+# Source: ~/git/dotfiles/systemd/nas/ + scripts/nas-replica-raiser
+#
+# Raises data_replicas file-by-file in bounded batches, gated on the pool
+# being healthy (foreground_target back on ssd, no high_priority reconcile
+# work pending, free space > the batch's transient peak). Job file:
+# /etc/nas-replica-raiser/job.json (example: systemd/nas/replica-raiser-job.json).
+#
+# Manual override: `touch /run/nas-replica-raiser/hold` closes the gate.
+# One-shots: `nas-replica-raiser inventory|pause|finalize [--apply]`.
+[Unit]
+Description=bcachefs incremental data_replicas raiser for /pool
+Requires=pool-mount.service
+After=pool-mount.service nas-fg-governor.service
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/nas-replica-raiser run --apply
+Restart=always
+RestartSec=60
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+StateDirectory=nas-replica-raiser
+RuntimeDirectory=nas-replica-raiser
+RuntimeDirectoryPreserve=yes
+
+[Install]
+WantedBy=pool-mount.service

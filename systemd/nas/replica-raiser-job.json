@@ -1,0 +1,8 @@
+{
+  "_comment": "Deployed to nas:/etc/nas-replica-raiser/job.json. batch_gb bounds one batch's logical size; peak_margin multiplies the transient raw peak (size x replica delta) that must fit in free space. current_level is only used by `pause` (what a still-pending file is reverted to). Order matters: entries are processed top to bottom.",
+  "batch_gb": 200,
+  "peak_margin": 1.5,
+  "entries": [
+    {"path": "/pool/recovered-oldmain/huggingface-cache", "target": 3, "erasure_code": 1, "current_level": 1}
+  ]
+}

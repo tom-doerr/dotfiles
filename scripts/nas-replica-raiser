@@ -1,0 +1,438 @@
+#!/usr/bin/env python3
+"""Incremental data_replicas raiser for the NAS bcachefs pool.
+
+Deployed to nas:/usr/local/sbin/nas-replica-raiser (root). Long-running mode
+is nas-replica-raiser.service; `pause`/`inventory`/`finalize` are one-shots.
+
+Why
+---
+bcachefs 1.39 executes high_priority reconcile work (adding replicas to
+under-protected data) strictly before destage, so a large replica raise in
+one stamp pauses destage for days and fills the SSD write tier (see
+~/CLAUDE.md on spark-1). This tool raises replicas FILE BY FILE in bounded
+batches and only opens the next batch when the pool is healthy:
+
+  gate = foreground_target is the SSD group (i.e. nas-fg-governor is happy)
+       AND high_priority pending == 0
+       AND pool free > transient peak of the batch (size x replica delta x margin)
+       AND no hold file
+
+Subcommands (all default to DRY RUN; add --apply to write anything):
+  inventory  walk the job paths, classify every file, write inventory.json
+  pause      stamp files that still have pending high_priority work with
+             data_replicas=<entry.current_level>, so the running campaign
+             stops and destage can drain; finished files are left alone
+  run        the batch loop (service mode; --once for a single iteration)
+  finalize   for entries whose files are all at target: raise the directory
+             stamp to target via `bcachefs set-file-option` (propagates), then
+             remove the per-file stamps so files simply inherit again
+
+Job file (JSON):
+  {"batch_gb": 500, "peak_margin": 1.5, "entries": [
+     {"path": "/pool/recovered-oldmain/huggingface-cache", "target": 3,
+      "erasure_code": 1, "current_level": 1}, ...]}
+
+Facts this relies on (verified Sep 6 2026 on 1.39.4):
+  * debugfs btrees/reconcile_hipri/keys lists pending high_priority extents
+    as "type set INODE:OFFSET:SNAPSHOT"; INODE == st_ino.
+  * explicit per-file options are xattrs "bcachefs.<opt>" (ENODATA when
+    inherited); "bcachefs_effective.<opt>" is the effective value.
+  * a raw setxattr on a DIRECTORY does not propagate to existing children
+    (only the CLI's REINHERIT recursion does) -> directories are only ever
+    stamped through the CLI in `finalize`.
+  * setting the same explicit value again is a kernel no-op -> re-stamping
+    after a restart is idempotent.
+"""
+
+import argparse
+import json
+import os
+import stat
+import subprocess
+import sys
+import time
+
+UUID = os.environ.get("NAS_RR_UUID", "3ab5c853-6fc9-4df8-b5f5-46a65dfa313d")
+SYSFS = os.environ.get("NAS_RR_SYSFS", f"/sys/fs/bcachefs/{UUID}")
+DEBUGFS = os.environ.get("NAS_RR_DEBUGFS", f"/sys/kernel/debug/bcachefs/{UUID}")
+POOL = os.environ.get("NAS_RR_POOL", "/pool")
+BCACHEFS = os.environ.get("NAS_RR_BCACHEFS", "/usr/local/sbin/bcachefs")
+SSD_GROUP = os.environ.get("NAS_RR_SSD_GROUP", "ssd")
+STATE_DIR = os.environ.get("STATE_DIRECTORY") or os.environ.get(
+    "NAS_RR_STATE_DIR", "/var/lib/nas-replica-raiser")
+HOLD_FILE = os.environ.get("NAS_RR_HOLD_FILE", "/run/nas-replica-raiser/hold")
+TEXTFILE = os.environ.get(
+    "NAS_RR_TEXTFILE", "/var/lib/prometheus/node-exporter/nas_replica_raiser.prom")
+POLL = float(os.environ.get("NAS_RR_POLL", "60"))
+XATTR_REPL = "bcachefs.data_replicas"
+XATTR_EC = "bcachefs.erasure_code"
+XATTR_EFF_REPL = "bcachefs_effective.data_replicas"
+
+
+def log(msg):
+    print(f"nas-replica-raiser: {msg}", flush=True)
+
+
+# --------------------------------------------------------------------------
+# pure logic (unit-tested)
+# --------------------------------------------------------------------------
+
+def parse_hipri_inodes(lines):
+    """Set of inode numbers that have pending high_priority extents.
+
+    Lines look like: 'u64s 5 type set 2147706864:3052544:U32_MAX len 0 ver 0'
+    """
+    out = set()
+    for line in lines:
+        parts = line.split()
+        try:
+            i = parts.index("set")
+        except ValueError:
+            continue
+        if i + 1 >= len(parts):
+            continue
+        inode = parts[i + 1].split(":")[0]
+        if inode.isdigit():
+            out.add(int(inode))
+    return out
+
+
+def parse_usage(text):
+    """(size, used, high_priority_pending) bytes from `bcachefs fs usage`."""
+    size = used = hipri = None
+    for line in text.splitlines():
+        p = line.split()
+        if not p:
+            continue
+        if p[0] == "Size:":
+            size = int(p[1])
+        elif p[0] == "Used:":
+            used = int(p[1])
+        elif p[0] == "high_priority:":
+            hipri = int(p[1])
+    if size is None or used is None or hipri is None:
+        raise ValueError("bcachefs fs usage output lacks Size/Used/high_priority rows")
+    return size, used, hipri
+
+
+def classify(f, target, hipri_inodes):
+    """f: dict(ino, size, explicit, effective). -> 'pending' | 'todo' | 'done'.
+
+    pending : the running campaign still has work queued for this file
+    todo    : below target (explicit stamp < target, or inherits < target)
+    done    : effective == target and nothing queued
+    """
+    if f["ino"] in hipri_inodes:
+        return "pending"
+    if f["explicit"] is not None and f["explicit"] < target:
+        return "todo"
+    if f["effective"] < target:
+        return "todo"
+    return "done"
+
+
+def plan_batch(todo, batch_bytes):
+    """Files (already sorted) to stamp next: at least one, up to batch_bytes."""
+    batch, total = [], 0
+    for f in todo:
+        if batch and total + f["size"] > batch_bytes:
+            break
+        batch.append(f)
+        total += f["size"]
+    return batch, total
+
+
+def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold):
+    """(open: bool, reason)."""
+    if hold:
+        return False, "hold file present"
+    if fg_target != ssd_group:
+        return False, f"foreground_target is '{fg_target}' (governor says SSD tier is not healthy)"
+    if hipri_pending is None:
+        return False, "high_priority pending UNKNOWN (fs usage failed)"
+    if hipri_pending > 0:
+        return False, f"high_priority pending = {hipri_pending / 1e9:.1f} GB (previous batch still running)"
+    if free_bytes < peak_bytes:
+        return False, f"free {free_bytes / 1e12:.2f} TB < required peak {peak_bytes / 1e12:.2f} TB"
+    return True, "gate open"
+
+
+# --------------------------------------------------------------------------
+# I/O helpers
+# --------------------------------------------------------------------------
+
+def read_file(path):
+    with open(path) as f:
+        return f.read()
+
+
+def xattr_int(path, name):
+    try:
+        return int(os.getxattr(path, name).decode().strip())
+    except OSError:
+        return None
+
+
+def hipri_inodes():
+    path = f"{DEBUGFS}/btrees/reconcile_hipri/keys"
+    with open(path) as f:
+        return parse_hipri_inodes(f)
+
+
+def fs_usage():
+    out = subprocess.run([BCACHEFS, "fs", "usage", POOL], capture_output=True,
+                         text=True, timeout=180, check=True).stdout
+    return parse_usage(out)
+
+
+def load_json(path, default):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default
+
+
+def save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(data, f)
+    os.replace(tmp, path)
+
+
+def walk_entry(entry):
+    root = entry["path"]
+    if not os.path.isdir(root):
+        raise SystemExit(f"job path is not a directory: {root}")
+    files = []
+    for dirpath, _dirs, names in os.walk(root):
+        for n in names:
+            p = os.path.join(dirpath, n)
+            try:
+                st = os.lstat(p)
+            except FileNotFoundError:
+                continue
+            if not stat.S_ISREG(st.st_mode):
+                continue
+            eff = xattr_int(p, XATTR_EFF_REPL)
+            if eff is None:
+                raise RuntimeError(f"{p}: cannot read {XATTR_EFF_REPL} (not bcachefs?)")
+            files.append({"path": p, "ino": st.st_ino, "size": st.st_size,
+                          "explicit": xattr_int(p, XATTR_REPL), "effective": eff})
+    return files
+
+
+def stamp(path, replicas, ec, apply):
+    if not apply:
+        return
+    os.setxattr(path, XATTR_REPL, str(replicas).encode())
+    if ec is not None:
+        os.setxattr(path, XATTR_EC, str(ec).encode())
+    got = xattr_int(path, XATTR_REPL)
+    if got != replicas:
+        raise RuntimeError(f"{path}: stamped data_replicas={replicas}, read back {got}")
+
+
+def write_metrics(state, reason):
+    lines = ["# HELP nas_replica_raiser_up 1 while the raiser is running.",
+             "# TYPE nas_replica_raiser_up gauge", "nas_replica_raiser_up 1",
+             "# HELP nas_replica_raiser_bytes bytes per job entry and class.",
+             "# TYPE nas_replica_raiser_bytes gauge",
+             "# HELP nas_replica_raiser_files files per job entry and class.",
+             "# TYPE nas_replica_raiser_files gauge"]
+    for path, e in state.get("entries", {}).items():
+        for cls in ("pending", "todo", "done", "in_batch"):
+            lines.append(f'nas_replica_raiser_bytes{{path="{path}",class="{cls}"}} {e.get(cls + "_bytes", 0)}')
+            lines.append(f'nas_replica_raiser_files{{path="{path}",class="{cls}"}} {e.get(cls + "_files", 0)}')
+    lines += ["# HELP nas_replica_raiser_batches_total batches stamped so far.",
+              "# TYPE nas_replica_raiser_batches_total counter",
+              f"nas_replica_raiser_batches_total {state.get('batches', 0)}",
+              "# HELP nas_replica_raiser_gate_open 1 when the last gate check passed.",
+              "# TYPE nas_replica_raiser_gate_open gauge",
+              f"nas_replica_raiser_gate_open {int(state.get('gate_open', False))}",
+              "# HELP nas_replica_raiser_last_check_timestamp_seconds Unix time of the last loop iteration.",
+              "# TYPE nas_replica_raiser_last_check_timestamp_seconds gauge",
+              f"nas_replica_raiser_last_check_timestamp_seconds {time.time():.0f}",
+              f"# last: {reason}", ""]
+    tmp = TEXTFILE + ".tmp"
+    with open(tmp, "w") as f:
+        f.write("\n".join(lines))
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, TEXTFILE)
+
+
+# --------------------------------------------------------------------------
+# subcommands
+# --------------------------------------------------------------------------
+
+def load_job(path):
+    job = load_json(path, None)
+    if job is None:
+        raise SystemExit(f"job file not found: {path}")
+    for e in job["entries"]:
+        e["path"] = os.path.realpath(e["path"])
+        if not e["path"].startswith(POOL + "/"):
+            raise SystemExit(f"refusing job path outside {POOL}: {e['path']}")
+        if not 1 <= int(e["target"]) <= 4:
+            raise SystemExit(f"bad target for {e['path']}: {e['target']}")
+    job.setdefault("batch_gb", 500)
+    job.setdefault("peak_margin", 1.5)
+    return job
+
+
+def do_inventory(job, hip=None, quiet=False):
+    hip = hipri_inodes() if hip is None else hip
+    inv = {}
+    for e in job["entries"]:
+        files = walk_entry(e)
+        classes = {"pending": [], "todo": [], "done": []}
+        for f in files:
+            classes[classify(f, int(e["target"]), hip)].append(f)
+        inv[e["path"]] = classes
+        if not quiet:
+            log(f"{e['path']}: " + ", ".join(
+                f"{k}={len(v)} files/{sum(x['size'] for x in v) / 1e9:.0f} GB" for k, v in classes.items()))
+    save_json(os.path.join(STATE_DIR, "inventory.json"), inv)
+    return inv, hip
+
+
+def do_pause(job, apply):
+    inv, _ = do_inventory(job)
+    n = b = 0
+    for e in job["entries"]:
+        lvl = e.get("current_level")
+        pend = inv[e["path"]]["pending"]
+        if not pend:
+            continue
+        if lvl is None:
+            raise SystemExit(f"{e['path']}: {len(pend)} files pending but no current_level in job")
+        for f in pend:
+            stamp(f["path"], int(lvl), None, apply)  # EC is auto-disabled by the fixups at 1x
+            n += 1
+            b += f["size"]
+        log(f"{'stamped' if apply else 'DRY RUN would stamp'} {len(pend)} pending files under "
+            f"{e['path']} with data_replicas={lvl} ({sum(x['size'] for x in pend) / 1e9:.0f} GB)")
+    log(f"pause {'applied' if apply else 'dry run'}: {n} files, {b / 1e12:.2f} TB")
+
+
+def do_run(job, apply, once):
+    state = load_json(os.path.join(STATE_DIR, "state.json"), {"batches": 0, "entries": {}})
+    batch_bytes = float(job["batch_gb"]) * 1e9
+    while True:
+        try:
+            size, used, hipri = fs_usage()
+        except (subprocess.SubprocessError, OSError, ValueError) as ex:
+            log(f"ERROR: fs usage failed: {ex!r}")
+            size = used = None
+            hipri = None
+        fg = read_file(f"{SYSFS}/options/foreground_target").strip()
+        hold = os.path.exists(HOLD_FILE)
+
+        inv, _ = do_inventory(job, quiet=True)
+        todo_all = []
+        for e in job["entries"]:
+            cl = inv[e["path"]]
+            st = state["entries"].setdefault(e["path"], {})
+            for k, v in cl.items():
+                st[k + "_files"] = len(v)
+                st[k + "_bytes"] = sum(x["size"] for x in v)
+            for f in sorted(cl["todo"], key=lambda x: x["path"]):
+                todo_all.append((e, f))
+
+        if not todo_all:
+            pend = sum(st.get("pending_files", 0) for st in state["entries"].values())
+            reason = (f"nothing to do yet: {pend} files still have pending high_priority work"
+                      if pend else "nothing to do: all entries at target (run `finalize` to clean up stamps)")
+            state["gate_open"] = False
+            write_metrics(state, reason)
+            if state.get("last_reason") != reason:
+                log(reason)
+            state["last_reason"] = reason
+            save_json(os.path.join(STATE_DIR, "state.json"), state)
+            if once:
+                return
+            time.sleep(POLL)
+            continue
+
+        # peak for the NEXT batch: size x (target - effective) x margin
+        cand, _ = plan_batch([f for _, f in todo_all], batch_bytes)
+        peak = sum(f["size"] * max(0, int(e["target"]) - f["effective"])
+                   for (e, f) in todo_all[:len(cand)]) * float(job["peak_margin"])
+        free = (size - used) if size is not None else 0
+        ok, reason = gate(fg, SSD_GROUP, hipri, free, peak, hold)
+        state["gate_open"] = ok
+        remaining = sum(f["size"] for _, f in todo_all)
+        reason = f"{reason}; todo {len(todo_all)} files / {remaining / 1e12:.2f} TB; next batch {len(cand)} files"
+        if ok:
+            n = 0
+            for e, f in todo_all[:len(cand)]:
+                stamp(f["path"], int(e["target"]), e.get("erasure_code"), apply)
+                n += 1
+            state["batches"] += 1 if apply else 0
+            log(f"BATCH {state['batches']}: {'stamped' if apply else 'DRY RUN would stamp'} {n} files "
+                f"({sum(f['size'] for _, f in todo_all[:len(cand)]) / 1e9:.0f} GB); {reason}")
+            for e, f in todo_all[:len(cand)]:
+                st = state["entries"][e["path"]]
+                st["in_batch_files"] = st.get("in_batch_files", 0) + 1
+                st["in_batch_bytes"] = st.get("in_batch_bytes", 0) + f["size"]
+        elif state.get("last_reason") != reason:
+            log(f"waiting: {reason}")
+        state["last_reason"] = reason
+        write_metrics(state, reason)
+        save_json(os.path.join(STATE_DIR, "state.json"), state)
+        if once:
+            return
+        time.sleep(POLL)
+
+
+def do_finalize(job, apply):
+    inv, _ = do_inventory(job)
+    for e in job["entries"]:
+        cl = inv[e["path"]]
+        if cl["todo"] or cl["pending"]:
+            log(f"{e['path']}: not finished ({len(cl['todo'])} todo, {len(cl['pending'])} pending) — skipped")
+            continue
+        tgt = int(e["target"])
+        cmd = [BCACHEFS, "set-file-option", f"--data_replicas={tgt}"]
+        if e.get("erasure_code") is not None:
+            cmd.append(f"--erasure_code={e['erasure_code']}")
+        cmd.append(e["path"])
+        log(f"{'run' if apply else 'DRY RUN'}: {' '.join(cmd)}")
+        if apply:
+            subprocess.run(cmd, check=True, timeout=3600)
+        stamped = [f for f in cl["done"] if f["explicit"] is not None]
+        log(f"{e['path']}: {'removing' if apply else 'would remove'} explicit stamps from {len(stamped)} files")
+        if apply:
+            for f in stamped:
+                try:
+                    os.removexattr(f["path"], XATTR_REPL)
+                except OSError as ex:
+                    if ex.errno != 61:  # ENODATA
+                        raise
+                if xattr_int(f["path"], XATTR_EFF_REPL) != tgt:
+                    raise RuntimeError(f"{f['path']}: effective replicas != {tgt} after clearing stamp")
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("cmd", choices=["inventory", "pause", "run", "finalize"])
+    ap.add_argument("--job", default="/etc/nas-replica-raiser/job.json")
+    ap.add_argument("--apply", action="store_true", help="write stamps (default: dry run)")
+    ap.add_argument("--once", action="store_true", help="run: single iteration")
+    a = ap.parse_args()
+    job = load_job(a.job)
+    log(f"{a.cmd}: job={a.job} entries={len(job['entries'])} batch_gb={job['batch_gb']} apply={a.apply}")
+    if a.cmd == "inventory":
+        do_inventory(job)
+    elif a.cmd == "pause":
+        do_pause(job, a.apply)
+    elif a.cmd == "run":
+        do_run(job, a.apply, a.once)
+    elif a.cmd == "finalize":
+        do_finalize(job, a.apply)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
