@@ -29,5 +29,10 @@ set_opt() {
     echo "bcachefs-pool-tunables: $name=$got"
 }
 
-set_opt move_ios_in_flight   8   8
-set_opt move_bytes_in_flight 16M 16.0M
+# Sep 5: 8/16M (A/B'd during a transaction-bound phase: no throughput loss).
+# Sep 6: RAISED to 32/64M — during the HDD-read-bound hipri phase the mover's
+# reads sat pinned at the cap; measured keys/s 8:117 32:273 64:300 with
+# journal_flush recent 59/70/105 ms -> 32 = 2.3x drain for +11 ms flush;
+# 64 was +10% more drain for +35 ms flush (rejected).
+set_opt move_ios_in_flight   32  32
+set_opt move_bytes_in_flight 64M 64.0M
