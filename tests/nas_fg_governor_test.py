@@ -87,17 +87,12 @@ class DecideTests(unittest.TestCase):
     def test_hdd_flips_back_when_all_conditions_hold(self):
         target, reason = self.d("hdd", 9.0)
         self.assertEqual(target, "ssd")
-        self.assertIn("hipri 0", reason)
+        self.assertIn("dwell ok", reason)
 
-    def test_hdd_refuses_while_hipri_pending(self):
-        target, reason = self.d("hdd", 20.0, hipri=1)
-        self.assertIsNone(target)
-        self.assertIn("high_priority pending", reason)
-
-    def test_hdd_refuses_when_hipri_unknown(self):
-        target, reason = self.d("hdd", 20.0, hipri=None)
-        self.assertIsNone(target)
-        self.assertIn("UNKNOWN", reason)
+    def test_hdd_flips_back_regardless_of_hipri(self):
+        # user decision Sep 6 2026: pending high_priority work is not a reason to stay on hdd
+        self.assertEqual(self.d("hdd", 20.0, hipri=1)[0], "ssd")
+        self.assertEqual(self.d("hdd", 20.0, hipri=None)[0], "ssd")
 
     def test_hdd_respects_dwell(self):
         target, reason = self.d("hdd", 20.0, now=100.0, last=0.0)

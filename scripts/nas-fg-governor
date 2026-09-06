@@ -18,9 +18,10 @@ missing logic from userspace:
     are headroom the allocator will reclaim before it blocks);
   * foreground_target == SSD group and ANY device below LOW_PCT of its
     buckets            -> write foreground_target = HDD group   (safety, immediate)
-  * foreground_target == HDD group and EVERY device above HIGH_PCT, no
-    high_priority reconcile work pending, DWELL seconds since the last flip
+  * foreground_target == HDD group and EVERY device above HIGH_PCT and
+    DWELL seconds since the last flip
                         -> write foreground_target = SSD group  (recovery)
+    (pending high_priority work is deliberately NOT a condition — see decide())
 
 Flipping foreground_target is cheap: it is not one of the six reconcile-
 tracked options, so it only steers NEW writes (no rescan). Per-directory
@@ -31,10 +32,9 @@ Operational notes
   * HOLD_FILE present -> log and take no action (manual work in progress).
   * Every sysfs write is read back; a mismatch raises -> the unit fails and
     restarts, and the metrics file goes stale (alert on staleness).
-  * `bcachefs fs usage` (the only source of pending high_priority bytes) is
-    run only when a flip back to SSD is being considered; if it fails the
-    flip back is refused and nas_fg_governor_usage_ok is 0 — never a silent
-    default.
+  * `bcachefs fs usage` is no longer consulted (the high_priority condition
+    was dropped Sep 6 2026); nas_fg_governor_usage_ok stays 1 for dashboard
+    compatibility.
   * State (flip counters, last flip) lives in STATE_DIR/state.json so the
     Prometheus counters survive restarts.
 """
@@ -103,8 +103,11 @@ def decide(current, min_pct, low_pct, high_pct, hipri_pending, now, last_flip, d
            ssd_group=SSD_GROUP, hdd_group=HDD_GROUP):
     """Return (new_target or None, reason).
 
-    hipri_pending: int bytes, or None when unknown (fs usage failed) — unknown
-    always refuses the flip back to SSD.
+    hipri_pending is accepted for API compatibility but IGNORED (user decision
+    Sep 6 2026): pending high_priority work only means destage is paused, so a
+    flip back can at worst cause one short ssd excursion that the low
+    watermark ends — not a safety concern, and hdd landing does not speed the
+    mover (its writes go to background_target anyway).
     """
     if current == ssd_group:
         if min_pct < low_pct:
@@ -113,13 +116,9 @@ def decide(current, min_pct, low_pct, high_pct, hipri_pending, now, last_flip, d
     if current == hdd_group:
         if min_pct < high_pct:
             return None, f"on {hdd_group}, min headroom {min_pct:.2f}% < high {high_pct}%"
-        if hipri_pending is None:
-            return None, "headroom ok but high_priority pending UNKNOWN (fs usage failed)"
-        if hipri_pending > 0:
-            return None, f"headroom ok but high_priority pending = {hipri_pending} B (destage paused)"
         if now - last_flip < dwell:
-            return None, f"headroom ok, hipri 0, but dwell {now - last_flip:.0f}s < {dwell:.0f}s"
-        return ssd_group, f"min headroom {min_pct:.2f}% >= high {high_pct}%, hipri 0, dwell ok"
+            return None, f"headroom ok but dwell {now - last_flip:.0f}s < {dwell:.0f}s"
+        return ssd_group, f"min headroom {min_pct:.2f}% >= high {high_pct}%, dwell ok"
     return None, f"foreground_target is '{current}' (neither {ssd_group} nor {hdd_group}) — not managed"
 
 
@@ -269,10 +268,6 @@ def one_cycle(state, dry_run):
     usage_ok = True
     hipri = None
 
-    # only pay for `bcachefs fs usage` when a flip back is on the table
-    if current == HDD_GROUP and min_pct >= HIGH_PCT and not hold:
-        hipri = hipri_pending()
-        usage_ok = hipri is not None
 
     now = time.time()
     target, reason = decide(current, min_pct, LOW_PCT, HIGH_PCT, hipri, now,
