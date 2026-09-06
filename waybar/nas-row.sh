@@ -6,7 +6,7 @@
 # display one. Probing per row would multiply the SSH load on a box that
 # already answers slowly under heavy pool IO.
 #
-# Rows: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 6=compression/reconcile
+# Rows: 2=BW 3=IOPS 4=LAT 7=UTIL 5=FILL/TEMP 8=congestion 6=compression/reconcile/fg-target
 # (display order comes from the waybar config, not the numbers).
 # Grouped by metric rather than by device, so an Optane figure can never be
 # mistaken for the SSD one sitting next to it.

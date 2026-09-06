@@ -59,7 +59,7 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l#ssd.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); echo "${ou:-0}|${os:-0}|${ot:-0}"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
@@ -323,16 +323,26 @@ fi
 if [[ "$host" == "nas" ]]; then
   optd=""
   if [[ "${optv:-}" == *"|"* ]]; then
-    IFS='|' read -r oused osize _ot <<< "$optv"
+    IFS='|' read -r oused osize _ot ofg <<< "$optv"
     optd=$(awk -v u="${oused:-0}" -v z="${osize:-0}" 'BEGIN{printf "OPTuse %.1fG/%.0fG", u/1073741824, z/1073741824}')
   fi
+  # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
+  # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.
+  case "${ofg:-}" in
+    ssd*) fgv="fg:${ofg}" ;;
+    hdd*) fgv=$(yellow "fg:${ofg}") ;;
+    *)    fgv=$(red "fg:?") ;;
+  esac
   printf '%s\n' "${bwv:-BW n/a}"   > "$cache.row2"
   printf '%s\n' "${iopsv:-IOPS n/a}" > "$cache.row3"
   printf '%s\n' "${latv:-LAT n/a}"  > "$cache.row4"
   printf '%s\n' "${utilv:-UTIL n/a}" > "$cache.row7"
   printf '%s\n' "${occv:-FILL n/a}${optd:+  $optd}" > "$cache.row5"
+  # row 8 = per-device congestion (user request Sep 6 2026: keep the LAST row pure
+  # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
+  printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
   row6=""
-  for v in "$mdv" "$rclv" "$cgvv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
+  for v in "$mdv" "$rclv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
   printf '%s\n' "$row6" > "$cache.row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
