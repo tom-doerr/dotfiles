@@ -14,6 +14,9 @@ Requires=pool-mount.service
 After=pool-mount.service
 
 [Service]
+# Sep 6 2026: Lexars relabelled ssd.nand.* (Optane becomes ssd.optane.*); the
+# healthy foreground target is the NAND subgroup, not the whole ssd group.
+Environment=NAS_FG_SSD_GROUP=ssd.nand
 Type=simple
 ExecStart=/usr/local/sbin/nas-fg-governor
 Restart=always
