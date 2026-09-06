@@ -49,8 +49,10 @@ class ParseTests(unittest.TestCase):
     def test_usage(self):
         size, used, hipri = rr.parse_usage(USAGE)
         self.assertEqual((size, used, hipri), (209513462660096, 148634303478272, 2205763088384))
+        # only nonzero rows are printed: no high_priority row == 0, not unknown
+        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile: data metadata\ntarget: 5 0\n"), (10, 1, 0))
         with self.assertRaises(ValueError):
-            rr.parse_usage("Size: 1\nUsed: 1\n")
+            rr.parse_usage("Pending reconcile:\nhigh_priority: 1 0\n")
 
 
 class ClassifyTests(unittest.TestCase):

@@ -98,8 +98,15 @@ def parse_hipri_inodes(lines):
 
 
 def parse_usage(text):
-    """(size, used, high_priority_pending) bytes from `bcachefs fs usage`."""
-    size = used = hipri = None
+    """(size, used, high_priority_pending) bytes from `bcachefs fs usage`.
+
+    `bcachefs fs usage` prints only NONZERO rows of the "Pending reconcile"
+    section, so an absent high_priority row means 0 — it must never be treated
+    as unknown (that bug kept the gate closed forever once a queue drained,
+    Sep 6 2026). Size and Used are always printed; missing them is an error.
+    """
+    size = used = None
+    hipri = 0
     for line in text.splitlines():
         p = line.split()
         if not p:
@@ -110,8 +117,8 @@ def parse_usage(text):
             used = int(p[1])
         elif p[0] == "high_priority:":
             hipri = int(p[1])
-    if size is None or used is None or hipri is None:
-        raise ValueError("bcachefs fs usage output lacks Size/Used/high_priority rows")
+    if size is None or used is None:
+        raise ValueError("bcachefs fs usage output lacks Size/Used rows")
     return size, used, hipri
 
 
