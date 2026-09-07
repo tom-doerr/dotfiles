@@ -13,7 +13,8 @@ one stamp pauses destage for days and fills the SSD write tier (see
 batches and only opens the next batch when the pool is healthy:
 
   gate = foreground_target is the SSD group (i.e. nas-fg-governor is happy)
-       AND high_priority pending == 0
+       AND high_priority pending <= slack (NAS_RR_HIPRI_SLACK_MB)
+       AND destage backlog ("target" row) <= NAS_RR_TARGET_MAX_GB (10)
        AND pool free > transient peak of the batch (size x replica delta x margin)
        AND no hold file
 
@@ -69,6 +70,10 @@ POLL = float(os.environ.get("NAS_RR_POLL", "60"))
 # for hours on one file, invisible to the mover). Without slack the gate would
 # never reopen; with it the campaign continues and the residual is reported.
 HIPRI_SLACK = int(float(os.environ.get("NAS_RR_HIPRI_SLACK_MB", "64")) * 1e6)
+# destage backlog ("target" row) that must have drained before the next batch
+# (user decision Sep 7 2026: 10 GB). A batch pauses destage, so this keeps the
+# SSD tier from carrying more than one batch's worth of un-destaged writes.
+TARGET_MAX = int(float(os.environ.get("NAS_RR_TARGET_MAX_GB", "10")) * 1e9)
 XATTR_REPL = "bcachefs.data_replicas"
 XATTR_EC = "bcachefs.erasure_code"
 XATTR_EFF_REPL = "bcachefs_effective.data_replicas"
@@ -103,7 +108,7 @@ def parse_hipri_inodes(lines):
 
 
 def parse_usage(text):
-    """(size, used, high_priority_pending) bytes from `bcachefs fs usage`.
+    """(size, used, high_priority_pending, target_pending) bytes from `bcachefs fs usage`.
 
     `bcachefs fs usage` prints only NONZERO rows of the "Pending reconcile"
     section, so an absent high_priority row means 0 — it must never be treated
@@ -111,7 +116,7 @@ def parse_usage(text):
     Sep 6 2026). Size and Used are always printed; missing them is an error.
     """
     size = used = None
-    hipri = 0
+    hipri = target = 0
     for line in text.splitlines():
         p = line.split()
         if not p:
@@ -122,9 +127,11 @@ def parse_usage(text):
             used = int(p[1])
         elif p[0] == "high_priority:":
             hipri = int(p[1])
+        elif p[0] == "target:":
+            target = int(p[1])
     if size is None or used is None:
         raise ValueError("bcachefs fs usage output lacks Size/Used rows")
-    return size, used, hipri
+    return size, used, hipri, target
 
 
 def classify(f, target, hipri_inodes):
@@ -154,8 +161,10 @@ def plan_batch(todo, batch_bytes):
     return batch, total
 
 
-def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold, slack=0):
-    """(open: bool, reason). slack = high_priority bytes tolerated as finished."""
+def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold, slack=0,
+         target_pending=0, target_max=None):
+    """(open: bool, reason). slack = high_priority bytes tolerated as finished;
+    target_max = destage backlog bytes that must have drained first (None = ignore)."""
     if hold:
         return False, "hold file present"
     if fg_target != ssd_group:
@@ -164,6 +173,8 @@ def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold, slac
         return False, "high_priority pending UNKNOWN (fs usage failed)"
     if hipri_pending > slack:
         return False, f"high_priority pending = {hipri_pending / 1e9:.1f} GB (previous batch still running)"
+    if target_max is not None and target_pending > target_max:
+        return False, f"destage backlog (target) = {target_pending / 1e9:.1f} GB > {target_max / 1e9:.0f} GB, waiting for it to drain"
     if free_bytes < peak_bytes:
         return False, f"free {free_bytes / 1e12:.2f} TB < required peak {peak_bytes / 1e12:.2f} TB"
     if hipri_pending:
@@ -335,11 +346,12 @@ def do_run(job, apply, once):
     batch_bytes = float(job["batch_gb"]) * 1e9
     while True:
         try:
-            size, used, hipri = fs_usage()
+            size, used, hipri, target = fs_usage()
         except (subprocess.SubprocessError, OSError, ValueError) as ex:
             log(f"ERROR: fs usage failed: {ex!r}")
             size = used = None
             hipri = None
+            target = 0
         fg = read_file(f"{SYSFS}/options/foreground_target").strip()
         hold = os.path.exists(HOLD_FILE)
 
@@ -374,7 +386,7 @@ def do_run(job, apply, once):
         peak = sum(f["size"] * max(0, int(e["target"]) - f["effective"])
                    for (e, f) in todo_all[:len(cand)]) * float(job["peak_margin"])
         free = (size - used) if size is not None else 0
-        ok, reason = gate(fg, SSD_GROUP, hipri, free, peak, hold, HIPRI_SLACK)
+        ok, reason = gate(fg, SSD_GROUP, hipri, free, peak, hold, HIPRI_SLACK, target, TARGET_MAX)
         state["gate_open"] = ok
         remaining = sum(f["size"] for _, f in todo_all)
         reason = f"{reason}; todo {len(todo_all)} files / {remaining / 1e12:.2f} TB; next batch {len(cand)} files"

@@ -47,10 +47,10 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(s, {2147706864, 6917529027641216822})
 
     def test_usage(self):
-        size, used, hipri = rr.parse_usage(USAGE)
-        self.assertEqual((size, used, hipri), (209513462660096, 148634303478272, 2205763088384))
+        size, used, hipri, target = rr.parse_usage(USAGE)
+        self.assertEqual((size, used, hipri, target), (209513462660096, 148634303478272, 2205763088384, 1077937328128))
         # only nonzero rows are printed: no high_priority row == 0, not unknown
-        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile: data metadata\ntarget: 5 0\n"), (10, 1, 0))
+        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile: data metadata\ntarget: 5 0\n"), (10, 1, 0, 5))
         with self.assertRaises(ValueError):
             rr.parse_usage("Pending reconcile:\nhigh_priority: 1 0\n")
 
@@ -107,6 +107,13 @@ class GateTests(unittest.TestCase):
         ok, why = rr.gate("ssd", "ssd", 500_000, 10e12, 1e12, False, slack=1_000_000)
         self.assertTrue(ok)
         self.assertIn("residual", why)
+
+    def test_destage_backlog_closes(self):
+        ok, why = rr.gate("ssd", "ssd", 0, 10e12, 1e12, False, target_pending=11e9, target_max=10e9)
+        self.assertFalse(ok)
+        self.assertIn("destage", why)
+        self.assertTrue(rr.gate("ssd", "ssd", 0, 10e12, 1e12, False, target_pending=9e9, target_max=10e9)[0])
+        self.assertTrue(rr.gate("ssd", "ssd", 0, 10e12, 1e12, False, target_pending=99e9, target_max=None)[0])
 
     def test_free_space_closes(self):
         ok, why = rr.gate("ssd", "ssd", 0, 0.5e12, 1e12, False)
