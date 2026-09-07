@@ -102,6 +102,12 @@ class GateTests(unittest.TestCase):
         self.assertFalse(rr.gate("ssd", "ssd", 5, 10e12, 1e12, False)[0])
         self.assertFalse(rr.gate("ssd", "ssd", None, 10e12, 1e12, False)[0])
 
+    def test_slack_tolerates_stuck_residual(self):
+        self.assertFalse(rr.gate("ssd", "ssd", 5_000_000, 10e12, 1e12, False, slack=1_000_000)[0])
+        ok, why = rr.gate("ssd", "ssd", 500_000, 10e12, 1e12, False, slack=1_000_000)
+        self.assertTrue(ok)
+        self.assertIn("residual", why)
+
     def test_free_space_closes(self):
         ok, why = rr.gate("ssd", "ssd", 0, 0.5e12, 1e12, False)
         self.assertFalse(ok)

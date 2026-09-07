@@ -64,6 +64,11 @@ HOLD_FILE = os.environ.get("NAS_RR_HOLD_FILE", "/run/nas-replica-raiser/hold")
 TEXTFILE = os.environ.get(
     "NAS_RR_TEXTFILE", "/var/lib/prometheus/node-exporter/nas_replica_raiser.prom")
 POLL = float(os.environ.get("NAS_RR_POLL", "60"))
+# high_priority bytes tolerated as "done": bcachefs can leave a few extents
+# queued that its logical pass never services (seen Sep 7 2026: 1.9 MB stuck
+# for hours on one file, invisible to the mover). Without slack the gate would
+# never reopen; with it the campaign continues and the residual is reported.
+HIPRI_SLACK = int(float(os.environ.get("NAS_RR_HIPRI_SLACK_MB", "64")) * 1e6)
 XATTR_REPL = "bcachefs.data_replicas"
 XATTR_EC = "bcachefs.erasure_code"
 XATTR_EFF_REPL = "bcachefs_effective.data_replicas"
@@ -149,18 +154,20 @@ def plan_batch(todo, batch_bytes):
     return batch, total
 
 
-def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold):
-    """(open: bool, reason)."""
+def gate(fg_target, ssd_group, hipri_pending, free_bytes, peak_bytes, hold, slack=0):
+    """(open: bool, reason). slack = high_priority bytes tolerated as finished."""
     if hold:
         return False, "hold file present"
     if fg_target != ssd_group:
         return False, f"foreground_target is '{fg_target}' (governor says SSD tier is not healthy)"
     if hipri_pending is None:
         return False, "high_priority pending UNKNOWN (fs usage failed)"
-    if hipri_pending > 0:
+    if hipri_pending > slack:
         return False, f"high_priority pending = {hipri_pending / 1e9:.1f} GB (previous batch still running)"
     if free_bytes < peak_bytes:
         return False, f"free {free_bytes / 1e12:.2f} TB < required peak {peak_bytes / 1e12:.2f} TB"
+    if hipri_pending:
+        return True, f"gate open (ignoring {hipri_pending / 1e6:.1f} MB stuck high_priority residual)"
     return True, "gate open"
 
 
@@ -367,7 +374,7 @@ def do_run(job, apply, once):
         peak = sum(f["size"] * max(0, int(e["target"]) - f["effective"])
                    for (e, f) in todo_all[:len(cand)]) * float(job["peak_margin"])
         free = (size - used) if size is not None else 0
-        ok, reason = gate(fg, SSD_GROUP, hipri, free, peak, hold)
+        ok, reason = gate(fg, SSD_GROUP, hipri, free, peak, hold, HIPRI_SLACK)
         state["gate_open"] = ok
         remaining = sum(f["size"] for _, f in todo_all)
         reason = f"{reason}; todo {len(todo_all)} files / {remaining / 1e12:.2f} TB; next batch {len(cand)} files"
