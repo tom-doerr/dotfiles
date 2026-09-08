@@ -86,6 +86,7 @@ window#waybar {
 /* ROSpider hexapod battery (rospider.sh); hidden while the robot is off */
 #custom-rospider {
     padding: 0 8px;
+    margin-right: 16px;
 }
 #custom-rospider.warning {
     color: #e5c07b;
