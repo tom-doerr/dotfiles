@@ -515,6 +515,17 @@ yellow under 48 h, and red at any balance under $5 (too low to start anything ev
 when idle). The runway suffix is omitted while nothing is running — an idle
 account has no meaningful runway.
 
+### ROSpider battery module (`waybar/rospider.sh`, Sep 8 2026)
+`custom/rospider` on the MAIN bar (modules-right, before weather; private
+config), 60 s, `signal: 7`, JSON. Reads the hexapod's
+`/ros_robot_controller/battery` (millivolts) over `ssh rospider` + the
+vendor docker/zsh recipe (see `~/git/rospider/CLAUDE.md`), maps a 3S LiPo
+table (12.6 V=100 % … 10.0 V=0 %, the board's alarm level) to `🕷 NN%`,
+class `warning` <40 % (yellow) / `critical` <20 % (red, bold). **Empty
+output = hidden**: a 2 s `/dev/tcp` probe of port 22 first, so a powered-off
+robot costs nothing (without it the ssh path burned the full 15 s timeout).
+`ROSPIDER_MV=11500 ~/.config/waybar/rospider.sh` tests the formatting offline.
+
 ### Weather module (`waybar/weather.sh`)
 Open-Meteo (no API key), coords for Mering. **Boot-resilience fix (Jul 30
 2026):** after a reboot the module stayed BLANK >5 min — waybar's
