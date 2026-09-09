@@ -511,8 +511,10 @@ not a flat dollar threshold** (Aug 13 2026) — Vast DESTROYS instances when cre
 hits zero, so $20 is comfortable at $0.10/h and nearly spent at $2/h. Runway =
 credit / Σ`dph_total` over instances with `actual_status == "running"`, which
 means the module now hits BOTH `users/current/` and `instances/`. Red under 12 h,
-yellow under 48 h, and red at any balance under $5 (too low to start anything even
-when idle). The runway suffix is omitted while nothing is running — an idle
+yellow under 48 h, and red under $5 only while something is burning. **An idle
+account is never coloured (Sep 9 2026, user request): with nothing running the
+balance cannot drain, so the old "always red under $5" was a permanent false
+alarm.** The runway suffix is omitted while nothing is running — an idle
 account has no meaningful runway.
 
 ### ROSpider battery module (`waybar/rospider.sh`, Sep 8 2026)

@@ -6,8 +6,9 @@
 #   something is actually burning; an idle account has no meaningful runway.
 #   Colour is driven by runway, NOT by a flat dollar figure: Vast destroys
 #   instances when credit hits zero, so $20 is comfortable at $0.10/h and nearly
-#   spent at $2/h. Red under RED_H hours, yellow under YELLOW_H. A balance below
-#   MIN_USD is always red — too low to start anything even when idle.
+#   spent at $2/h. Red under RED_H hours, yellow under YELLOW_H, and red below
+#   MIN_USD while something burns. An idle account is never coloured: nothing
+#   can drain the balance, so a low figure is information, not an alarm.
 #   "VAST ?" = no key,  "VAST !" = API/parse error (not a silent fake balance).
 
 key="${VAST_API_KEY:-}"
@@ -39,8 +40,9 @@ try:
             txt = "<span color='#ff5555'>%s</span>" % txt
         elif hours < YELLOW_H:
             txt = "<span color='#f1fa8c'>%s</span>" % txt
-    elif credit < MIN_USD:
-        txt = "<span color='#ff5555'>%s</span>" % txt
+    # Idle account (nothing running, nothing burning): never coloured. A low
+    # balance cannot drain on its own, so red would be a permanent false alarm
+    # (user request Sep 9 2026). MIN_USD only matters while something burns.
     print(txt)
 except (KeyError, ValueError, TypeError, json.JSONDecodeError):
     print("VAST !")
