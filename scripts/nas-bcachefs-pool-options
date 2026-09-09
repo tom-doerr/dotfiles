@@ -1,0 +1,29 @@
+#!/bin/sh
+# Apply runtime-only bcachefs options to /pool after it is mounted.
+# Deployed to nas:/usr/local/sbin/bcachefs-pool-options, run by
+# bcachefs-pool-options.service (Requires/After + WantedBy pool-mount.service).
+#
+# promote_skip_congested=0: our patched module (fork tom-doerr/bcachefs-tools,
+# branch promote-congestion-mult-1.39.4) adds this option; 0 = promotes are
+# never skipped because a device's read latency exceeds 4x its fast quantile.
+# Measured Sep 10 2026: with the skip on, 99 % of promote candidates were
+# refused and the Optane read cache grew 127 MiB/min; with it off, 0 refused
+# and +609 MiB per 2 min. The option is OPT_RUNTIME without a superblock
+# field, so it resets to 1 on every mount — hence this unit.
+#
+# Every write is read back; a mismatch (e.g. a stock module without the
+# option) is a hard failure so the unit shows red instead of silently
+# running with the skip on.
+set -eu
+UUID=3ab5c853-6fc9-4df8-b5f5-46a65dfa313d
+d=/sys/fs/bcachefs/$UUID/options
+[ -d "$d" ] || { echo "bcachefs-pool-options: $d missing (pool not mounted?)" >&2; exit 1; }
+set_opt() {
+    name=$1 write=$2 expect=$3
+    [ -e "$d/$name" ] || { echo "bcachefs-pool-options: option $name does not exist in the running module" >&2; exit 1; }
+    echo "$write" > "$d/$name"
+    got=$(cat "$d/$name")
+    [ "$got" = "$expect" ] || { echo "bcachefs-pool-options: $name: wrote '$write', read back '$got'" >&2; exit 1; }
+    echo "bcachefs-pool-options: $name=$got"
+}
+set_opt promote_skip_congested 0 0

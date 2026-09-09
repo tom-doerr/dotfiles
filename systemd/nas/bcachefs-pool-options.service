@@ -1,0 +1,14 @@
+# Deployed to nas:/etc/systemd/system/bcachefs-pool-options.service
+# Source: ~/git/dotfiles/systemd/nas/ + scripts/nas-bcachefs-pool-options
+[Unit]
+Description=Apply runtime-only bcachefs options to /pool (promote_skip_congested=0)
+Requires=pool-mount.service
+After=pool-mount.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/bcachefs-pool-options
+
+[Install]
+WantedBy=pool-mount.service
