@@ -230,7 +230,10 @@ if [[ "$host" == "nas" && "${cgv:-}" == *:* ]]; then
   for part in $(tr '|' '\n' <<< "$cgv" | sort); do
     IFS=':' read -r cgn cgc cgr <<< "$part"
     seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{printf "%s cong %d%% rd %.1fms", n, c, r/1000}')
-    [[ ${cgc:--1} -ge 50 || ${cgr:--1} -ge 3000 ]] && seg=$(red "$seg")
+    # yellow, not red (Sep 9 2026, user request): a high congestion vote only
+    # throttles promote writes onto that device, it is not a fault. Red stays
+    # reserved for the probe itself failing (below).
+    [[ ${cgc:--1} -ge 50 || ${cgr:--1} -ge 3000 ]] && seg=$(yellow "$seg")
     cgvv="${cgvv:+$cgvv }$seg"
   done
 elif [[ "$host" == "nas" ]]; then

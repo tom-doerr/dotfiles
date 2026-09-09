@@ -398,8 +398,10 @@ background→hdd; 2× replicas; lz4+zstd).
   units normalized to µs remote-side). Rendered on nas2 as verbose PER-DRIVE
   segments (user request Aug 17: no mental decoding): `lexar1 congested  89%
   read  2.0ms lexar2 congested  77% read  3.0ms`, each segment individually
-  red when ITS congested ≥50% or median read ≥3 ms (the sick drive lights up,
-  not the group); red `congestion:?` when the sysfs read fails (non-silent).
+  **yellow (was red until Sep 9 2026 — user: high congestion is not critical,
+  it only throttles promotes onto that device)** when ITS congested ≥50% or
+  median read ≥3 ms (the sick drive lights up, not the group); red
+  `congestion:?` stays red when the sysfs read fails (non-silent).
   Segments sort by label so lexar1 always leads (glob order is dev-1=lexar2
   first). Row measured 196 visible chars, 193 physical px margin via the grim
   recipe — fits with room for the stale suffix. Motivation: `IO:%`
