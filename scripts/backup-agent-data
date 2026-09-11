@@ -1,0 +1,47 @@
+#!/bin/bash
+# Back up Claude Code (~/.claude) and Codex (~/.codex) data + logs to the NAS.
+# Dest: nas:/pool/home/backups/spark-1/agents/{claude,codex/{files,db}}
+#  - ~/.claude: rsync mirror (transcripts, history.jsonl, sessions, memory,
+#    plans, todos, settings ...), minus caches.
+#  - ~/.codex non-DB files: rsync mirror (sessions/ 11 GB, history.jsonl,
+#    session_index.jsonl, config.toml, auth.json, rules, memories, plugins, log/).
+#  - ~/.codex SQLite DBs (all WAL mode): small ones via `sqlite3 .backup` into a
+#    local temp (consistent snapshot) then rsync; logs_2.sqlite (54 GB, too big
+#    for the 99 %-full local disk) via wal_checkpoint(TRUNCATE) + rsync of the
+#    main file, then quick_check of the COPY on the NAS. A torn copy fails
+#    loudly (rc 1) instead of sitting there looking fine.
+# Not a replacement for kopia (hourly /home/tom snapshots) — an independent,
+# plain-file copy the user asked for.
+set -euo pipefail
+NAS=${NAS:-nas}
+DEST=/pool/home/backups/spark-1/agents
+TMP=$(mktemp -d "${TMPDIR:-/tmp}/agent-backup.XXXXXX"); trap 'rm -rf "$TMP"' EXIT
+log(){ echo "$(date -u +%FT%TZ) $*"; }
+
+log "claude -> $NAS:$DEST/claude"
+rsync -a --delete --exclude=cache/ --exclude=paste-cache/ --exclude=downloads/ "$HOME/.claude/" "$NAS:$DEST/claude/"
+
+log "codex files -> $NAS:$DEST/codex/files"
+rsync -a --delete --exclude='*.sqlite' --exclude='*.sqlite-wal' --exclude='*.sqlite-shm' --exclude=cache/ "$HOME/.codex/" "$NAS:$DEST/codex/files/"
+
+log "codex small DBs -> consistent .backup snapshots"
+for db in "$HOME"/.codex/*.sqlite; do
+  b=$(basename "$db")
+  if [ "$(stat -c %s "$db")" -lt 1000000000 ]; then
+    sqlite3 "$db" ".backup '$TMP/$b'"
+    sqlite3 "$TMP/$b" "PRAGMA quick_check;" | grep -qx ok || { log "ABORT: snapshot of $b failed quick_check"; exit 1; }
+  fi
+done
+rsync -a "$TMP"/ "$NAS:$DEST/codex/db/"
+
+# logs_2.sqlite (54 GB) is too big for a local .backup on the 99 %-full disk and
+# the NAS has no sqlite3 to verify a raw copy, so stream a LOGICAL dump: `.dump`
+# runs inside one read transaction = a consistent snapshot in WAL mode, and it
+# needs no local space. Restore: `zstd -dc logs_2.sql.zst | sqlite3 new.sqlite`.
+BIG="$HOME/.codex/logs_2.sqlite"
+log "codex logs_2.sqlite ($(du -h "$BIG" | cut -f1)): streaming consistent .dump -> logs_2.sql.zst"
+sqlite3 "$BIG" ".dump" | zstd -T4 -3 -q | ssh "$NAS" "cat > '$DEST/codex/db/logs_2.sql.zst.partial' && mv '$DEST/codex/db/logs_2.sql.zst.partial' '$DEST/codex/db/logs_2.sql.zst'"
+ssh "$NAS" "zstd -t -q '$DEST/codex/db/logs_2.sql.zst'" || { log "ABORT: logs_2.sql.zst failed integrity test"; exit 1; }
+
+ssh "$NAS" "date -u +%FT%TZ > '$DEST/LAST_BACKUP'; du -sh '$DEST'/claude '$DEST'/codex/files '$DEST'/codex/db" | sed 's/^/  /'
+log "DONE"
