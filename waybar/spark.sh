@@ -59,7 +59,7 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
@@ -326,8 +326,11 @@ fi
 if [[ "$host" == "nas" ]]; then
   optd=""
   if [[ "${optv:-}" == *"|"* ]]; then
-    IFS='|' read -r oused osize _ot ofg <<< "$optv"
-    optd=$(awk -v u="${oused:-0}" -v z="${osize:-0}" 'BEGIN{printf "OPTuse %.1fG/%.0fG", u/1073741824, z/1073741824}')
+    IFS='|' read -r oused osize _ot ofg ocached <<< "$optv"
+    # "used" in bcachefs fs usage = DURABLE data only (btree/journal/user); the
+    # promote cache is separate and evictable — show both (Sep 12 2026: the
+    # shrinking OPTuse was btree copies draining to the Lexars, not the cache).
+    optd=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" 'BEGIN{printf "OPT %.0fG+cache %.0fG/%.0fG", u/1073741824, c/1073741824, z/1073741824}')
   fi
   # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
   # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.
