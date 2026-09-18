@@ -61,6 +61,12 @@ TEXTFILE = os.environ.get(
 STATE_DIR = os.environ.get("STATE_DIRECTORY") or os.environ.get(
     "NAS_FG_STATE_DIR", "/var/lib/nas-fg-governor")
 HOLD_FILE = os.environ.get("NAS_FG_HOLD_FILE", "/run/nas-fg-governor/hold")
+# Agent mode (Sep 18 2026): nas-sysadmin (spark-1, DSPy) writes its desired target into
+# this file; the governor APPLIES it, subject to the LOW floor, and no longer flips back
+# to ssd on its own. Empty = legacy watermark mode. A request older than AGENT_MAX_AGE is
+# stale: logged, exported, and the legacy rule takes over until a fresh one arrives.
+AGENT_FILE = os.environ.get("NAS_FG_AGENT_FILE", "")
+AGENT_MAX_AGE = float(os.environ.get("NAS_FG_AGENT_MAX_AGE", "2700"))
 
 
 def log(msg):
@@ -100,8 +106,13 @@ def parse_hipri_pending(usage_text):
 
 
 def decide(current, min_pct, low_pct, high_pct, hipri_pending, now, last_flip, dwell,
-           ssd_group=SSD_GROUP, hdd_group=HDD_GROUP):
+           ssd_group=SSD_GROUP, hdd_group=HDD_GROUP, agent=None):
     """Return (new_target or None, reason).
+
+    agent = (target, age_seconds) from a FRESH nas-sysadmin request, or None. With an
+    agent request the governor applies it (dwell-limited); the LOW floor always wins
+    (ssd -> hdd below LOW regardless of the agent, hdd -> ssd refused below LOW). Without
+    one (legacy mode, or stale request) the watermark rule below decides.
 
     hipri_pending is accepted for API compatibility but IGNORED (user decision
     Sep 6 2026): pending high_priority work only means destage is paused, so a
@@ -112,7 +123,19 @@ def decide(current, min_pct, low_pct, high_pct, hipri_pending, now, last_flip, d
     if current == ssd_group:
         if min_pct < low_pct:
             return hdd_group, f"min headroom {min_pct:.2f}% < low {low_pct}%"
-        return None, f"on {ssd_group}, min headroom {min_pct:.2f}% >= low {low_pct}%"
+        if agent is not None and agent[0] == hdd_group:
+            if now - last_flip < dwell:
+                return None, f"agent wants {hdd_group} but dwell {now - last_flip:.0f}s < {dwell:.0f}s"
+            return hdd_group, f"agent request {hdd_group} (age {agent[1]:.0f}s), headroom {min_pct:.2f}%"
+        return None, f"on {ssd_group}, min headroom {min_pct:.2f}% >= low {low_pct}%" + (" (agent agrees)" if agent else "")
+    if current == hdd_group and agent is not None:
+        if agent[0] != ssd_group:
+            return None, f"on {hdd_group}, agent agrees (age {agent[1]:.0f}s)"
+        if min_pct < low_pct:
+            return None, f"agent wants {ssd_group} but min headroom {min_pct:.2f}% < low {low_pct}% floor — refused"
+        if now - last_flip < dwell:
+            return None, f"agent wants {ssd_group} but dwell {now - last_flip:.0f}s < {dwell:.0f}s"
+        return ssd_group, f"agent request {ssd_group} (age {agent[1]:.0f}s), headroom {min_pct:.2f}% >= low {low_pct}%"
     if current == hdd_group:
         if min_pct < high_pct:
             return None, f"on {hdd_group}, min headroom {min_pct:.2f}% < high {high_pct}%"
@@ -156,6 +179,20 @@ def read_devices():
 
 def get_target():
     return read(f"{SYSFS}/options/foreground_target").strip()
+
+
+def read_agent_request(now, path=None, max_age=None):
+    """Return (target, age) if the agent file exists and is fresh, (target, age) with
+    stale=True flagged via age > max_age, or None when no agent file is configured/present."""
+    path = AGENT_FILE if path is None else path
+    max_age = AGENT_MAX_AGE if max_age is None else max_age
+    if not path or not os.path.exists(path):
+        return None
+    target = read(path).split()[0]
+    if target not in (SSD_GROUP, HDD_GROUP):
+        raise ValueError(f"agent file {path} holds '{target}', expected {SSD_GROUP} or {HDD_GROUP}")
+    age = now - os.path.getmtime(path)
+    return target, age, age > max_age
 
 
 def set_target(value, dry_run):
@@ -239,6 +276,19 @@ def write_metrics(current, devs, state, usage_ok, hold, reason):
         "# HELP nas_fg_governor_hold 1 while the hold file suspends actions.",
         "# TYPE nas_fg_governor_hold gauge",
         f"nas_fg_governor_hold {int(hold)}",
+        "# HELP nas_fg_governor_agent_request 1 for the target the nas-sysadmin agent currently requests (0 = none).",
+        "# TYPE nas_fg_governor_agent_request gauge",
+    ]
+    ag = state.get("agent")
+    for g in (SSD_GROUP, HDD_GROUP):
+        lines.append(f'nas_fg_governor_agent_request{{target="{g}"}} {int(bool(ag) and ag["target"] == g)}')
+    lines += [
+        "# HELP nas_fg_governor_agent_stale 1 when the agent request is older than NAS_FG_AGENT_MAX_AGE (legacy rule in charge).",
+        "# TYPE nas_fg_governor_agent_stale gauge",
+        f"nas_fg_governor_agent_stale {int(bool(ag) and ag['stale'])}",
+        "# HELP nas_fg_governor_agent_age_seconds age of the agent's request file (-1 = none).",
+        "# TYPE nas_fg_governor_agent_age_seconds gauge",
+        f"nas_fg_governor_agent_age_seconds {ag['age_s'] if ag else -1}",
         "# HELP nas_fg_governor_thresholds_percent configured low/high watermarks.",
         "# TYPE nas_fg_governor_thresholds_percent gauge",
         f'nas_fg_governor_thresholds_percent{{kind="low"}} {LOW_PCT}',
@@ -270,8 +320,15 @@ def one_cycle(state, dry_run):
 
 
     now = time.time()
+    req = read_agent_request(now)
+    agent = None
+    if req is not None and not req[2]:
+        agent = (req[0], req[1])
+    elif req is not None:
+        log(f"agent request '{req[0]}' is STALE ({req[1]:.0f}s > {AGENT_MAX_AGE:.0f}s) — legacy watermark rule in charge")
     target, reason = decide(current, min_pct, LOW_PCT, HIGH_PCT, hipri, now,
-                            state["last_flip_ts"], DWELL)
+                            state["last_flip_ts"], DWELL, agent=agent)
+    state["agent"] = {"target": req[0], "age_s": round(req[1]), "stale": req[2]} if req else None
     if hold and target is not None:
         reason = f"HOLD file {HOLD_FILE} present — NOT acting on: {reason}"
         target = None

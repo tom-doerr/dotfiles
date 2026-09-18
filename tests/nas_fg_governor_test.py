@@ -109,3 +109,54 @@ class DecideTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)
+
+
+class AgentModeTests(unittest.TestCase):
+    """Sep 18 2026: nas-sysadmin requests are applied, the LOW floor stays a veto."""
+
+    def decide(self, current, pct, agent, last_flip=0, now=10_000):
+        return gov.decide(current, pct, 15, 25, None, now, last_flip, 600,
+                          ssd_group="ssd.nand", hdd_group="hdd", agent=agent)
+
+    def test_agent_request_hdd_is_applied_from_ssd(self):
+        target, reason = self.decide("ssd.nand", 40.0, ("hdd", 120))
+        self.assertEqual(target, "hdd"); self.assertIn("agent request hdd", reason)
+
+    def test_agent_request_ssd_is_applied_from_hdd_when_above_floor(self):
+        target, reason = self.decide("hdd", 20.0, ("ssd.nand", 60))
+        self.assertEqual(target, "ssd.nand"); self.assertIn("agent request ssd.nand", reason)
+
+    def test_agent_request_ssd_refused_below_floor(self):
+        target, reason = self.decide("hdd", 14.9, ("ssd.nand", 60))
+        self.assertIsNone(target); self.assertIn("refused", reason)
+
+    def test_floor_beats_agent_on_ssd(self):
+        target, reason = self.decide("ssd.nand", 14.0, ("ssd.nand", 60))
+        self.assertEqual(target, "hdd"); self.assertIn("< low", reason)
+
+    def test_agent_agreement_is_a_noop_even_above_high(self):
+        target, reason = self.decide("hdd", 60.0, ("hdd", 60))
+        self.assertIsNone(target); self.assertIn("agent agrees", reason)
+
+    def test_dwell_limits_agent_flips(self):
+        target, reason = self.decide("hdd", 30.0, ("ssd.nand", 60), last_flip=9_800)
+        self.assertIsNone(target); self.assertIn("dwell", reason)
+
+    def test_legacy_rule_without_agent(self):
+        self.assertEqual(self.decide("hdd", 30.0, None)[0], "ssd.nand")
+        self.assertIsNone(self.decide("hdd", 20.0, None)[0])
+
+    def test_read_agent_request_freshness_and_validation(self):
+        import tempfile, time
+        with tempfile.NamedTemporaryFile("w", suffix=".fg", delete=False) as f:
+            f.write("hdd 2026-09-18T07:00:00Z\n"); path = f.name
+        now = os.path.getmtime(path)
+        self.assertEqual(gov.read_agent_request(now + 10, path, 2700)[:2], ("hdd", 10))
+        self.assertTrue(gov.read_agent_request(now + 3000, path, 2700)[2])
+        self.assertIsNone(gov.read_agent_request(now, path + ".missing", 2700))
+        self.assertIsNone(gov.read_agent_request(now, "", 2700))
+        with open(path, "w") as f:
+            f.write("optane\n")
+        with self.assertRaises(ValueError):
+            gov.read_agent_request(now, path, 2700)
+        os.unlink(path)

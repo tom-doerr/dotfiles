@@ -47,7 +47,10 @@ def parse_pagetypeinfo():
         f = raw.split()
         if section == "free" and len(f) >= 17 and f[0] == "Node":
             zone, mtype = f[3].rstrip(","), f[5]
-            counts = [int(x) for x in f[6:17]]
+            # The kernel prints ">100000" once a free list exceeds 100000 blocks (seen on
+            # Sep 18 2026 during the pre-hang fragmentation storm; it crashed this exporter
+            # every 20 min). Treat it as the floor it is — 100000 — never as a parse error.
+            counts = [int(x.lstrip(">")) for x in f[6:17]]
             freep[(zone, mtype)] = sum(c * (1 << o) for o, c in enumerate(counts))
             ge6[(zone, mtype)] = sum(counts[6:])
         elif section == "blocks" and len(f) >= 9 and f[0] == "Node":

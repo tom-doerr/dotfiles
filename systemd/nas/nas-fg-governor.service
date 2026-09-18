@@ -22,6 +22,10 @@ Environment=NAS_FG_SSD_GROUP=ssd.nand
 # (btree writes then spill to HDDs). 15/25 leaves ~215 GB on lexar2 = ~10 h.
 Environment=NAS_FG_LOW_PCT=15
 Environment=NAS_FG_HIGH_PCT=25
+# Sep 18 2026: agent mode. nas-sysadmin (spark-1, DSPy) writes its decision into this
+# file every 15 min; the governor applies it (dwell-limited) and keeps only the LOW floor
+# as a veto. Stale request (> NAS_FG_AGENT_MAX_AGE, 45 min) = legacy watermarks, logged.
+Environment=NAS_FG_AGENT_FILE=/home/tom/.local/state/nas-sysadmin/fg_target
 Type=simple
 ExecStart=/usr/local/sbin/nas-fg-governor
 Restart=always
