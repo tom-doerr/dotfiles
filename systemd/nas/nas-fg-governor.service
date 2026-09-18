@@ -17,6 +17,11 @@ After=pool-mount.service
 # Sep 6 2026: Lexars relabelled ssd.nand.* (Optane becomes ssd.optane.*); the
 # healthy foreground target is the NAND subgroup, not the whole ssd group.
 Environment=NAS_FG_SSD_GROUP=ssd.nand
+# Sep 18 2026: 5/9 left lexar2 only 69 GB when writes moved to HDD; the btree
+# kept growing ~20 GB/h per Lexar during a bulk ingest and hit the floor in 4 h
+# (btree writes then spill to HDDs). 15/25 leaves ~215 GB on lexar2 = ~10 h.
+Environment=NAS_FG_LOW_PCT=15
+Environment=NAS_FG_HIGH_PCT=25
 Type=simple
 ExecStart=/usr/local/sbin/nas-fg-governor
 Restart=always
