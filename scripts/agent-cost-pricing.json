@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "API list prices in USD per 1M tokens. Verified 2026-09-20 against",
+    "platform.claude.com/docs/en/about-claude/pricing and developers.openai.com/api/docs/pricing.",
+    "cache_read = cache hit, cache_write_5m / cache_write_1h = Anthropic TTL variants,",
+    "cache_write = OpenAI cache write (null = not billed separately by that provider).",
+    "'alias' maps a model id onto another entry. Unknown models are reported unpriced,",
+    "never silently defaulted."
+  ],
+  "web_search_per_1k": 10.0,
+  "claude": {
+    "claude-opus-5": {"input": 5.0, "output": 25.0, "cache_write_5m": 6.25, "cache_write_1h": 10.0, "cache_read": 0.50},
+    "claude-opus-5[1m]": {"alias": "claude-opus-5"},
+    "claude-opus-4-8": {"input": 5.0, "output": 25.0, "cache_write_5m": 6.25, "cache_write_1h": 10.0, "cache_read": 0.50},
+    "claude-fable-5": {"input": 10.0, "output": 50.0, "cache_write_5m": 12.50, "cache_write_1h": 20.0, "cache_read": 1.0},
+    "claude-fable-5-1": {"input": 10.0, "output": 50.0, "cache_write_5m": 12.50, "cache_write_1h": 20.0, "cache_read": 0.25},
+    "claude-sonnet-5": {"input": 2.0, "output": 10.0, "cache_write_5m": 2.50, "cache_write_1h": 4.0, "cache_read": 0.20},
+    "claude-haiku-4-5": {"input": 1.0, "output": 5.0, "cache_write_5m": 1.25, "cache_write_1h": 2.0, "cache_read": 0.10}
+  },
+  "codex": {
+    "gpt-6-astra": {"input": 10.0, "output": 50.0, "cache_read": 1.0, "cache_write": 12.50},
+    "gpt-5.6-sol": {"input": 4.0, "output": 20.0, "cache_read": 0.40, "cache_write": 5.0},
+    "gpt-5.5": {"input": 5.0, "output": 30.0, "cache_read": 0.50, "cache_write": null},
+    "gpt-5.4": {"input": 2.50, "output": 15.0, "cache_read": 0.25, "cache_write": null},
+    "gpt-5.3-codex": {"input": 1.75, "output": 14.0, "cache_read": 0.175, "cache_write": null},
+    "gpt-5.2": {"input": 1.75, "output": 14.0, "cache_read": 0.175, "cache_write": null}
+  }
+}

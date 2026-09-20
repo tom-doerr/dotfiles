@@ -592,6 +592,38 @@ suspect list. Reads via a NOPASSWD `sudo -n nft -a list table inet tailscale_onl
 - Verified live Sep 20: with handle 19 present → `DRIFT: 1 extra`; after the user deleted it →
   `in sync`. Without the sudoers entry it publishes `nft_drift_up 0` and logs `CANNOT READ`.
 
+## `agent-cost-report` — what Claude Code + Codex would have cost over the API (Sep 20 2026)
+
+`scripts/agent-cost-report` + `scripts/agent-cost-pricing.json` + `tests/agent_cost_report_test.py`.
+Prices the token counters the agents already write to disk; no API calls, no account access.
+`--tool claude|codex|both`, `--by model|day|month|tool`, `--since/--until`, `--json`, `--no-cache`.
+Parsed files are cached in `~/.cache/agent-cost-report/parsed.json` keyed by (path, size, mtime)
+plus `CACHE_VERSION` — **bump that constant whenever parsing changes** or stale rows survive.
+Prices are data, not code: verified Sep 20 2026 against platform.claude.com and
+developers.openai.com. Unknown models are printed in an UNPRICED block with their token
+counts, never priced by a guessed default.
+
+**★ Claude Code writes ONE JSONL LINE PER CONTENT BLOCK** (thinking / text / tool_use), each
+repeating the SAME `usage` object → a naive sum double-counts (57,475 records vs 29,143 real
+API calls here, i.e. ~2x, $30k vs $15k). Dedupe on `(message.id, requestId)`. A resumed or
+forked session also re-writes earlier messages into the new transcript, so dedupe must span
+files too.
+**★ Codex has TWO transcript formats.** New builds write one `token_usage_record` per response
+(`payload.usage` is per response; `turn_token_usage`/`thread_token_usage` are running totals —
+summing those inflates hugely). Older builds have no such record: usage is only in
+`event_msg`/`token_count`, whose `last_token_usage` is **re-emitted on rate-limit refreshes**
+(measured: sum of `last` = 2x the file's own running total). Difference `total_token_usage`
+instead. Files carrying both must use the record path only.
+**Billing-semantics differences that matter:** Anthropic's `input_tokens` EXCLUDES cache
+tokens and the 5m/1h cache-write split lives in `usage.cache_creation`; OpenAI's `input_tokens`
+INCLUDES the cached part, so uncached = input - cached. Codex `output_tokens` already contains
+`reasoning_output_tokens` — do not add them.
+Model attribution: Claude from `message.model`; Codex by joining `token_usage_record.turn_id`
+to the preceding `turn_context.model` (old format: the most recent `turn_context`).
+No long-context premium exists on Claude 4.6+, so `claude-opus-5[1m]` is an alias of
+`claude-opus-5` in the pricing file. Web search is billed separately ($10/1k) and is read from
+`server_tool_use.web_search_requests`.
+
 ## ★ `scripts/` and `systemd/` are BLANKET-GITIGNORED — new files need `git add -f`
 
 `.gitignore:24-25` ignores `systemd/` and `scripts/` wholesale ("Local/generated

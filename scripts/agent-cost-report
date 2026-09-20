@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+"""What Claude Code + Codex usage would have cost at API list prices.
+
+Reads the local transcripts (~/.claude/projects/*.jsonl, ~/.codex/sessions/**/*.jsonl),
+sums the token counters the agents already record, and prices them with
+agent-cost-pricing.json.  Parsed files are cached by (path, size, mtime) so a
+second run over the ~12 GB of Codex sessions is fast.
+
+Deliberate non-features: no silent fallbacks.  A model without a price lands in
+an UNPRICED section with its token counts; a Claude record without the 5m/1h
+cache split is counted as 5m and reported as a caveat.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from collections import defaultdict
+from pathlib import Path
+
+HOME = Path.home()
+CLAUDE_DIR = HOME / ".claude" / "projects"
+CODEX_DIR = HOME / ".codex" / "sessions"
+PRICING = Path(__file__).with_name("agent-cost-pricing.json")
+CACHE = HOME / ".cache" / "agent-cost-report" / "parsed.json"
+CACHE_VERSION = 3  # bump when parsing changes, so stale cache entries are re-parsed
+
+# Token buckets, priced per 1M.  Claude and Codex share the names where the
+# billing concept is the same (input = uncached input, cache_read = cache hit).
+BUCKETS = ("input", "output", "cache_read", "cache_write_5m", "cache_write_1h", "cache_write")
+
+
+def new_row() -> dict:
+    row = {b: 0 for b in BUCKETS}
+    row["requests"] = 0
+    row["web_search"] = 0
+    row["no_cache_split"] = 0
+    return row
+
+
+def add(dst: dict, src: dict) -> None:
+    for k, v in src.items():
+        dst[k] = dst.get(k, 0) + v
+
+
+# --------------------------------------------------------------------------- parsing
+
+
+def parse_claude(path: Path, skip: set[str] | None = None) -> dict:
+    """-> {"rows": {date|model: row}, "seen": [dedupe keys]}"""
+    rows: dict[str, dict] = defaultdict(new_row)
+    seen: list[str] = []
+    local: set[str] = set()
+    with path.open(errors="replace") as fh:
+        for line in fh:
+            if '"usage"' not in line or '"assistant"' not in line:
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            if rec.get("type") != "assistant":
+                continue
+            msg = rec.get("message") or {}
+            usage = msg.get("usage")
+            model = msg.get("model")
+            if not usage or not model or model == "<synthetic>":
+                continue
+            # One line per content block (thinking / text / tool_use) repeats the
+            # SAME usage object, and a resumed or forked session re-writes earlier
+            # messages into the new transcript.  Both must be collapsed or the
+            # totals roughly double.
+            key = f"{msg.get('id')}|{rec.get('requestId')}"
+            if key in local:
+                continue
+            local.add(key)
+            seen.append(key)
+            if skip and key in skip:
+                continue
+            date = (rec.get("timestamp") or "")[:10]
+            row = rows[f"{date}|{model}"]
+            row["requests"] += 1
+            row["input"] += usage.get("input_tokens", 0)
+            row["output"] += usage.get("output_tokens", 0)
+            row["cache_read"] += usage.get("cache_read_input_tokens", 0)
+            created = usage.get("cache_creation_input_tokens", 0)
+            split = usage.get("cache_creation") or {}
+            if split:
+                row["cache_write_5m"] += split.get("ephemeral_5m_input_tokens", 0)
+                row["cache_write_1h"] += split.get("ephemeral_1h_input_tokens", 0)
+            elif created:
+                row["cache_write_5m"] += created
+                row["no_cache_split"] += created
+            row["web_search"] += (usage.get("server_tool_use") or {}).get("web_search_requests", 0)
+    return {"rows": rows, "seen": seen}
+
+
+def parse_codex(path: Path, skip: set[str] | None = None) -> dict:
+    """-> {"rows": {date|model: row}, "seen": [response ids]}"""
+    rows: dict[str, dict] = defaultdict(new_row)
+    seen: list[str] = []
+    local: set[str] = set()
+    turn_model: dict[str, str] = {}
+    # Sessions written by older Codex builds have no token_usage_record; their
+    # usage only shows up in event_msg/token_count.  There, last_token_usage is
+    # re-emitted on rate-limit refreshes (summing it overcounts by up to 2x), so
+    # the cumulative total_token_usage is differenced instead.
+    tc_rows: dict[str, dict] = defaultdict(new_row)
+    tc_seen: list[str] = []
+    prev_total: dict[str, int] = {}
+    cur_model = "unknown"
+    with path.open(errors="replace") as fh:
+        for line in fh:
+            if (
+                '"turn_context"' not in line
+                and '"token_usage_record"' not in line
+                and '"token_count"' not in line
+            ):
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue
+            kind = rec.get("type")
+            payload = rec.get("payload") or {}
+            if kind == "turn_context":
+                if payload.get("model"):
+                    cur_model = payload["model"]
+                    if payload.get("turn_id"):
+                        turn_model[payload["turn_id"]] = cur_model
+                continue
+            if kind == "event_msg" and payload.get("type") == "token_count":
+                total = (payload.get("info") or {}).get("total_token_usage")
+                if not total:
+                    continue
+                delta = {}
+                for f in ("input_tokens", "cached_input_tokens", "cache_write_input_tokens", "output_tokens"):
+                    cur = total.get(f, 0)
+                    # A drop means the counter restarted (new accounting scope);
+                    # take the current value rather than a negative delta.
+                    delta[f] = cur - prev_total.get(f, 0) if cur >= prev_total.get(f, 0) else cur
+                    prev_total[f] = cur
+                if not any(delta.values()):
+                    continue
+                tc_seen.append(f"{path.name}:tc:{len(tc_seen)}")
+                row = tc_rows[f"{(rec.get('timestamp') or '')[:10]}|{cur_model}"]
+                row["requests"] += 1
+                cached = delta["cached_input_tokens"]
+                row["input"] += max(delta["input_tokens"] - cached, 0)
+                row["cache_read"] += cached
+                row["cache_write"] += delta["cache_write_input_tokens"]
+                row["output"] += delta["output_tokens"]
+                continue
+            if kind != "token_usage_record":
+                continue
+            usage = payload.get("usage") or {}  # per response; *_token_usage are running totals
+            model = turn_model.get(payload.get("turn_id")) or payload.get("model") or "unknown"
+            key = payload.get("response_id") or f"{path.name}:{len(seen)}"
+            if key in local:
+                continue
+            local.add(key)
+            seen.append(key)
+            if skip and key in skip:
+                continue
+            date = (rec.get("timestamp") or "")[:10]
+            row = rows[f"{date}|{model}"]
+            row["requests"] += 1
+            cached = usage.get("cached_input_tokens", 0)
+            # OpenAI's input_tokens is the total; the cached part is billed cheaper.
+            row["input"] += max(usage.get("input_tokens", 0) - cached, 0)
+            row["cache_read"] += cached
+            row["cache_write"] += usage.get("cache_write_input_tokens", 0)
+            row["output"] += usage.get("output_tokens", 0)  # includes reasoning tokens
+    if seen:  # new format present -> token_count events would double-count it
+        return {"rows": rows, "seen": seen}
+    return {"rows": tc_rows, "seen": tc_seen}
+
+
+def collect(tool: str, files: list[Path], cache: dict, use_cache: bool) -> tuple[dict, dict]:
+    parser = parse_claude if tool == "claude" else parse_codex
+    rows: dict[str, dict] = defaultdict(new_row)
+    dupes = {"records": 0, "dropped": 0}
+    seen_global: set[str] = set()
+    for path in files:
+        st = path.stat()
+        key = str(path)
+        hit = cache.get(key) if use_cache else None
+        if not hit or hit.get("v") != CACHE_VERSION or hit["size"] != st.st_size or hit["mtime"] != int(st.st_mtime):
+            parsed = parser(path)
+            hit = {
+                "v": CACHE_VERSION,
+                "size": st.st_size,
+                "mtime": int(st.st_mtime),
+                "rows": dict(parsed["rows"]),
+                "seen": parsed["seen"],
+            }
+            cache[key] = hit
+        # Dedupe across files too: a resumed session re-writes earlier records.
+        overlap = sum(1 for s in hit["seen"] if s in seen_global)
+        dupes["records"] += len(hit["seen"])
+        dupes["dropped"] += overlap
+        if not overlap:
+            source = hit["rows"]
+        elif overlap < len(hit["seen"]):
+            # Partial overlap: re-parse skipping the records already counted, so
+            # the split is exact rather than prorated.
+            source = parser(path, skip=seen_global)["rows"]
+        else:
+            source = {}
+        for k, row in source.items():
+            add(rows[k], row)
+        seen_global.update(hit["seen"])
+    return rows, dupes
+
+
+# --------------------------------------------------------------------------- pricing
+
+
+def price_row(prices: dict, model: str, row: dict, web_search_per_1k: float) -> tuple[float, dict] | None:
+    entry = prices.get(model)
+    while entry and "alias" in entry:
+        entry = prices.get(entry["alias"])
+    if not entry:
+        return None
+    cost = 0.0
+    parts = {}
+    for bucket in BUCKETS:
+        tokens = row.get(bucket, 0)
+        if not tokens:
+            continue
+        rate = entry.get(bucket)
+        if rate is None:
+            parts[f"{bucket}:unbilled"] = tokens
+            continue
+        c = tokens * rate / 1_000_000
+        cost += c
+        parts[bucket] = c
+    if row.get("web_search"):
+        c = row["web_search"] * web_search_per_1k / 1000
+        cost += c
+        parts["web_search"] = c
+    return cost, parts
+
+
+def human(n: float) -> str:
+    for unit, div in (("B", 1e9), ("M", 1e6), ("k", 1e3)):
+        if abs(n) >= div:
+            return f"{n / div:.1f}{unit}"
+    return f"{n:.0f}"
+
+
+# --------------------------------------------------------------------------- report
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--tool", choices=("claude", "codex", "both"), default="both")
+    ap.add_argument("--since", help="YYYY-MM-DD, inclusive")
+    ap.add_argument("--until", help="YYYY-MM-DD, inclusive")
+    ap.add_argument("--by", choices=("model", "day", "month", "tool"), default="model")
+    ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument("--pricing", default=str(PRICING))
+    ap.add_argument("--no-cache", action="store_true", help="re-parse every file")
+    args = ap.parse_args()
+
+    pricing = json.loads(Path(args.pricing).read_text())
+    cache = {}
+    if not args.no_cache and CACHE.exists():
+        try:
+            cache = json.loads(CACHE.read_text())
+        except ValueError:
+            cache = {}
+
+    tools = ("claude", "codex") if args.tool == "both" else (args.tool,)
+    totals = {}
+    for tool in tools:
+        root, pattern = (CLAUDE_DIR, "*/*.jsonl") if tool == "claude" else (CODEX_DIR, "**/*.jsonl")
+        files = sorted(root.glob(pattern)) if root.exists() else []
+        if not files:
+            print(f"warning: no {tool} transcripts under {root}", file=sys.stderr)
+        rows, dupes = collect(tool, files, cache.setdefault(tool, {}), not args.no_cache)
+        totals[tool] = {"rows": rows, "dupes": dupes, "files": len(files)}
+
+    CACHE.parent.mkdir(parents=True, exist_ok=True)
+    CACHE.write_text(json.dumps(cache))
+
+    grouped: dict[tuple, dict] = defaultdict(new_row)
+    unpriced: dict[tuple, dict] = defaultdict(new_row)
+    cost_by_group: dict[tuple, float] = defaultdict(float)
+    grand = 0.0
+    caveat_tokens = 0
+
+    for tool, data in totals.items():
+        prices = pricing.get(tool, {})
+        for key, row in data["rows"].items():
+            date, model = key.split("|", 1)
+            if args.since and date < args.since:
+                continue
+            if args.until and date > args.until:
+                continue
+            if args.by == "model":
+                gkey = (tool, model)
+            elif args.by == "day":
+                gkey = (tool, date)
+            elif args.by == "month":
+                gkey = (tool, date[:7])
+            else:
+                gkey = (tool,)
+            priced = price_row(prices, model, row, pricing.get("web_search_per_1k", 0))
+            caveat_tokens += row.get("no_cache_split", 0)
+            if priced is None:
+                add(unpriced[(tool, model)], row)
+                continue
+            add(grouped[gkey], row)
+            cost_by_group[gkey] += priced[0]
+            grand += priced[0]
+
+    if args.json:
+        out = {
+            "total_usd": grand,
+            "groups": [
+                {"key": list(k), "usd": cost_by_group[k], **{b: v for b, v in g.items()}}
+                for k, g in sorted(grouped.items(), key=lambda kv: -cost_by_group[kv[0]])
+            ],
+            "unpriced": [{"key": list(k), **v} for k, v in unpriced.items()],
+        }
+        print(json.dumps(out, indent=2))
+        return 0
+
+    width = max((len(" ".join(k)) for k in grouped), default=10)
+    print(f"{'group'.ljust(width)}  {'requests':>9} {'in':>8} {'cache rd':>9} {'cache wr':>9} {'out':>8} {'USD':>11}")
+    for k, g in sorted(grouped.items(), key=lambda kv: -cost_by_group[kv[0]]):
+        cw = g["cache_write_5m"] + g["cache_write_1h"] + g["cache_write"]
+        print(
+            f"{' '.join(k).ljust(width)}  {g['requests']:>9,} {human(g['input']):>8} "
+            f"{human(g['cache_read']):>9} {human(cw):>9} {human(g['output']):>8} "
+            f"{cost_by_group[k]:>11,.2f}"
+        )
+    print(f"{'TOTAL'.ljust(width)}  {'':>9} {'':>8} {'':>9} {'':>9} {'':>8} {grand:>11,.2f}")
+
+    if unpriced:
+        print("\nUNPRICED (no entry in pricing.json - add one to include them):")
+        for (tool, model), row in sorted(unpriced.items(), key=lambda kv: -kv[1]["output"]):
+            cw = row["cache_write_5m"] + row["cache_write_1h"] + row["cache_write"]
+            print(
+                f"  {tool} {model}: {row['requests']:,} requests, in {human(row['input'])}, "
+                f"cache rd {human(row['cache_read'])}, cache wr {human(cw)}, out {human(row['output'])}"
+            )
+
+    for tool, data in totals.items():
+        d = data["dupes"]
+        print(
+            f"\n{tool}: {data['files']} files, {d['records']:,} usage records, "
+            f"{d['dropped']:,} duplicates dropped (resumed/forked sessions repeat history)"
+        )
+    if caveat_tokens:
+        print(f"note: {human(caveat_tokens)} cache-write tokens had no 5m/1h split and were priced as 5m")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
