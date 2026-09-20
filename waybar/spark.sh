@@ -291,7 +291,10 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     for(i=1;i<=m;i++){
       k=index(C[i],":"); if(!k) continue
       l=substr(C[i],1,k-1); split(substr(C[i],k+1),F,":")
-      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.lexar/,"l",t); if(t ~ /optane/)t="op"
+      # short names: e1-e8, l1/l2, op. The Lexars were relabelled ssd.nand.lexarN on Sep 6 2026
+      # and the old /^ssd\.lexar/ pattern silently stopped matching -> 15-char names overflowed
+      # the BW and IOPS rows off the right edge (fixed Sep 20 2026).
+      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.(nand\.)?lexar/,"l",t); if(t ~ /optane/)t="op"
       grp=(l ~ /optane/)?"opt":((l ~ /^hdd/)?"hdd":"ssd")
       fill[t]=F[6]+0; lat[t]=F[7]+0; tmp[t]=F[8]+0
       if(l in p){split(p[l],Q,":")
@@ -319,13 +322,16 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     }
     B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L " \xe2\x94\x82"; U=U " \xe2\x94\x82"
     for(i=1;i<=cnt;i++){t=order[i]
+      O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
+      # the Optane is the only member of the "opt" aggregate, so its per-device entry on the
+      # BW/IOPS/LAT/UTIL rows repeated the aggregate verbatim; dropped to fit (Sep 20 2026).
+      if(t=="op") continue
       B=B sprintf("  %s %3d\xe2\x86\x93%3d\xe2\x86\x91", t, dbw[t]+0.5, dbr[t]+0.5)
       I=I sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", t, dw[t]+0.5, dr[t]+0.5)
       if(lat[t]>=0) L=L sprintf("  %s %s", t, fl(lat[t]))
       useg=sprintf("  %s %3d%%", t, du[t]+0.5)
       if(du[t]>=90) useg="<span color=\"#ff5555\">" useg "</span>"
       U=U useg
-      O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
     }
     print B; print I; print L; print U; print O
   }')

@@ -312,6 +312,15 @@ prints 5 chars right-aligned, `moved %4d`, cmp/lz4/zstd/raw `%5.1fT`, scan `%3d%
 items after it never shift. Verified: three consecutive renders, identical width and identical
 column for every label. Width 209 visible + up to 5 for the stale suffix < ~221. Rule for any
 future row-6 field: pad it; never let a value's width depend on its magnitude.
+**Right-edge cut-off on BW/IOPS FIXED Sep 20 2026 (user screenshot):** two causes. (1) the
+short-name rule `sub(/^ssd\.lexar/,"l")` silently stopped matching after the Sep 6 relabel to
+`ssd.nand.lexarN`, so both Lexars printed 15-char names on every per-device row (BW 224, IOPS
+253 visible chars vs the ~221 capacity) — now `/^ssd\.(nand\.)?lexar/`. (2) on the four rows
+that open with type aggregates (BW/IOPS/LAT/UTIL) the per-device `op` entry repeated the `opt`
+aggregate verbatim (single-member group) — dropped there, kept on FILL/TEMP. Widths after:
+BW 185, IOPS 211, LAT 152, FILL 167, row6 209, UTIL 127, cong 74. IOPS is the tightest row
+(aggregates %5d because the Optane already does 11k reads/s). Check widths with
+`sed 's/<[^>]*>//g' /tmp/spark_nas.rowN | wc -m` after any change.
 Arrows follow the into-device convention (w↓ r↑, write first — matches net
 rx↓/tx↑; row2/3 had it inverted for a day). UTIL ≥90% renders red.
 Optane matched by `/optane/` SUBSTRING, never a `^ssd`/label prefix — its
