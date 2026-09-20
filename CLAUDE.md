@@ -299,6 +299,13 @@ print `<1000 µs` as `NNNNµs` and above as `N.Nms` (awk `fl()`, if/else not `?:
 the probe always shipped integer µs, only the `%.1fms` display hid the Optane's ~16-19 µs
 median as `0.0`. The LAT row lost its trailing `ms` unit (units are per value now); width
 168 → 189 chars, still under the ~221 capacity.
+**Reconcile phase on row 6 (Sep 20 2026):** the 6th `|` slot of `optv` carries the first
+line of the pool's top-level `reconcile_status` file, packed `scan:<type>:<pct>:<done>/<total>`
+(bcachefs's own `bch2_progress` node count — printed only for fs/metadata scans; device/inum
+scans pack `-`), `proc:<prio>_<kind>`, `wait` or `between`. Rendered after `promoted N/s`:
+yellow `scan fs 2% 20.7k/1.01M nodes` while scanning (the mover moves nothing until the scan
+ends), plain `proc normal_logical` while working, nothing otherwise. Row 6 = 194 visible chars.
+Cache format still 42 fields (slot packing, same trick as `fg:`).
 Arrows follow the into-device convention (w↓ r↑, write first — matches net
 rx↓/tx↑; row2/3 had it inverted for a day). UTIL ≥90% renders red.
 Optane matched by `/optane/` SUBSTRING, never a `^ssd`/label prefix — its

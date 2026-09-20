@@ -59,7 +59,7 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
@@ -330,9 +330,21 @@ fi
 # to a SECOND bar, rendered here and handed to `custom/nas2` via this file, so the
 # NAS is still probed ONCE per cycle rather than twice.
 if [[ "$host" == "nas" ]]; then
-  optd=""
+  optd=""; scanv=""
   if [[ "${optv:-}" == *"|"* ]]; then
-    IFS='|' read -r oused osize _ot ofg ocached <<< "$optv"
+    IFS='|' read -r oused osize _ot ofg ocached orsc <<< "$optv"
+    # 6th optv slot (Sep 20 2026) = first line of the pool's reconcile_status, packed:
+    # scan:<type>:<pct>:<done>/<total> (fs/metadata scans carry bcachefs's own node
+    # progress; device/inum scans have none), proc:<prio>_<kind>, wait, between.
+    # A running scan is shown in yellow: the mover moves nothing until it ends.
+    case "${orsc:-}" in
+      scan:*) IFS=':' read -r _ st sp sd <<< "$orsc"
+              if [[ "$sp" != "-" ]]; then
+                scanv=$(awk -v t="$st" -v p="$sp" -v d="$sd" 'function k(n){ if(n>=1e6) return sprintf("%.2fM", n/1e6); if(n>=1e3) return sprintf("%.1fk", n/1e3); return n } BEGIN{split(d,a,"/"); printf "scan %s %d%% %s/%s nodes", t, p, k(a[1]), k(a[2])}')
+              else scanv="scan $st"; fi
+              scanv=$(yellow "$scanv") ;;
+      proc:*) scanv="proc ${orsc#proc:}" ;;
+    esac
     # "used" in bcachefs fs usage = DURABLE data only (btree/journal/user); the
     # promote cache is separate and evictable — show both (Sep 12 2026: the
     # shrinking OPTuse was btree copies draining to the Lexars, not the cache).
@@ -354,7 +366,7 @@ if [[ "$host" == "nas" ]]; then
   # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
   printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
   row6=""
-  for v in "$mdv" "$rclv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
+  for v in "$mdv" "$scanv" "$rclv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
   printf '%s\n' "$row6" > "$cache.row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
