@@ -1,0 +1,32 @@
+# Prometheus alert rules for nft-drift-watch. Install on the NAS next to nas-alerts.yml
+# (/pool/services/prometheus/config/, root, via the NAS base-tmux sudo), add the file to
+# `rule_files:` in prometheus.yml, validate with
+#   docker exec prometheus promtool check rules /etc/prometheus/nft-drift-alerts.yml
+# then `curl -XPOST localhost:9090/-/reload`.
+#
+# ★ THREE alerts, because "not drifted" and "not watching" are different facts and each needs its
+# own signal: drift (the rule is back), down (the watcher cannot read the ruleset - usually the
+# sudoers entry is missing), and STALE (the watcher is not running at all - a gap, which no
+# value-based alert can ever see).
+groups:
+  - name: nft-drift
+    rules:
+      - alert: NftRulesetDrift
+        expr: nft_drift_in_sync == 0 and nft_drift_up == 1
+        for: 2m
+        labels: {severity: critical}
+        annotations:
+          summary: "spark-1 live nftables ruleset differs from /etc/nftables.conf"
+          description: "{{ $labels.instance }}: extra={{ with query \"nft_drift_extra_rules\" }}{{ . | first | value }}{{ end }} missing={{ with query \"nft_drift_missing_rules\" }}{{ . | first | value }}{{ end }}. Evidence in ~/.local/state/nft-drift-watch/. Third recurrence was Sep 20 2026; it opens the whole wired LAN."
+      - alert: NftDriftWatcherCannotRead
+        expr: nft_drift_up == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "nft-drift-watch cannot read the ruleset (sudoers entry missing?)"
+      - alert: NftDriftWatcherStale
+        expr: time() - nft_drift_last_check_timestamp_seconds > 300 or absent(nft_drift_last_check_timestamp_seconds)
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: "nft-drift-watch has not reported for 5 minutes - it is not watching"

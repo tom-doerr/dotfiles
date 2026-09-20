@@ -1,0 +1,15 @@
+[Unit]
+Description=Watch the live nftables ruleset for rules that are not in /etc/nftables.conf
+Documentation=file:///home/tom/git/dotfiles/scripts/nft-drift-watch
+After=network-online.target
+
+[Service]
+Type=simple
+Environment=NFT_DRIFT_INTERVAL=60
+ExecStart=%h/git/dotfiles/scripts/nft-drift-watch
+Restart=always
+RestartSec=30
+Nice=10
+
+[Install]
+WantedBy=default.target

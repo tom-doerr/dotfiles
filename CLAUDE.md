@@ -568,6 +568,30 @@ on genuine failure (no silent cache fallback — keeps failures visible).
 Broad `except Exception` narrowed to `(KeyError,ValueError,TypeError,
 JSONDecodeError)`. Manual recover if ever blank: `kill -USR2 $(pgrep -x waybar)`.
 
+## `nft-drift-watch` — the live nftables ruleset vs `/etc/nftables.conf`, every minute (Sep 20 2026)
+
+`scripts/nft-drift-watch` (+ `systemd/user/nft-drift-watch.service`, `tests/nft_drift_watch_test.py`).
+Third time a runtime-inserted `iifname "enP7s7" accept` (handle 19, above the drop) opened spark-1's
+whole wired LAN — origin still unknown — so this turns the next one into a timestamped event with a
+suspect list. Reads via a NOPASSWD `sudo -n nft -a list table inet tailscale_only`
+(`systemd/nft-drift-watch.sudoers` → `/etc/sudoers.d/`, 0440); publishes
+`~/.local/share/node_exporter/textfile/nft_drift.prom`.
+- **Every cycle writes `nft_drift_in_sync` (1/0), `_extra_rules`, `_missing_rules`, `_up` and
+  `_last_check_timestamp_seconds`** — so a run of 1s is evidence it LOOKED, and a gap means it was
+  NOT RUNNING. Alerts for all three states: `systemd/nft-drift-watch.alerts.yml` (install on the NAS).
+- On drift: journal lines naming each extra/missing rule + a snapshot in
+  `~/.local/state/nft-drift-watch/drift-<stamp>.txt` (live listing with handles, `ps` oldest-first,
+  `who -a`, 600 journal lines, nft/firewall/tailscale units); each unreadable section says so.
+  Snapshot on the TRANSITION and then hourly, not per minute. Heartbeat log line hourly while in sync.
+- **Parser lessons (all pinned by tests):** the live listing writes `chain input { # handle 1`, so
+  strip comments quote-aware BEFORE looking for `{`; the file's `# [who date] why` tags are not
+  policy; fold `\` continuations (the log rule spans four lines); `set`/`map` blocks are skipped
+  (elements legitimately differ); and nft RE-SERIALISES — it prints the default `burst 5 packets` and
+  drops the redundant `meta nfproto ipv4 meta l4proto tcp`, so `CANONICAL` strips those from both
+  sides. Anything else still shows as drift, which is the right failure direction.
+- Verified live Sep 20: with handle 19 present → `DRIFT: 1 extra`; after the user deleted it →
+  `in sync`. Without the sudoers entry it publishes `nft_drift_up 0` and logs `CANNOT READ`.
+
 ## ★ `scripts/` and `systemd/` are BLANKET-GITIGNORED — new files need `git add -f`
 
 `.gitignore:24-25` ignores `systemd/` and `scripts/` wholesale ("Local/generated

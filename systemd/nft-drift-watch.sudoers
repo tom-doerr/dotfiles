@@ -1,0 +1,4 @@
+# Install as /etc/sudoers.d/nft-drift-watch (mode 0440), then `visudo -c` to validate.
+# Lets tom's nft-drift-watch READ the live ruleset without a password. Read only: it can list,
+# never add, insert, delete or flush. Reading nftables needs CAP_NET_ADMIN, hence sudo at all.
+tom ALL=(root) NOPASSWD: /usr/sbin/nft -a list table inet tailscale_only
