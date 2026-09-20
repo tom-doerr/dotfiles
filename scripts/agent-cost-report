@@ -15,7 +15,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 from pathlib import Path
 
@@ -250,6 +252,41 @@ def human(n: float) -> str:
     return f"{n:.0f}"
 
 
+def group_of(tool: str, model: str) -> str:
+    """Bucket a (tool, model) pair into what the status bar shows."""
+    if tool == "codex":
+        return "codex"
+    return "claude_fable" if "fable" in model else "claude"
+
+
+def windows(totals: dict, pricing: dict, today: str) -> dict:
+    """Per-group cost for today / last 7d / last 30d / all time, plus unpriced counts.
+
+    Dates are the UTC day stamped on each record, so "today" is the UTC day.
+    """
+    spans = {
+        "today": today,
+        "d7": (datetime.fromisoformat(today) - timedelta(days=6)).date().isoformat(),
+        "d30": (datetime.fromisoformat(today) - timedelta(days=29)).date().isoformat(),
+        "all": "",
+    }
+    out = {g: {w: {"usd": 0.0, "unpriced_requests": 0} for w in spans} for g in ("codex", "claude", "claude_fable")}
+    for tool, data in totals.items():
+        prices = pricing.get(tool, {})
+        for key, row in data["rows"].items():
+            date, model = key.split("|", 1)
+            priced = price_row(prices, model, row, pricing.get("web_search_per_1k", 0))
+            bucket = out[group_of(tool, model)]
+            for window, start in spans.items():
+                if date < start:
+                    continue
+                if priced is None:
+                    bucket[window]["unpriced_requests"] += row.get("requests", 0)
+                else:
+                    bucket[window]["usd"] += priced[0]
+    return out
+
+
 # --------------------------------------------------------------------------- report
 
 
@@ -260,6 +297,11 @@ def main() -> int:
     ap.add_argument("--until", help="YYYY-MM-DD, inclusive")
     ap.add_argument("--by", choices=("model", "day", "month", "tool"), default="model")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument(
+        "--windows",
+        action="store_true",
+        help="JSON: per-group (codex / claude / claude_fable) cost for today, 7d, 30d, all",
+    )
     ap.add_argument("--pricing", default=str(PRICING))
     ap.add_argument("--no-cache", action="store_true", help="re-parse every file")
     args = ap.parse_args()
@@ -282,8 +324,17 @@ def main() -> int:
         rows, dupes = collect(tool, files, cache.setdefault(tool, {}), not args.no_cache)
         totals[tool] = {"rows": rows, "dupes": dupes, "files": len(files)}
 
+    # Atomic: a waybar run and a manual run can overlap, and a half-written
+    # 23 MB cache would be silently discarded on the next read (= full re-parse).
     CACHE.parent.mkdir(parents=True, exist_ok=True)
-    CACHE.write_text(json.dumps(cache))
+    tmp = CACHE.with_suffix(f".tmp{os.getpid()}")
+    tmp.write_text(json.dumps(cache))
+    tmp.replace(CACHE)
+
+    if args.windows:
+        today = datetime.now(timezone.utc).date().isoformat()
+        print(json.dumps({"generated": today, "groups": windows(totals, pricing, today)}))
+        return 0
 
     grouped: dict[tuple, dict] = defaultdict(new_row)
     unpriced: dict[tuple, dict] = defaultdict(new_row)

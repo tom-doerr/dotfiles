@@ -95,3 +95,10 @@ window#waybar {
     color: #e06c75;
     font-weight: bold;
 }
+
+/* Agent spend row (agent-cost.sh): API-list-price equivalent of Codex and
+   Claude Code usage. Padding so it does not start flush against the screen
+   edge once the text outgrows the module's min-length. */
+#custom-agentcost {
+    padding: 0 8px;
+}

@@ -603,6 +603,23 @@ Prices are data, not code: verified Sep 20 2026 against platform.claude.com and
 developers.openai.com. Unknown models are printed in an UNPRICED block with their token
 counts, never priced by a guessed default.
 
+**Waybar row `agents` (Sep 20 2026, LAST bar in the private config → y=2472 for grim):**
+`waybar/agent-cost.sh` (symlinked into `~/.config/waybar/`, `custom/agentcost`, return-type
+json, interval 300, min-length 56) renders `CDX $78+? $3.9k  CC $120 $3.0k  FBL $183 $3.0k
+30d $9.8k` — bright = TODAY (UTC day), dim `#6272a4` = trailing 30 d, trailing `30d` = all
+three groups. Groups: `codex` = every Codex model, `claude` = Claude Code minus Fable,
+`claude_fable` = `claude-fable-*`. Yellow `+?` = that group has requests whose model has no
+published price (Codex's `codex-auto-review`, 75k requests / 11.1B cache-read tokens here),
+so the figure is a FLOOR — never silently omitted. Tooltip carries today/7d/30d/all per group.
+Fed by `agent-cost-report --windows` (one JSON blob, all four windows) — **0.2-0.5 s on a warm
+cache**, so the module runs the report directly and needs no timer or probe file. The cache
+write is atomic (tmp + `os.replace`) because the waybar run and a manual run overlap; a
+half-written 23 MB cache would be discarded silently and cost a 12-min full re-parse.
+CSS `#custom-agentcost { padding: 0 8px }` — without it the row sits flush on the screen edge
+once the text outgrows `min-length`. Row is 65 visible chars / 659 px of the 2149 usable.
+**waybar has a USER UNIT here: `systemctl --user restart waybar`** — bar-structure changes need
+a full restart (SIGUSR2 only reloads CSS), and the unit avoids `pkill` entirely.
+
 **★ Claude Code writes ONE JSONL LINE PER CONTENT BLOCK** (thinking / text / tool_use), each
 repeating the SAME `usage` object → a naive sum double-counts (57,475 records vs 29,143 real
 API calls here, i.e. ~2x, $30k vs $15k). Dedupe on `(message.id, requestId)`. A resumed or

@@ -149,3 +149,35 @@ def test_new_format_wins_when_both_present(tmp_path):
     )
     rows = acr.parse_codex(f)["rows"]
     assert rows["2026-09-01|gpt-6-astra"]["output"] == 10 and len(rows) == 1
+
+
+def test_group_of_splits_fable_from_the_rest():
+    assert acr.group_of("codex", "gpt-6-astra") == "codex"
+    assert acr.group_of("claude", "claude-opus-5") == "claude"
+    assert acr.group_of("claude", "claude-fable-5-1") == "claude_fable"
+
+
+def _row(**kw):
+    r = acr.new_row()
+    r.update(kw)
+    return r
+
+
+def test_windows_buckets_by_date_and_tracks_unpriced():
+    totals = {
+        "claude": {"rows": {
+            "2026-09-20|claude-opus-5": _row(output=1_000_000, requests=1),     # today
+            "2026-09-18|claude-fable-5": _row(output=1_000_000, requests=1),    # in 7d
+            "2026-08-25|claude-opus-5": _row(output=1_000_000, requests=1),     # in 30d only
+            "2026-01-01|claude-opus-5": _row(output=1_000_000, requests=1),     # all only
+        }},
+        "codex": {"rows": {"2026-09-20|codex-auto-review": _row(output=500, requests=3)}},
+    }
+    w = acr.windows(totals, PRICES, "2026-09-20")
+    assert w["claude"]["today"]["usd"] == 25.0
+    assert w["claude"]["d7"]["usd"] == 25.0        # the 09-18 row is fable, not claude
+    assert w["claude"]["d30"]["usd"] == 50.0
+    assert w["claude"]["all"]["usd"] == 75.0
+    assert w["claude_fable"]["d7"]["usd"] == 50.0
+    # An unpriced model contributes requests, never a guessed dollar figure.
+    assert w["codex"]["today"] == {"usd": 0.0, "unpriced_requests": 3}
