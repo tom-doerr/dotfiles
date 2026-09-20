@@ -10,7 +10,9 @@ fi
 bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<10; i++)); do printf '░'; done; }
 fmt() { [[ $1 -gt 1048576 ]] && printf "%4dMB" $((($1+524288)/1048576)) || printf "%4dKB" $((($1+512)/1024)); }
 pad() { printf "%-${2}s" "$1"; }
-hb() { awk -v b="${1:-0}" 'BEGIN{if(b<=0){print "0";exit} u="BKMGTP"; i=1; while(b>=1024&&i<6){b/=1024;i++} printf (b<10?"%.1f%s":"%.0f%s"), b, substr(u,i,1)}'; }
+# human bytes, ALWAYS 5 chars right-aligned ("    0", " 9.9G", " 303M", "1023M"): row 6 is
+# built from these and variable widths made its items jump on every refresh (Sep 20 2026).
+hb() { awk -v b="${1:-0}" 'BEGIN{if(b<=0){printf "%5s", "0"; exit} u="BKMGTP"; i=1; while(b>=1024&&i<6){b/=1024;i++} printf "%5s", sprintf((b<10?"%.1f%s":"%.0f%s"), b, substr(u,i,1))}'; }
 red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
 yellow() { printf "<span color='#f1fa8c'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
@@ -203,10 +205,11 @@ mdv=""
 if [[ "$host" == "nas" && ${bc_saved:--1} -ge 0 ]]; then
   # compression totals (lz4 = written awaiting zstd recompress, zstd = done,
   # raw = incompressible) + mover throughput + promote rate
-  cmpsz=$(awk -v g="${bc_saved:-0}" 'BEGIN{if(g>=1024)printf "%.1fT",g/1024; else printf "%dG",g}')
-  oratio=$(awk -v r="${bc_ratio:--1}" 'BEGIN{if(r<0)print "?"; else printf "%.2f", r/100}')
-  cmpv=$(awk -v a="${lz4log:-0}" -v ar="${lz4r:-0}" -v b="${zstdlog:-0}" -v br="${zstdr:-0}" -v c="${inclog:-0}" 'BEGIN{printf "lz4 %.1fT@%.2fx zstd %.1fT@%.2fx raw %.1fT", a/1024,ar/100,b/1024,br/100,c/1024}')
-  mdv="cmp saved ${cmpsz}@${oratio}x ($cmpv)  moved ${dst:-0}M/s  promoted $(hb ${promo:-0})/s"
+  # fixed widths throughout: the row must not reflow between refreshes
+  cmpsz=$(awk -v g="${bc_saved:-0}" 'BEGIN{if(g>=1024)printf "%5.1fT",g/1024; else printf "%5dG",g}')
+  oratio=$(awk -v r="${bc_ratio:--1}" 'BEGIN{if(r<0)print "   ?"; else printf "%.2f", r/100}')
+  cmpv=$(awk -v a="${lz4log:-0}" -v ar="${lz4r:-0}" -v b="${zstdlog:-0}" -v br="${zstdr:-0}" -v c="${inclog:-0}" 'BEGIN{printf "lz4 %5.1fT@%.2fx zstd %5.1fT@%.2fx raw %5.1fT", a/1024,ar/100,b/1024,br/100,c/1024}')
+  mdv="cmp saved ${cmpsz}@${oratio}x ($cmpv)  moved $(awk -v v="${dst:-0}" 'BEGIN{printf "%4d", v}')M/s  promoted $(hb ${promo:-0})/s"
 fi
 # backlog = bcachefs "Pending reconcile" queues (bytes, data column) packed
 # replicas|erasure_code|compression|target|other|metadata (high_priority is
@@ -216,7 +219,10 @@ rclv=""
 if [[ "$host" == "nas" && "${bc_backlog:-}" == *"|"* ]]; then
   IFS='|' read -r rcr rce rcc rct rco rcm <<< "$bc_backlog"
   rclv=$(printf "backlog: repl %s  ec %s  recmpr %s  destage %s" "$(hb "$rcr")" "$(hb "${rce:-0}")" "$(hb "$rcc")" "$(hb "$rct")")
-  [[ $((${rco:-0} + ${rcm:-0})) -gt 0 ]] && rclv="$rclv$(yellow " +misc $(hb $((rco + rcm)))")"
+  # +misc (checksum/EC-pending/high_priority/metadata) is ALWAYS printed so the items after
+  # it do not shift when it appears; yellow only when nonzero (Sep 20 2026).
+  misc=$(hb $(( ${rco:-0} + ${rcm:-0} )))
+  if [[ $((${rco:-0} + ${rcm:-0})) -gt 0 ]]; then rclv="$rclv$(yellow " +misc $misc")"; else rclv="$rclv +misc $misc"; fi
 elif [[ "$host" == "nas" && "${bc_backlog:-}" == "-1" ]]; then
   rclv=$(red "backlog:?")
 fi
@@ -340,7 +346,7 @@ if [[ "$host" == "nas" ]]; then
     case "${orsc:-}" in
       scan:*) IFS=':' read -r _ st sp sd <<< "$orsc"
               if [[ "$sp" != "-" ]]; then
-                scanv=$(awk -v t="$st" -v p="$sp" -v d="$sd" 'function k(n){ if(n>=1e6) return sprintf("%.2fM", n/1e6); if(n>=1e3) return sprintf("%.1fk", n/1e3); return n } BEGIN{split(d,a,"/"); printf "scan %s %d%% %s/%s nodes", t, p, k(a[1]), k(a[2])}')
+                scanv=$(awk -v t="$st" -v p="$sp" -v d="$sd" 'function k(n){ if(n>=1e6) return sprintf("%5.2fM", n/1e6); if(n>=1e3) return sprintf("%5.1fk", n/1e3); return sprintf("%6d", n) } BEGIN{split(d,a,"/"); printf "scan %s %3d%% %s/%s", t, p, k(a[1]), k(a[2])}')
               else scanv="scan $st"; fi
               scanv=$(yellow "$scanv") ;;
       proc:*) scanv="proc ${orsc#proc:}" ;;

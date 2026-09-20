@@ -306,6 +306,12 @@ scans pack `-`), `proc:<prio>_<kind>`, `wait` or `between`. Rendered after `prom
 yellow `scan fs 2% 20.7k/1.01M nodes` while scanning (the mover moves nothing until the scan
 ends), plain `proc normal_logical` while working, nothing otherwise. Row 6 = 194 visible chars.
 Cache format still 42 fields (slot packing, same trick as `fg:`).
+**Row 6 is FIXED-WIDTH since Sep 20 2026 (user: the items kept moving):** `hb()` always
+prints 5 chars right-aligned, `moved %4d`, cmp/lz4/zstd/raw `%5.1fT`, scan `%3d%%` with
+`%5.1fk`/`%5.2fM` counts, and `+misc` is ALWAYS printed (yellow only when nonzero) so the
+items after it never shift. Verified: three consecutive renders, identical width and identical
+column for every label. Width 209 visible + up to 5 for the stale suffix < ~221. Rule for any
+future row-6 field: pad it; never let a value's width depend on its magnitude.
 Arrows follow the into-device convention (w↓ r↑, write first — matches net
 rx↓/tx↑; row2/3 had it inverted for a day). UTIL ≥90% renders red.
 Optane matched by `/optane/` SUBSTRING, never a `^ssd`/label prefix — its
