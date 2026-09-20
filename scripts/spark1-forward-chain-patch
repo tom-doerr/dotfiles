@@ -50,5 +50,8 @@ def main():
     subprocess.run(['nft', '-c', '-f', CONF], check=True); print('syntax OK')
     subprocess.run(['nft', '-f', CONF], check=True); print('APPLIED')
     out = subprocess.run(['nft', 'list', 'chain', 'inet', 'tailscale_only', 'forward'], capture_output=True, text=True).stdout
-    print('forward chain live: %d rules' % out.count('accept') + out.count('drop') if out else 'forward chain NOT found after apply')
+    # (the first live run tripped here: `'%d' % a + b` binds as `('%d' % a) + b`, str + int - AFTER
+    # the apply had already succeeded. Cosmetic, but a crash in a summary line reads as a failed deploy.)
+    print('forward chain live: %d rules' % (out.count('accept')+out.count('drop')) if out
+          else 'forward chain NOT found after apply')
 if __name__ == '__main__': main()
