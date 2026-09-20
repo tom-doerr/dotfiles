@@ -620,6 +620,32 @@ once the text outgrows `min-length`. Row is 65 visible chars / 659 px of the 214
 **waybar has a USER UNIT here: `systemctl --user restart waybar`** — bar-structure changes need
 a full restart (SIGUSR2 only reloads CSS), and the unit avoids `pkill` entirely.
 
+**Quota bars on the same row (`scripts/agent-usage`, Sep 21 2026):**
+`CC 5h █░░░░░░░░░  3%  7d ████░░░░░░ 43%  Fable ██████░░░░ 63%  CDX 7d ██░░░░░░░░ 19%`
+(module `custom/agentusage`, interval 120, 84 chars; row total with the spend segment
+= 1546 px of the 2149 usable). These are SUBSCRIPTION QUOTA percentages, a different
+axis from the dollar figures next to them.
+**★ Claude's bars come from the SERVER, not from the transcripts:
+`GET https://api.anthropic.com/api/oauth/usage` with the OAuth access token in
+`~/.claude/.credentials.json` (`claudeAiOauth.accessToken`) + header
+`anthropic-beta: oauth-2025-04-20`.** That is exactly what the `/usage` dialog draws
+(verified: dialog 3/42/63 % = endpoint 3/42/63 %). Endpoint found by grepping the CLI
+bundle `~/.local/share/claude/versions/<ver>` for `api/oauth/usage` (variants
+`?at_wall=1&skip_spend=1`, `?cedar_ember=1&skip_spend=1`). Response: `limits[]` with
+`kind` = `session` / `weekly_all` / `weekly_scoped` (+ `scope.model.display_name`,
+here Fable), each `percent` / `severity` / `resets_at`, plus `five_hour`/`seven_day`
+objects, `extra_usage`, and `seven_day_breakdown` (Claude Code 97 % vs chat 3 %).
+Only the dialog's "what's contributing" list is computed locally — nothing in
+`~/.claude/` stores the percentages, so they cannot be read offline.
+**Codex quota = the last `rate_limits` block in the newest rollout** (`primary.used_percent`,
+`window_minutes` 10080 = weekly, `resets_at` epoch; `plan_type`). Read from the file TAIL
+(4 MB) — rollouts reach 100s of MB. It is exact as of the last request and afterwards only
+an OVER-estimate (the window rolls forward while nothing is logged), so a snapshot older
+than 6 h renders dim and its age goes in the tooltip.
+Colour = proximity, not activity: ≥70 % yellow, ≥90 % red, plus the server's own
+`severity`. A nonzero percent always lights ≥1 cell (a 3 % bar that renders empty reads
+as "no data"). Unknown `limits[].kind` values are SKIPPED, never guessed into a bar.
+
 **★ Claude Code writes ONE JSONL LINE PER CONTENT BLOCK** (thinking / text / tool_use), each
 repeating the SAME `usage` object → a naive sum double-counts (57,475 records vs 29,143 real
 API calls here, i.e. ~2x, $30k vs $15k). Dedupe on `(message.id, requestId)`. A resumed or

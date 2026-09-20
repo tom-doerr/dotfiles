@@ -102,3 +102,10 @@ window#waybar {
 #custom-agentcost {
     padding: 0 8px;
 }
+
+/* Quota bars (agent-usage): Claude session/weekly/Fable + Codex weekly. Needs its
+   own gap or it runs straight into the spend figures next to it. */
+#custom-agentusage {
+    padding: 0 8px;
+    margin-right: 14px;
+}

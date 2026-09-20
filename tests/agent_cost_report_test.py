@@ -181,3 +181,58 @@ def test_windows_buckets_by_date_and_tracks_unpriced():
     assert w["claude_fable"]["d7"]["usd"] == 50.0
     # An unpriced model contributes requests, never a guessed dollar figure.
     assert w["codex"]["today"] == {"usd": 0.0, "unpriced_requests": 3}
+
+
+# --------------------------------------------------------------------- agent-usage
+
+USAGE_SPEC = importlib.util.spec_from_loader(
+    "agent_usage",
+    importlib.machinery.SourceFileLoader(
+        "agent_usage", str(Path(__file__).resolve().parents[1] / "scripts" / "agent-usage")
+    ),
+)
+au = importlib.util.module_from_spec(USAGE_SPEC)
+USAGE_SPEC.loader.exec_module(au)
+
+
+def test_claude_entries_maps_the_three_usage_bars():
+    payload = {"limits": [
+        {"kind": "session", "percent": 3, "severity": "normal", "resets_at": "2026-09-21T00:10:00+00:00"},
+        {"kind": "weekly_all", "percent": 42, "severity": "normal", "resets_at": "2026-09-25T03:00:00+00:00"},
+        {"kind": "weekly_scoped", "percent": 63, "severity": "normal", "resets_at": "2026-09-25T03:00:00+00:00",
+         "scope": {"model": {"display_name": "Fable"}}},
+        {"kind": "something_new", "percent": 99, "severity": "critical"},
+    ]}
+    got = [(e["label"], e["percent"]) for e in au.claude_entries(payload)]
+    assert got == [("CC 5h", 3), ("7d", 42), ("Fable", 63)]  # unknown kind skipped, not guessed
+
+
+def test_nonzero_usage_always_lights_a_cell():
+    assert au.filled_cells(0) == 0
+    assert au.filled_cells(1) == 1   # would round to 0 -> indistinguishable from no data
+    assert au.filled_cells(43) == 4
+    assert au.filled_cells(100) == 10
+
+
+def test_colour_only_warns_near_the_limit():
+    assert au.colour({"percent": 63, "severity": "normal"}) is None
+    assert au.colour({"percent": 75, "severity": "normal"}) == au.COL_WARN
+    assert au.colour({"percent": 95, "severity": "normal"}) == au.COL_CRIT
+    assert au.colour({"percent": 10, "severity": "warning"}) == au.COL_WARN
+
+
+def test_codex_entry_reads_the_last_snapshot(tmp_path):
+    f = tmp_path / "rollout.jsonl"
+    def ev(ts, pct):
+        return json.dumps({"type": "event_msg", "timestamp": ts, "payload": {
+            "type": "token_count",
+            "rate_limits": {"primary": {"used_percent": pct, "window_minutes": 10080, "resets_at": 1790441439}}}})
+    f.write_text(ev("2026-09-20T10:00:00.000Z", 12.0) + "\n" + ev("2026-09-20T23:14:07.000Z", 19.4))
+    e = au.codex_entry(f)
+    assert e["percent"] == 19 and e["label"] == "CDX 7d" and e["stale_seconds"] > 0
+
+
+def test_codex_entry_without_rate_limits_returns_none(tmp_path):
+    f = tmp_path / "r.jsonl"
+    f.write_text(json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {}}}))
+    assert au.codex_entry(f) is None

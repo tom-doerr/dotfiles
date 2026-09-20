@@ -1,0 +1,201 @@
+#!/usr/bin/env python3
+"""Subscription quota bars for Claude Code and Codex — what /usage shows, in the bar.
+
+Claude: GET https://api.anthropic.com/api/oauth/usage with the OAuth token Claude
+Code already stores in ~/.claude/.credentials.json.  That is the SAME source the
+/usage dialog draws its bars from (server-side truth), not a local estimate — its
+"limits" array carries session (5h), weekly-all and weekly-scoped (Fable) percents.
+
+Codex: the last `rate_limits` block logged in the newest ~/.codex/sessions rollout.
+Codex writes it on every token_count event, so it is exact as of the last request
+and only ever an OVER-estimate afterwards (the window rolls forward while nothing
+is being logged).  Its age is reported rather than hidden.
+
+--waybar prints a waybar JSON object; default prints the parsed numbers.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import subprocess
+import sys
+import time
+from datetime import datetime, timezone
+from pathlib import Path
+
+HOME = Path.home()
+CREDENTIALS = HOME / ".claude" / ".credentials.json"
+CODEX_DIR = HOME / ".codex" / "sessions"
+USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
+STALE_SECONDS = 6 * 3600  # a Codex snapshot older than this is dimmed as stale
+
+FILL, EMPTY = "█", "░"
+COL_DIM, COL_WARN, COL_CRIT = "#6272a4", "#f1fa8c", "#ff5555"
+
+
+# --------------------------------------------------------------------------- sources
+
+
+def claude_usage(timeout: int = 15) -> dict:
+    """Raw /api/oauth/usage payload. Raises on any failure — callers show that."""
+    creds = json.loads(CREDENTIALS.read_text())["claudeAiOauth"]
+    out = subprocess.run(
+        ["curl", "-sS", "-m", str(timeout), "-H", f"Authorization: Bearer {creds['accessToken']}",
+         "-H", "anthropic-beta: oauth-2025-04-20", USAGE_URL],
+        capture_output=True, text=True, timeout=timeout + 5,
+    )
+    if out.returncode != 0:
+        raise RuntimeError(f"curl exit {out.returncode}: {out.stderr.strip()[:200]}")
+    return json.loads(out.stdout)
+
+
+def claude_entries(payload: dict) -> list[dict]:
+    """The three bars /usage draws, in its order: session, weekly all, weekly scoped."""
+    names = {"session": "CC 5h", "weekly_all": "7d"}
+    entries = []
+    for lim in payload.get("limits") or []:
+        kind = lim.get("kind")
+        label = names.get(kind)
+        if label is None and kind == "weekly_scoped":
+            label = ((lim.get("scope") or {}).get("model") or {}).get("display_name") or "scoped"
+        if label is None:
+            continue  # an unknown limit kind is skipped, not guessed at
+        entries.append({
+            "label": label,
+            "percent": lim.get("percent", 0),
+            "severity": lim.get("severity", "normal"),
+            "resets_at": lim.get("resets_at"),
+            "stale_seconds": 0,
+        })
+    return entries
+
+
+def newest_codex_session() -> Path | None:
+    files = list(CODEX_DIR.glob("**/*.jsonl")) if CODEX_DIR.exists() else []
+    return max(files, key=lambda f: f.stat().st_mtime) if files else None
+
+
+def codex_entry(path: Path, tail_bytes: int = 4_000_000) -> dict | None:
+    """Last rate_limits block in a rollout file (tail only — these files reach 100s of MB)."""
+    size = path.stat().st_size
+    with path.open("rb") as fh:
+        if size > tail_bytes:
+            fh.seek(size - tail_bytes)
+            fh.readline()  # discard the partial line
+        last = None
+        for raw in fh:
+            if b'"rate_limits"' not in raw:
+                continue
+            try:
+                rec = json.loads(raw)
+            except ValueError:
+                continue
+            limits = (rec.get("payload") or {}).get("rate_limits")
+            if limits and limits.get("primary"):
+                last = (rec.get("timestamp"), limits["primary"])
+    if not last:
+        return None
+    stamp, primary = last
+    age = 0
+    if stamp:
+        age = max(0, int(time.time() - datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()))
+    window_h = round((primary.get("window_minutes") or 0) / 60)
+    return {
+        "label": f"CDX {window_h // 24}d" if window_h >= 24 else f"CDX {window_h}h",
+        "percent": round(primary.get("used_percent", 0)),
+        "severity": "normal",
+        "resets_at": primary.get("resets_at"),
+        "stale_seconds": age,
+    }
+
+
+# --------------------------------------------------------------------------- render
+
+
+def colour(entry: dict) -> str | None:
+    """Colour means "close to the limit", not "in use" — at 50% a yellow bar all
+    week is noise. The server's own severity still wins when it escalates."""
+    if entry["percent"] >= 90 or entry["severity"] == "critical":
+        return COL_CRIT
+    if entry["percent"] >= 70 or entry["severity"] == "warning":
+        return COL_WARN
+    return None
+
+
+def filled_cells(percent: int, width: int = 10) -> int:
+    # Any nonzero usage lights at least one cell: a 3% bar that renders empty
+    # is indistinguishable from "no data".
+    n = max(0, min(width, round(percent * width / 100)))
+    return 1 if n == 0 and percent > 0 else n
+
+
+def bar(percent: int, width: int = 10) -> str:
+    n = filled_cells(percent, width)
+    return FILL * n + EMPTY * (width - n)
+
+
+def segment(entry: dict, width: int = 10) -> str:
+    n = filled_cells(entry["percent"], width)
+    col = colour(entry)
+    fill = f"<span color='{col}'>{FILL * n}</span>" if col else FILL * n
+    # The unfilled part stays dim so the filled part alone reads as the value.
+    body = fill + f"<span color='{COL_DIM}'>{EMPTY * (width - n)}</span>"
+    text = f"{entry['label']} {body}{entry['percent']:>3}%"
+    if entry["stale_seconds"] > STALE_SECONDS:
+        text = f"<span color='{COL_DIM}'>{text}</span>"
+    return text
+
+
+def reset_note(entry: dict) -> str:
+    val = entry.get("resets_at")
+    if val is None:
+        return "no reset time"
+    when = (
+        datetime.fromtimestamp(val, timezone.utc)
+        if isinstance(val, (int, float))
+        else datetime.fromisoformat(str(val).replace("Z", "+00:00"))
+    )
+    hours = (when - datetime.now(timezone.utc)).total_seconds() / 3600
+    return f"resets in {hours:.0f}h ({when.astimezone().strftime('%a %H:%M')})"
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--waybar", action="store_true", help="emit waybar JSON")
+    ap.add_argument("--width", type=int, default=10, help="bar width in characters")
+    args = ap.parse_args()
+
+    entries, problems = [], []
+    try:
+        entries.extend(claude_entries(claude_usage()))
+    except Exception as err:  # network, token, JSON shape: all shown, never silently zeroed
+        problems.append(f"claude usage: {type(err).__name__}: {err}")
+    try:
+        path = newest_codex_session()
+        entry = codex_entry(path) if path else None
+        if entry:
+            entries.append(entry)
+        else:
+            problems.append("codex: no rate_limits in the newest rollout")
+    except Exception as err:
+        problems.append(f"codex: {type(err).__name__}: {err}")
+
+    if not args.waybar:
+        print(json.dumps({"entries": entries, "problems": problems}, indent=2))
+        return 1 if problems else 0
+
+    text = "  ".join(segment(e, args.width) for e in entries)
+    if problems:
+        text = (text + "  " if text else "") + f"<span color='{COL_CRIT}'>usage ?</span>"
+    tip = [f"{e['label']}: {e['percent']}% used, {reset_note(e)}"
+           + (f"  [snapshot {e['stale_seconds'] // 3600}h old]" if e["stale_seconds"] > STALE_SECONDS else "")
+           for e in entries]
+    tip.append("\nClaude: live from /api/oauth/usage (same source as /usage).")
+    tip.append("Codex: last rate_limits logged in the newest rollout; only ever an over-estimate.")
+    print(json.dumps({"text": text, "tooltip": "\n".join(tip + problems)}))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
