@@ -229,7 +229,8 @@ cgvv=""
 if [[ "$host" == "nas" && "${cgv:-}" == *:* ]]; then
   for part in $(tr '|' '\n' <<< "$cgv" | sort); do
     IFS=':' read -r cgn cgc cgr <<< "$part"
-    seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{printf "%s cong %d%% rd %.1fms", n, c, r/1000}')
+    # sub-millisecond medians (the Optane reads at ~16 us) print in us; "0.0ms" hid them (Sep 20 2026)
+    seg=$(awk -v n="$cgn" -v c="${cgc:--1}" -v r="${cgr:--1}" 'BEGIN{if(r<1000) printf "%s cong %d%% rd %d\xc2\xb5s", n, c, r; else printf "%s cong %d%% rd %.1fms", n, c, r/1000}')
     # yellow, not red (Sep 9 2026, user request): a high congestion vote only
     # throttles promote writes onto that device, it is not a fault. Red stays
     # reserved for the probe itself failing (below).
@@ -273,7 +274,11 @@ swapv=""
 # ↓ = writes INTO the device, ↑ = reads served FROM it. Write printed first.
 bwv=""; iopsv=""; latv=""; occv=""
 if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
-  mapfile -t _drow < <(awk -v cur="$devs" -v prv="$pdevs" -v dt="${rate_dt:-1}" 'BEGIN{
+  mapfile -t _drow < <(awk -v cur="$devs" -v prv="$pdevs" -v dt="${rate_dt:-1}" '
+  # latency in us -> "  16µs" below 1 ms, " 3.3ms" above; a fixed %.1fms showed the
+  # Optane (median read ~16 us) as 0.0 (Sep 20 2026). if/else, not ?: (mawk).
+  function fl(u,  s){ if(u<1000) s=sprintf("%4d\xc2\xb5s", u); else s=sprintf("%4.1fms", u/1000); return s }
+  BEGIN{
     if(dt<1)dt=1
     n=split(prv,P,"|"); for(i=1;i<=n;i++){k=index(P[i],":"); if(k)p[substr(P[i],1,k-1)]=substr(P[i],k+1)}
     m=split(cur,C,"|"); cnt=0
@@ -302,14 +307,15 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     for(i=1;i<=3;i++){k=G[i]; if(!(k in seen))continue
       B=B sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", k, tbw[k]+0.5, tbr[k]+0.5)
       I=I sprintf("  %s %5d\xe2\x86\x93%5d\xe2\x86\x91", k, tw[k]+0.5, tr[k]+0.5)
-      L=L sprintf("  %s %5.1f", k, (lc[k]?ls[k]/lc[k]:0)/1000)
+      v=0; if(lc[k]) v=ls[k]/lc[k]
+      L=L sprintf("  %s %s", k, fl(v))
       U=U sprintf("  %s %3d%%", k, (uc[k]?us[k]/uc[k]:0)+0.5)
     }
-    B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L "ms \xe2\x94\x82"; U=U " \xe2\x94\x82"
+    B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L " \xe2\x94\x82"; U=U " \xe2\x94\x82"
     for(i=1;i<=cnt;i++){t=order[i]
       B=B sprintf("  %s %3d\xe2\x86\x93%3d\xe2\x86\x91", t, dbw[t]+0.5, dbr[t]+0.5)
       I=I sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", t, dw[t]+0.5, dr[t]+0.5)
-      if(lat[t]>=0) L=L sprintf("  %s %4.1f", t, lat[t]/1000)
+      if(lat[t]>=0) L=L sprintf("  %s %s", t, fl(lat[t]))
       useg=sprintf("  %s %3d%%", t, du[t]+0.5)
       if(du[t]>=90) useg="<span color=\"#ff5555\">" useg "</span>"
       U=U useg

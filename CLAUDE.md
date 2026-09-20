@@ -294,6 +294,11 @@ the promote rate needs a data_read_promote counter the probe now ships,
 cache 41→42 fields); each =
 by-type aggregate (opt/ssd/hdd) then `│` then per device (e1-e8 l1 l2 op);
 display order comes from the CONFIG (private repo), not the numbers.
+**Latency units are adaptive since Sep 20 2026:** LAT row and the congestion row's `rd`
+print `<1000 µs` as `NNNNµs` and above as `N.Nms` (awk `fl()`, if/else not `?:` for mawk);
+the probe always shipped integer µs, only the `%.1fms` display hid the Optane's ~16-19 µs
+median as `0.0`. The LAT row lost its trailing `ms` unit (units are per value now); width
+168 → 189 chars, still under the ~221 capacity.
 Arrows follow the into-device convention (w↓ r↑, write first — matches net
 rx↓/tx↑; row2/3 had it inverted for a day). UTIL ≥90% renders red.
 Optane matched by `/optane/` SUBSTRING, never a `^ssd`/label prefix — its
