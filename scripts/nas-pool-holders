@@ -1,0 +1,22 @@
+#!/bin/sh
+# List what holds the bcachefs pool mount, i.e. why `umount /pool` says "target is busy".
+# Deployed to nas:~/nas-pool-holders (source: dotfiles scripts/nas-pool-holders).
+#
+# Scans /proc directly on purpose: `fuser` is not installed on the NAS, and
+# `lsof +D /pool` recursively walks the whole 190 TB tree - it never finishes and
+# holds the mount open itself (Sep 20 2026). Run as root to see every user's processes.
+M=${1:-/pool}
+echo "processes with cwd/root/fd/mmap under $M:"
+for p in /proc/[0-9]*; do
+  pid=${p#/proc/}; comm=$(cat "$p/comm" 2>/dev/null) || continue
+  for l in cwd root; do
+    t=$(readlink "$p/$l" 2>/dev/null); case "$t" in "$M"|"$M"/*) echo "  pid $pid $comm $l=$t";; esac
+  done
+  for fd in "$p"/fd/*; do
+    t=$(readlink "$fd" 2>/dev/null); case "$t" in "$M"|"$M"/*) echo "  pid $pid $comm fd=$t";; esac
+  done
+  grep -qE " $M(/| |$)" "$p/maps" 2>/dev/null && echo "  pid $pid $comm mmap"
+done | sort -u
+echo "nested mounts under $M:"
+findmnt -rno TARGET,FSTYPE | awk -v m="$M/" 'index($1,m)==1 {print "  " $0}'
+echo "(both lists empty = no userspace holder; a busy umount is then a reference still being released, e.g. docker teardown - retry)"
