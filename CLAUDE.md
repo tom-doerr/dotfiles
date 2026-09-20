@@ -624,6 +624,20 @@ No long-context premium exists on Claude 4.6+, so `claude-opus-5[1m]` is an alia
 `claude-opus-5` in the pricing file. Web search is billed separately ($10/1k) and is read from
 `server_tool_use.web_search_requests`.
 
+## NAS lockdown tooling (Sep 20 2026) — `systemd/nas/nftables.conf`, `scripts/nas-lockdown-deploy`, `scripts/nas-compose-rebind`
+
+Deployed live Sep 20 11:04–11:07; the story and verification are in `~/CLAUDE.md` (NAS section).
+- `nas-lockdown-deploy` (runs ON the NAS as tom, `sudo -n` from the base tmux): `nft -c`, backup,
+  **`systemd-run --on-active=240` dead-man switch** deleting the table, `nft -f`; `--confirm` cancels
+  the timer and enables `nftables.service`. Verify from spark-1 INSIDE the window — with
+  `-o HostKeyAlias=nas` on raw IPs, or a host-key failure masquerades as a lockout.
+- `nas-compose-rebind` rewrites `ports:` lines to `127.0.0.1:` + `100.85.146.21:` pairs; handles
+  `"9000:9000"`, bare `5434:5432`, `0.0.0.0:` and `${VAR:-0.0.0.0}:` prefixes, `${VAR:-2283}:2283`
+  (quoted on output), `/tcp` suffixes and trailing comments; **refuses the whole run on any
+  unparseable entry or a file with nothing to rebind**; postgres stacks `docker stop -t 600` first;
+  immich via `/usr/local/sbin/immich-compose`. Tests: `tests/nas_compose_rebind_test.py`.
+- `spark1-forward-chain-patch` — spark-1 has the same Docker-forward hole; staged, needs sudo.
+
 ## ★ `scripts/` and `systemd/` are BLANKET-GITIGNORED — new files need `git add -f`
 
 `.gitignore:24-25` ignores `systemd/` and `scripts/` wholesale ("Local/generated

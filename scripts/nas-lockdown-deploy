@@ -1,0 +1,24 @@
+#!/bin/bash
+# Deploy systemd/nas/nftables.conf on the NAS with a COMMIT-CONFIRMED dead-man switch.
+#   nas-lockdown-deploy            stage /home/tom/nftables.conf.new -> /etc, arm 240 s auto-revert, apply
+#   nas-lockdown-deploy --confirm  cancel the auto-revert and enable nftables.service
+# Runs ON THE NAS as tom (sudo -n ticket from the base tmux). If the operator on spark-1 loses access
+# and cannot confirm, the transient timer deletes the table and the box is back to how it was.
+set -euo pipefail
+NEW=/home/tom/nftables.conf.new
+if [[ "${1:-}" == "--confirm" ]]; then
+    sudo -n systemctl stop nas-lockdown-rollback.timer 2>/dev/null && echo "rollback timer cancelled" || echo "no rollback timer was armed"
+    sudo -n systemctl enable nftables.service >/dev/null 2>&1 && echo "nftables.service enabled for boot"
+    sudo -n nft list table inet nas_lockdown | grep -cE "accept|drop" | xargs -I{} echo "nas_lockdown live: {} rules"
+    exit 0
+fi
+sudo -n nft -c -f "$NEW" && echo "syntax OK"
+BAK="/etc/nftables.conf.bak-$(date +%Y%m%d-%H%M%S)"
+sudo -n cp -a /etc/nftables.conf "$BAK" && echo "backup $BAK"
+sudo -n install -m 0755 -o root -g root "$NEW" /etc/nftables.conf
+sudo -n systemctl stop nas-lockdown-rollback.timer 2>/dev/null || true
+sudo -n systemd-run --on-active=240 --unit=nas-lockdown-rollback \
+    --description="auto-revert inet nas_lockdown unless confirmed" /usr/sbin/nft delete table inet nas_lockdown >/dev/null
+echo "dead-man switch armed: table deleted automatically in 240 s unless --confirm"
+sudo -n nft -f /etc/nftables.conf
+echo "APPLIED_$(date +%H:%M:%S)"
