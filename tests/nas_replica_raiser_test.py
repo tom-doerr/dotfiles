@@ -36,9 +36,9 @@ high_priority:      2205763088384         0
 """
 
 
-def F(ino, size, explicit, effective, path=None):
+def F(ino, size, explicit, effective, path=None, ec_effective=None):
     return {"ino": ino, "size": size, "explicit": explicit, "effective": effective,
-            "path": path or f"/pool/x/{ino}"}
+            "ec_effective": ec_effective, "path": path or f"/pool/x/{ino}"}
 
 
 class ParseTests(unittest.TestCase):
@@ -68,6 +68,18 @@ class ClassifyTests(unittest.TestCase):
     def test_at_target_is_done(self):
         self.assertEqual(rr.classify(F(1, 10, None, 3), 3, set()), "done")
         self.assertEqual(rr.classify(F(1, 10, 3, 3), 3, set()), "done")
+
+    def test_erasure_code_goal(self):
+        """Data already at the replica target still needs converting when EC is asked for."""
+        at_target = F(1, 10, None, 3)                       # no EC xattr -> inherits the pool default
+        self.assertEqual(rr.classify(at_target, 3, set(), 1, 0), "todo")   # pool default 0, want 1
+        self.assertEqual(rr.classify(at_target, 3, set(), 0, 0), "done")   # already matches
+        self.assertEqual(rr.classify(at_target, 3, set(), 1, 1), "done")   # inherits 1 fs-wide
+        self.assertEqual(rr.classify(F(1, 10, None, 3, ec_effective=1), 3, set(), 1, 0), "done")
+        self.assertEqual(rr.classify(F(1, 10, None, 3, ec_effective=0), 3, set(), 1, 1), "todo")
+        # a pending file stays pending, and no EC goal means the old behaviour
+        self.assertEqual(rr.classify(at_target, 3, {1}, 1, 0), "pending")
+        self.assertEqual(rr.classify(at_target, 3, set(), None, 0), "done")
 
 
 class PlanTests(unittest.TestCase):

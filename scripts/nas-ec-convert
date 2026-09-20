@@ -1,0 +1,156 @@
+#!/usr/bin/env python3
+"""Convert a big bcachefs tree to erasure coding in chunks, paced by the EC backlog.
+
+Deployed to nas:/usr/local/sbin/nas-ec-convert (source: dotfiles scripts/nas-ec-convert).
+
+Why not nas-replica-raiser: that one classifies and stamps FILE by file, which is right
+for a tree with mixed per-file overrides but impossible for MinIO - 7.6 M files, three
+xattr reads each, on every poll. Here the chunk unit is an immediate SUBDIRECTORY of the
+root, which `bcachefs set-file-option` propagates to every inheriting child (and MinIO has
+no per-file overrides at all). No file walk, no du: pacing comes from the pool's own
+`erasure_code` pending row, so the queue is bounded whatever a chunk turns out to weigh.
+
+Only for data ALREADY at the wanted replica count: enabling EC there is pure shrink with
+no transient peak (unlike 1x -> 3x + EC, which inflates first - see the Aug 26 2026
+near-miss). It refuses to change data_replicas.
+
+  nas-ec-convert /pool/services/minio/data/idea-rank            # dry run, prints the plan
+  nas-ec-convert /pool/services/minio/data/idea-rank --apply    # convert, paced
+  nas-ec-convert <root> --status                                # progress only
+
+Pause: `touch /run/nas-ec-convert.hold` (checked before every chunk).
+"""
+import argparse
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+POOL = "/pool"
+UUID = os.environ.get("NAS_EC_UUID", "3ab5c853-6fc9-4df8-b5f5-46a65dfa313d")
+SYSFS = f"/sys/fs/bcachefs/{UUID}"
+BCACHEFS = os.environ.get("NAS_EC_BCACHEFS", "/usr/local/sbin/bcachefs")
+STATE_DIR = "/var/lib/nas-ec-convert"
+HOLD = "/run/nas-ec-convert.hold"
+XATTR_EFF_EC = "bcachefs_effective.erasure_code"
+
+
+def log(msg):
+    print(f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} {msg}", flush=True)
+
+
+def ec_pending_bytes():
+    """The pool's queued erasure-coding work, in bytes (absent row = 0)."""
+    out = subprocess.run([BCACHEFS, "fs", "usage", POOL], capture_output=True, text=True, timeout=180).stdout
+    sect = out.split("Pending reconcile:", 1)
+    if len(sect) != 2:
+        raise RuntimeError("no 'Pending reconcile:' section in fs usage")
+    m = re.search(r"^erasure_code:\s+(\d+)", sect[1].split("\n\n")[0], re.M)
+    return int(m.group(1)) if m else 0
+
+
+def pool_default_ec():
+    with open(f"{SYSFS}/options/erasure_code") as f:
+        return int(f.read().strip())
+
+
+def effective_ec(path, pool_ec):
+    """Effective erasure_code of a path; an absent xattr means it inherits the fs default."""
+    try:
+        return int(os.getxattr(path, XATTR_EFF_EC).decode().strip())
+    except OSError:
+        return pool_ec
+
+
+def chunks(root, pool_ec):
+    """Immediate subdirectories, oldest name first, with their current EC state."""
+    out = []
+    with os.scandir(root) as it:
+        for e in sorted(it, key=lambda e: e.name):
+            if e.is_dir(follow_symlinks=False):
+                out.append((e.path, effective_ec(e.path, pool_ec)))
+    return out
+
+
+def stamp(path, apply):
+    """Set erasure_code=1 on a directory; the CLI propagates to inheriting children.
+
+    A raw setxattr on a directory does NOT propagate - only set-file-option re-inherits.
+    """
+    if not apply:
+        log(f"DRY RUN would stamp {path}")
+        return True
+    r = subprocess.run([BCACHEFS, "set-file-option", "--erasure_code=1", path],
+                       capture_output=True, text=True, timeout=600)
+    if r.returncode != 0:
+        raise RuntimeError(f"set-file-option failed on {path}: {r.stderr.strip()[:200]}")
+    got = effective_ec(path, -1)
+    if got != 1:
+        raise RuntimeError(f"stamped {path} but erasure_code reads back {got}")
+    return True
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("root")
+    ap.add_argument("--apply", action="store_true", help="actually stamp (default: dry run)")
+    ap.add_argument("--status", action="store_true", help="print progress and exit")
+    ap.add_argument("--max-pending-gb", type=float, default=float(os.environ.get("NAS_EC_MAX_PENDING_GB", "500")),
+                    help="wait while the pool's queued EC work exceeds this (default 500)")
+    ap.add_argument("--chunks-per-round", type=int, default=int(os.environ.get("NAS_EC_CHUNKS", "8")))
+    ap.add_argument("--poll", type=float, default=float(os.environ.get("NAS_EC_POLL", "300")))
+    a = ap.parse_args(argv)
+
+    root = os.path.realpath(a.root)
+    if not root.startswith(POOL + "/"):
+        raise SystemExit(f"refusing a path outside {POOL}: {root}")
+    if not os.path.isdir(root):
+        raise SystemExit(f"not a directory: {root}")
+    if a.apply and os.geteuid() != 0:
+        raise SystemExit("--apply needs root (the MinIO tree is root-owned)")
+
+    pool_ec = pool_default_ec()
+    todo = [(p, ec) for p, ec in chunks(root, pool_ec) if ec != 1]
+    done = len(chunks(root, pool_ec)) - len(todo)
+    log(f"{root}: {done} chunks already erasure coded, {len(todo)} to go "
+        f"(pool default erasure_code={pool_ec}, queued EC work {ec_pending_bytes() / 1e9:.0f} GB)")
+    if a.status or not todo:
+        return 0
+
+    if a.apply:  # a dry run must not need root just to record state it will not write
+        os.makedirs(STATE_DIR, exist_ok=True)
+    state_path = os.path.join(STATE_DIR, re.sub(r"\W+", "_", root.strip("/")) + ".json")
+    state = {"root": root, "stamped": 0, "started": time.time()}
+    i = 0
+    while i < len(todo):
+        if os.path.exists(HOLD):
+            log(f"hold file {HOLD} present, waiting")
+            time.sleep(a.poll)
+            continue
+        pend = ec_pending_bytes()
+        if pend > a.max_pending_gb * 1e9:
+            log(f"queued EC work {pend / 1e9:.0f} GB > {a.max_pending_gb:.0f} GB, waiting "
+                f"({len(todo) - i} chunks left)")
+            time.sleep(a.poll)
+            continue
+        batch = todo[i:i + a.chunks_per_round]
+        for path, _ in batch:
+            stamp(path, a.apply)
+        i += len(batch)
+        state["stamped"] = i
+        state["last"] = batch[-1][0]
+        if a.apply:
+            with open(state_path, "w") as f:
+                json.dump(state, f)
+        log(f"stamped {len(batch)} chunks ({i}/{len(todo)}); queued EC work was {pend / 1e9:.0f} GB")
+        if not a.apply:
+            log("dry run: stopping after the first round")
+            return 0
+    log(f"DONE: {i} chunks under {root} now request erasure coding")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

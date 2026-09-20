@@ -77,6 +77,7 @@ TARGET_MAX = int(float(os.environ.get("NAS_RR_TARGET_MAX_GB", "10")) * 1e9)
 XATTR_REPL = "bcachefs.data_replicas"
 XATTR_EC = "bcachefs.erasure_code"
 XATTR_EFF_REPL = "bcachefs_effective.data_replicas"
+XATTR_EFF_EC = "bcachefs_effective.erasure_code"
 
 
 def log(msg):
@@ -134,12 +135,14 @@ def parse_usage(text):
     return size, used, hipri, target
 
 
-def classify(f, target, hipri_inodes):
-    """f: dict(ino, size, explicit, effective). -> 'pending' | 'todo' | 'done'.
+def classify(f, target, hipri_inodes, ec_target=None, pool_ec=0):
+    """f: dict(ino, size, explicit, effective, ec_effective). -> 'pending'|'todo'|'done'.
 
     pending : the running campaign still has work queued for this file
-    todo    : below target (explicit stamp < target, or inherits < target)
-    done    : effective == target and nothing queued
+    todo    : below the replica target, OR the entry asks for an erasure_code setting
+              this file does not have yet (data already at target replicas still needs
+              converting - that campaign shape is pure shrink, no transient peak)
+    done    : effective == target, erasure_code as requested, nothing queued
     """
     if f["ino"] in hipri_inodes:
         return "pending"
@@ -147,6 +150,11 @@ def classify(f, target, hipri_inodes):
         return "todo"
     if f["effective"] < target:
         return "todo"
+    if ec_target is not None:
+        # an absent effective xattr means "inherits the filesystem default", not "unset"
+        ec = f["ec_effective"] if f["ec_effective"] is not None else pool_ec
+        if ec != int(ec_target):
+            return "todo"
     return "done"
 
 
@@ -244,7 +252,8 @@ def walk_entry(entry):
             if eff is None:
                 raise RuntimeError(f"{p}: cannot read {XATTR_EFF_REPL} (not bcachefs?)")
             files.append({"path": p, "ino": st.st_ino, "size": st.st_size,
-                          "explicit": xattr_int(p, XATTR_REPL), "effective": eff})
+                          "explicit": xattr_int(p, XATTR_REPL), "effective": eff,
+                          "ec_effective": xattr_int(p, XATTR_EFF_EC)})
     return files
 
 
@@ -306,14 +315,20 @@ def load_job(path):
     return job
 
 
+def pool_erasure_code():
+    """The filesystem-wide erasure_code default: what a file with no xattr inherits."""
+    return int(read_file(f"{SYSFS}/options/erasure_code").strip())
+
+
 def do_inventory(job, hip=None, quiet=False):
     hip = hipri_inodes() if hip is None else hip
+    pool_ec = pool_erasure_code()
     inv = {}
     for e in job["entries"]:
         files = walk_entry(e)
         classes = {"pending": [], "todo": [], "done": []}
         for f in files:
-            classes[classify(f, int(e["target"]), hip)].append(f)
+            classes[classify(f, int(e["target"]), hip, e.get("erasure_code"), pool_ec)].append(f)
         inv[e["path"]] = classes
         if not quiet:
             log(f"{e['path']}: " + ", ".join(

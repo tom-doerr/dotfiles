@@ -3,6 +3,12 @@
   "batch_gb": 200,
   "peak_margin": 1.5,
   "entries": [
-    {"path": "/pool/recovered-oldmain/huggingface-cache", "target": 3, "erasure_code": 1, "current_level": 1}
+    {
+      "path": "/pool/recovered-oldmain/huggingface-cache",
+      "target": 3,
+      "erasure_code": 1,
+      "current_level": 1,
+      "_why": "finished Sep 9; kept so a re-download inherits the same policy."
+    }
   ]
 }
