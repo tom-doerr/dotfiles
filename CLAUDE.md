@@ -1,5 +1,28 @@
 # Claude Configuration Notes - Dotfiles
 
+## MOVED OUT 2026-09-22: host-specific NAS / tailnet / firewall config
+
+This repo is **public**. Host-specific infrastructure config no longer lives
+here — it moved to the private repo, `~/git/private/nas-infra/` (see its
+README). That covers the NAS pool tooling and exporters, the NAS-side systemd
+units and firewall ruleset, the Tailscale Services config, the firewall
+drift-watch and forward-chain patch, `service-endpoints`, and their tests.
+
+**Do not add it back.** `.gitignore` already excludes `scripts/`, `systemd/`
+and `docker/`; everything tracked under them got there via `git add -f`, which
+is how host config leaked into a public repo in the first place. Before you
+`git add -f` anything under those trees, ask whether it names a host, an
+address, a firewall rule or a service topology. If yes, it belongs in
+`nas-infra`.
+
+What stays here is portable or genuinely reusable: the Hyprland/waybar/ghostty
+configs, the wallpaper and span-toggle tooling, the agent cost/usage reporting,
+and the hardware exporters (`gpu-exporter`, `pdu-exporter`,
+`ups-modbus-exporter`, `thermal-*`, `weather-exporter`,
+`spark-pdu-watchdog`). Some of those still hardcode LAN addresses — RFC1918
+only, but worth parameterising to env vars if they are ever touched again.
+
+
 ## Neovim Autosave Issues
 
 ### Problem
