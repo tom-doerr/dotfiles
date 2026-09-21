@@ -47,10 +47,11 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(s, {2147706864, 6917529027641216822})
 
     def test_usage(self):
-        size, used, hipri, target = rr.parse_usage(USAGE)
+        size, used, hipri, target, ec = rr.parse_usage(USAGE)
         self.assertEqual((size, used, hipri, target), (209513462660096, 148634303478272, 2205763088384, 1077937328128))
         # only nonzero rows are printed: no high_priority row == 0, not unknown
-        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile: data metadata\ntarget: 5 0\n"), (10, 1, 0, 5))
+        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile: data metadata\ntarget: 5 0\n"), (10, 1, 0, 5, 0))
+        self.assertEqual(rr.parse_usage("Size: 10\nUsed: 1\nPending reconcile:\nerasure_code: 7 0\n")[4], 7)
         with self.assertRaises(ValueError):
             rr.parse_usage("Pending reconcile:\nhigh_priority: 1 0\n")
 
@@ -132,6 +133,31 @@ class GateTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertIn("peak", why)
 
+
+
+class DirGranularityTests(unittest.TestCase):
+    """Chunk units of unknown size, for trees too large to classify file by file."""
+
+    def test_batch_is_bounded_by_count_when_sizes_are_unknown(self):
+        units = [F(i, None, None, 3) for i in range(20)]
+        self.assertEqual(len(rr.plan_batch(units, 1e9, 8)[0]), 8)
+        self.assertEqual(len(rr.plan_batch(units, 1e9, None)[0]), 1)  # no count given: one at a time
+        # files with sizes still batch by bytes, ignoring the count
+        sized = [F(i, 400_000_000, None, 1) for i in range(10)]
+        self.assertEqual(len(rr.plan_batch(sized, 1e9, 8)[0]), 2)
+
+    def test_ec_only_campaign_ignores_the_ssd_gates_and_paces_on_ec_backlog(self):
+        # foreground on hdd and a full destage queue must not block an EC-only campaign
+        ok, why = rr.gate("hdd", "ssd", 0, 10e12, 0, False, target_pending=500e9, target_max=None,
+                          require_ssd_fg=False, ec_pending=100e9, ec_max=500e9)
+        self.assertTrue(ok, why)
+        # ... but its own backlog ceiling does
+        ok, why = rr.gate("hdd", "ssd", 0, 10e12, 0, False, require_ssd_fg=False,
+                          ec_pending=600e9, ec_max=500e9)
+        self.assertFalse(ok)
+        self.assertIn("queued erasure-coding work", why)
+        # the default is unchanged: SSD foreground still required
+        self.assertFalse(rr.gate("hdd", "ssd", 0, 10e12, 0, False)[0])
 
 if __name__ == "__main__":
     unittest.main(verbosity=1)

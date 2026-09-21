@@ -1,8 +1,30 @@
 {
-  "_comment": "Deployed to nas:/etc/nas-replica-raiser/job.json. batch_gb bounds one batch's logical size; peak_margin multiplies the transient raw peak (size x replica delta) that must fit in free space. current_level is only used by `pause` (what a still-pending file is reverted to). Order matters: entries are processed top to bottom.",
+  "_comment": "Deployed to nas:/etc/nas-replica-raiser/job.json. batch_gb bounds one batch's logical size; peak_margin multiplies the transient raw peak (size x replica delta) that must fit in free space. current_level is only used by `pause` (what a still-pending file is reverted to). Order matters: entries are processed top to bottom. granularity 'dir' stamps immediate SUBDIRECTORIES instead of files (for trees too large to classify file by file) and is only allowed for erasure_code campaigns, since unit sizes are then unknown; such an entry batches by chunks_per_batch and may set require_ssd_foreground=false + max_ec_pending_gb, because turning EC on for data already at its replica target writes no extra copies.",
   "batch_gb": 200,
   "peak_margin": 1.5,
   "entries": [
+    {
+      "path": "/pool/services/minio/data/soarm",
+      "target": 3,
+      "erasure_code": 1,
+      "current_level": 3,
+      "granularity": "dir",
+      "chunks_per_batch": 1,
+      "require_ssd_foreground": false,
+      "max_ec_pending_gb": 500,
+      "_why": "1.4 TiB of immutable S3 objects, already 3x; one chunk, as a canary before the big bucket."
+    },
+    {
+      "path": "/pool/services/minio/data/idea-rank",
+      "target": 3,
+      "erasure_code": 1,
+      "current_level": 3,
+      "granularity": "dir",
+      "chunks_per_batch": 8,
+      "require_ssd_foreground": false,
+      "max_ec_pending_gb": 500,
+      "_why": "19.4 TiB in 924 dated dirs (~21 GiB each), the pool's biggest 3x tree; 4+2 EC frees ~32 TB."
+    },
     {
       "path": "/pool/recovered-oldmain/huggingface-cache",
       "target": 3,
