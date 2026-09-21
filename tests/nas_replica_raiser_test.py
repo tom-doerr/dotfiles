@@ -159,5 +159,35 @@ class DirGranularityTests(unittest.TestCase):
         # the default is unchanged: SSD foreground still required
         self.assertFalse(rr.gate("hdd", "ssd", 0, 10e12, 0, False)[0])
 
+class StampPropagationTests(unittest.TestCase):
+    """A raw setxattr on a directory reaches only that inode (Sep 21 2026: it silently
+    'converted' 924 MinIO directories to nothing). Directory units must go through the CLI."""
+
+    def test_directory_units_use_the_cli_and_verify_a_child(self):
+        import tempfile, types
+        calls = []
+        with tempfile.TemporaryDirectory() as td:
+            d = os.path.join(td, "unit")
+            os.makedirs(os.path.join(d, "child"))
+
+            def fake_run(cmd, **kw):
+                calls.append(cmd)
+                return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+            real_run, real_xattr = rr.subprocess.run, rr.xattr_int
+            rr.subprocess.run = fake_run
+            rr.xattr_int = lambda path, name: 1 if name == rr.XATTR_EFF_EC else 3
+            try:
+                rr.stamp(d, 3, 1, True, propagate=True)
+                self.assertEqual(calls[0][:2], [rr.BCACHEFS, "set-file-option"])
+                self.assertIn("--erasure_code=1", calls[0])
+                # a child that did not inherit must raise, not pass silently
+                rr.xattr_int = lambda path, name: None if name == rr.XATTR_EFF_EC else 3
+                with self.assertRaises(RuntimeError):
+                    rr.stamp(d, 3, 1, True, propagate=True)
+            finally:
+                rr.subprocess.run, rr.xattr_int = real_run, real_xattr
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=1)

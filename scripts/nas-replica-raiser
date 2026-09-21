@@ -263,11 +263,14 @@ def walk_dirs(root, pool_repl):
         for e in sorted(it, key=lambda e: e.name):
             if not e.is_dir(follow_symlinks=False):
                 continue
-            eff = xattr_int(e.path, XATTR_EFF_REPL)
+            # judge a directory unit by what its CONTENTS actually inherited, not by the
+            # directory's own stamp: the two diverge exactly when propagation failed
+            probe = sample_child(e.path) or e.path
+            eff = xattr_int(probe, XATTR_EFF_REPL)
             eff = pool_repl if eff is None else eff   # no xattr = inherits the fs default
             units.append({"path": e.path, "ino": e.inode(), "size": None,
                           "explicit": xattr_int(e.path, XATTR_REPL), "effective": eff,
-                          "ec_effective": xattr_int(e.path, XATTR_EFF_EC)})
+                          "ec_effective": xattr_int(probe, XATTR_EFF_EC)})
     return units
 
 
@@ -295,15 +298,49 @@ def walk_entry(entry, pool_repl):
     return files
 
 
-def stamp(path, replicas, ec, apply):
+def sample_child(path):
+    """Any entry inside a directory, for verifying that a stamp propagated."""
+    try:
+        with os.scandir(path) as it:
+            for e in it:
+                return e.path
+    except OSError:
+        pass
+    return None
+
+
+def stamp(path, replicas, ec, apply, propagate=False):
+    """Set options on one unit.
+
+    A raw setxattr is right for a FILE, but on a DIRECTORY it sets only that inode - it
+    does NOT reach existing children, and the CLI's re-inherit is the only thing that
+    does. Using setxattr for directory units silently "converted" 924 MinIO directories
+    to nothing on Sep 21 2026, so a propagating stamp goes through the CLI and is then
+    verified on a child.
+    """
     if not apply:
         return
-    os.setxattr(path, XATTR_REPL, str(replicas).encode())
+    if not propagate:
+        os.setxattr(path, XATTR_REPL, str(replicas).encode())
+        if ec is not None:
+            os.setxattr(path, XATTR_EC, str(ec).encode())
+        got = xattr_int(path, XATTR_REPL)
+        if got != replicas:
+            raise RuntimeError(f"{path}: stamped data_replicas={replicas}, read back {got}")
+        return
+    cmd = [BCACHEFS, "set-file-option", f"--data_replicas={replicas}"]
     if ec is not None:
-        os.setxattr(path, XATTR_EC, str(ec).encode())
-    got = xattr_int(path, XATTR_REPL)
-    if got != replicas:
-        raise RuntimeError(f"{path}: stamped data_replicas={replicas}, read back {got}")
+        cmd.append(f"--erasure_code={ec}")
+    cmd.append(path)
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
+    if r.returncode != 0:
+        raise RuntimeError(f"set-file-option failed on {path}: {r.stderr.strip()[:200]}")
+    child = sample_child(path)
+    if child is not None:
+        got_ec = xattr_int(child, XATTR_EFF_EC)
+        if ec is not None and got_ec != int(ec):
+            raise RuntimeError(f"{path}: stamped erasure_code={ec} but child {child} reads {got_ec} "
+                               f"- the stamp did not propagate")
 
 
 def write_metrics(state, reason):
@@ -398,7 +435,7 @@ def do_pause(job, apply):
         if lvl is None:
             raise SystemExit(f"{e['path']}: {len(pend)} files pending but no current_level in job")
         for f in pend:
-            stamp(f["path"], int(lvl), None, apply)  # EC is auto-disabled by the fixups at 1x
+            stamp(f["path"], int(lvl), None, apply, e.get("granularity") == "dir")  # EC auto-off at 1x
             n += 1
             b += f["size"] or 0
         log(f"{'stamped' if apply else 'DRY RUN would stamp'} {len(pend)} pending units under "
@@ -468,7 +505,8 @@ def do_run(job, apply, once):
         if ok:
             n = 0
             for e, f in todo_all[:len(cand)]:
-                stamp(f["path"], int(e["target"]), e.get("erasure_code"), apply)
+                stamp(f["path"], int(e["target"]), e.get("erasure_code"), apply,
+                      e.get("granularity") == "dir")
                 n += 1
             state["batches"] += 1 if apply else 0
             vol_b = sum(f["size"] or 0 for _, f in todo_all[:len(cand)])
