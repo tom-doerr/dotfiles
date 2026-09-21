@@ -5,4 +5,10 @@ After=swww-daemon.service
 
 [Service]
 Type=oneshot
+# [claude 2026-09-22] After=/Requires= only orders us after the daemon has
+# FORKED (Type=simple = active immediately), not after it answers. At boot the
+# timer's OnStartupSec=15s fired while swww was still failing to connect, the
+# `swww img` call exited 1, and the wallpaper stayed black until the 06:00 tick.
+# oneshot forbids Restart=, so poll for a live daemon instead.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do %h/.local/bin/swww query >/dev/null 2>&1 && exit 0; sleep 1; done; echo "swww-daemon did not become reachable after 60s" >&2; exit 1'
 ExecStart=%h/git/dotfiles/scripts/wallpaper-gradient.py

@@ -1,0 +1,18 @@
+[Unit]
+Description=Wayland wallpaper daemon (swww)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+# [claude 2026-09-22] graphical-session.target can be reached BEFORE hyprland's
+# exec-once `systemctl --user import-environment WAYLAND_DISPLAY ...` has run.
+# Without it swww silently defaults to wayland-0 (we are on wayland-1) and dies
+# with a misleading ENOENT. Wait for the var, then pull it in at exec time.
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY=" && exit 0; sleep 1; done; echo "WAYLAND_DISPLAY never appeared in the user manager environment after 60s" >&2; exit 1'
+ExecStart=/bin/sh -c 'eval "export $(systemctl --user show-environment | grep "^WAYLAND_DISPLAY=")"; exec %h/.local/bin/swww-daemon'
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target
