@@ -249,7 +249,7 @@ def save_json(path, data):
     os.replace(tmp, path)
 
 
-def walk_dirs(root):
+def walk_dirs(root, pool_repl):
     """Immediate subdirectories as stamp units (granularity "dir").
 
     For a tree with millions of files and no per-file overrides (MinIO: 7.6 M objects),
@@ -264,20 +264,19 @@ def walk_dirs(root):
             if not e.is_dir(follow_symlinks=False):
                 continue
             eff = xattr_int(e.path, XATTR_EFF_REPL)
-            if eff is None:
-                raise RuntimeError(f"{e.path}: cannot read {XATTR_EFF_REPL} (not bcachefs?)")
+            eff = pool_repl if eff is None else eff   # no xattr = inherits the fs default
             units.append({"path": e.path, "ino": e.inode(), "size": None,
                           "explicit": xattr_int(e.path, XATTR_REPL), "effective": eff,
                           "ec_effective": xattr_int(e.path, XATTR_EFF_EC)})
     return units
 
 
-def walk_entry(entry):
+def walk_entry(entry, pool_repl):
     root = entry["path"]
     if not os.path.isdir(root):
         raise SystemExit(f"job path is not a directory: {root}")
     if entry.get("granularity") == "dir":
-        return walk_dirs(root)
+        return walk_dirs(root, pool_repl)
     files = []
     for dirpath, _dirs, names in os.walk(root):
         for n in names:
@@ -289,8 +288,7 @@ def walk_entry(entry):
             if not stat.S_ISREG(st.st_mode):
                 continue
             eff = xattr_int(p, XATTR_EFF_REPL)
-            if eff is None:
-                raise RuntimeError(f"{p}: cannot read {XATTR_EFF_REPL} (not bcachefs?)")
+            eff = pool_repl if eff is None else eff   # no xattr = inherits the fs default
             files.append({"path": p, "ino": st.st_ino, "size": st.st_size,
                           "explicit": xattr_int(p, XATTR_REPL), "effective": eff,
                           "ec_effective": xattr_int(p, XATTR_EFF_EC)})
@@ -361,24 +359,30 @@ def load_job(path):
     return job
 
 
-def pool_erasure_code():
-    """The filesystem-wide erasure_code default: what a file with no xattr inherits."""
-    return int(read_file(f"{SYSFS}/options/erasure_code").strip())
+def pool_option_int(name):
+    """A filesystem-wide option value: what a path with no xattr of its own inherits.
+
+    `bcachefs_effective.*` only reports INODE-level inheritance, so a path that simply
+    takes the fs-wide default has no xattr at all (ENODATA). That is "inherits", not
+    "unknown" - MinIO's whole tree is in that state.
+    """
+    return int(read_file(f"{SYSFS}/options/{name}").strip())
 
 
 def do_inventory(job, hip=None, quiet=False):
     hip = hipri_inodes() if hip is None else hip
-    pool_ec = pool_erasure_code()
+    pool_ec = pool_option_int("erasure_code")
+    pool_repl = pool_option_int("data_replicas")
     inv = {}
     for e in job["entries"]:
-        files = walk_entry(e)
+        files = walk_entry(e, pool_repl)
         classes = {"pending": [], "todo": [], "done": []}
         for f in files:
             classes[classify(f, int(e["target"]), hip, e.get("erasure_code"), pool_ec)].append(f)
         inv[e["path"]] = classes
         if not quiet:
             log(f"{e['path']}: " + ", ".join(
-                f"{k}={len(v)} files/{sum(x['size'] for x in v) / 1e9:.0f} GB" for k, v in classes.items()))
+                f"{k}={len(v)} units/{sum(x['size'] or 0 for x in v) / 1e9:.0f} GB" for k, v in classes.items()))
     save_json(os.path.join(STATE_DIR, "inventory.json"), inv)
     return inv, hip
 
@@ -396,9 +400,9 @@ def do_pause(job, apply):
         for f in pend:
             stamp(f["path"], int(lvl), None, apply)  # EC is auto-disabled by the fixups at 1x
             n += 1
-            b += f["size"]
-        log(f"{'stamped' if apply else 'DRY RUN would stamp'} {len(pend)} pending files under "
-            f"{e['path']} with data_replicas={lvl} ({sum(x['size'] for x in pend) / 1e9:.0f} GB)")
+            b += f["size"] or 0
+        log(f"{'stamped' if apply else 'DRY RUN would stamp'} {len(pend)} pending units under "
+            f"{e['path']} with data_replicas={lvl} ({sum(x['size'] or 0 for x in pend) / 1e9:.0f} GB)")
     log(f"pause {'applied' if apply else 'dry run'}: {n} files, {b / 1e12:.2f} TB")
 
 
@@ -424,7 +428,7 @@ def do_run(job, apply, once):
             st = state["entries"].setdefault(e["path"], {})
             for k, v in cl.items():
                 st[k + "_files"] = len(v)
-                st[k + "_bytes"] = sum(x["size"] for x in v)
+                st[k + "_bytes"] = sum(x["size"] or 0 for x in v)
             for f in sorted(cl["todo"], key=lambda x: x["path"]):
                 todo_all.append((e, f))
 
