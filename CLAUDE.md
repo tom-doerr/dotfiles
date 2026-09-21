@@ -603,11 +603,21 @@ Prices are data, not code: verified Sep 20 2026 against platform.claude.com and
 developers.openai.com. Unknown models are printed in an UNPRICED block with their token
 counts, never priced by a guessed default.
 
-**Waybar row `agents` (Sep 20 2026, LAST bar in the private config → y=2472 for grim):**
+**Waybar row `agents` (Sep 20 2026, bars `agents` y=2472 / `agentpace` y=2496 for grim):**
 `waybar/agent-cost.sh` (symlinked into `~/.config/waybar/`, `custom/agentcost`, return-type
-json, interval 300, min-length 56) renders `CDX $78+? $3.9k  CC $120 $3.0k  FBL $183 $3.0k
-30d $9.8k` — bright = TODAY (UTC day), dim `#6272a4` = trailing 30 d, trailing `30d` = all
-three groups. Groups: `codex` = every Codex model, `claude` = Claude Code minus Fable,
+json, interval 300) renders `CDX $319+?  CC $1.0k  FBL $452  5h $44`.
+**★ SPANS ARE QUOTA WINDOWS, NOT CALENDAR DAYS (user decision Sep 21 2026):** each group is
+summed since ITS window opened — Claude groups from the weekly `window_started_at`
+(Fri 03:00 UTC), Codex from its own `window_minutes` window, plus the current 5 h Claude
+session — so every figure sits under the bar it belongs to. Nothing in either product
+resets at midnight in any timezone, so a "today" column lined up with nothing (it also
+jumped at 02:00 CEST, which is what prompted this). The cost script gets the window starts
+by calling `agent-usage --max-age 3600` (starts only change at a reset — it must not add
+fetches) and passes them to `agent-cost-report --spans '{"name":"<UTC ISO>"}'`.
+**That required 10-MINUTE BUCKET KEYS in the cost cache** (`bucket()`, key
+`2026-09-21T01:30|model`, CACHE_VERSION 4, one full re-parse): day keys cannot answer
+"since 03:00 UTC". A span start is floored to its bucket, so it can over-count by at most
+the first partial bucket. Groups: `codex` = every Codex model, `claude` = Claude Code minus Fable,
 `claude_fable` = `claude-fable-*`. Yellow `+?` = that group has requests whose model has no
 published price (Codex's `codex-auto-review`, 75k requests / 11.1B cache-read tokens here),
 so the figure is a FLOOR — never silently omitted. Tooltip carries today/7d/30d/all per group.
@@ -654,6 +664,13 @@ Only the dialog's "what's contributing" list is computed locally — nothing in
 (4 MB) — rollouts reach 100s of MB. It is exact as of the last request and afterwards only
 an OVER-estimate (the window rolls forward while nothing is logged), so a snapshot older
 than 6 h renders dim and its age goes in the tooltip.
+**★ THE ENDPOINT RATE-LIMITS AND SAYS SO WITH HTTP 200:** polled every 120 s by two rows
+it started returning `{"error":{"type":"rate_limit_error"}}` with status 200, which cached
+as a valid payload and made every Claude bar SILENTLY VANISH (no problem reported, row just
+short). Fixes: `claude_usage()` rejects any payload without `limits`; an empty entry list is
+now itself a reported problem; red `usage ?` only when there is nothing to draw, a merely
+stale row gets a dim `!`. Polling: usage row 300 s (fetches), pace row `--max-age 900` and
+cost module `--max-age 3600` (both ride the shared cache) → ~1 request/5 min.
 Colour = proximity, not activity: ≥70 % yellow, ≥90 % red, plus the server's own
 `severity`. A nonzero percent always lights ≥1 cell (a 3 % bar that renders empty reads
 as "no data"). Unknown `limits[].kind` values are SKIPPED, never guessed into a bar.

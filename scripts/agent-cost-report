@@ -26,7 +26,7 @@ CLAUDE_DIR = HOME / ".claude" / "projects"
 CODEX_DIR = HOME / ".codex" / "sessions"
 PRICING = Path(__file__).with_name("agent-cost-pricing.json")
 CACHE = HOME / ".cache" / "agent-cost-report" / "parsed.json"
-CACHE_VERSION = 3  # bump when parsing changes, so stale cache entries are re-parsed
+CACHE_VERSION = 4  # bump when parsing changes, so stale cache entries are re-parsed
 
 # Token buckets, priced per 1M.  Claude and Codex share the names where the
 # billing concept is the same (input = uncached input, cache_read = cache hit).
@@ -39,6 +39,17 @@ def new_row() -> dict:
     row["web_search"] = 0
     row["no_cache_split"] = 0
     return row
+
+
+def bucket(timestamp: str | None) -> str:
+    """UTC timestamp -> 10-minute bucket key, e.g. 2026-09-21T01:30.
+
+    Day-resolution keys cannot answer "since the quota window opened", because
+    those windows start at 03:00 UTC (weekly) or an arbitrary minute (session).
+    10 minutes keeps the cache small while bounding the edge error to one bucket.
+    """
+    ts = timestamp or ""
+    return (ts[:15] + "0") if len(ts) >= 15 else ts[:10]
 
 
 def add(dst: dict, src: dict) -> None:
@@ -80,8 +91,7 @@ def parse_claude(path: Path, skip: set[str] | None = None) -> dict:
             seen.append(key)
             if skip and key in skip:
                 continue
-            date = (rec.get("timestamp") or "")[:10]
-            row = rows[f"{date}|{model}"]
+            row = rows[f"{bucket(rec.get('timestamp'))}|{model}"]
             row["requests"] += 1
             row["input"] += usage.get("input_tokens", 0)
             row["output"] += usage.get("output_tokens", 0)
@@ -146,7 +156,7 @@ def parse_codex(path: Path, skip: set[str] | None = None) -> dict:
                 if not any(delta.values()):
                     continue
                 tc_seen.append(f"{path.name}:tc:{len(tc_seen)}")
-                row = tc_rows[f"{(rec.get('timestamp') or '')[:10]}|{cur_model}"]
+                row = tc_rows[f"{bucket(rec.get('timestamp'))}|{cur_model}"]
                 row["requests"] += 1
                 cached = delta["cached_input_tokens"]
                 row["input"] += max(delta["input_tokens"] - cached, 0)
@@ -165,8 +175,7 @@ def parse_codex(path: Path, skip: set[str] | None = None) -> dict:
             seen.append(key)
             if skip and key in skip:
                 continue
-            date = (rec.get("timestamp") or "")[:10]
-            row = rows[f"{date}|{model}"]
+            row = rows[f"{bucket(rec.get('timestamp'))}|{model}"]
             row["requests"] += 1
             cached = usage.get("cached_input_tokens", 0)
             # OpenAI's input_tokens is the total; the cached part is billed cheaper.
@@ -259,6 +268,32 @@ def group_of(tool: str, model: str) -> str:
     return "claude_fable" if "fable" in model else "claude"
 
 
+def spans(totals: dict, pricing: dict, starts: dict) -> dict:
+    """Per-group cost since each named start time, e.g. when a quota window opened.
+
+    `starts` maps a span name to a UTC ISO timestamp. Each start is floored to its
+    10-minute bucket, so a span can over-count by at most the activity in the first
+    partial bucket — stated rather than hidden.
+    """
+    floors = {name: bucket(ts) for name, ts in starts.items()}
+    out = {g: {n: {"usd": 0.0, "unpriced_requests": 0} for n in starts}
+           for g in ("codex", "claude", "claude_fable")}
+    for tool, data in totals.items():
+        prices = pricing.get(tool, {})
+        for key, row in data["rows"].items():
+            stamp, model = key.split("|", 1)
+            priced = price_row(prices, model, row, pricing.get("web_search_per_1k", 0))
+            target = out[group_of(tool, model)]
+            for name, floor in floors.items():
+                if stamp < floor:
+                    continue
+                if priced is None:
+                    target[name]["unpriced_requests"] += row.get("requests", 0)
+                else:
+                    target[name]["usd"] += priced[0]
+    return out
+
+
 def windows(totals: dict, pricing: dict, today: str) -> dict:
     """Per-group cost for today / last 7d / last 30d / all time, plus unpriced counts.
 
@@ -274,16 +309,17 @@ def windows(totals: dict, pricing: dict, today: str) -> dict:
     for tool, data in totals.items():
         prices = pricing.get(tool, {})
         for key, row in data["rows"].items():
-            date, model = key.split("|", 1)
+            date = key.split("|", 1)[0][:10]
+            model = key.split("|", 1)[1]
             priced = price_row(prices, model, row, pricing.get("web_search_per_1k", 0))
-            bucket = out[group_of(tool, model)]
+            target = out[group_of(tool, model)]
             for window, start in spans.items():
                 if date < start:
                     continue
                 if priced is None:
-                    bucket[window]["unpriced_requests"] += row.get("requests", 0)
+                    target[window]["unpriced_requests"] += row.get("requests", 0)
                 else:
-                    bucket[window]["usd"] += priced[0]
+                    target[window]["usd"] += priced[0]
     return out
 
 
@@ -297,6 +333,11 @@ def main() -> int:
     ap.add_argument("--until", help="YYYY-MM-DD, inclusive")
     ap.add_argument("--by", choices=("model", "day", "month", "tool"), default="model")
     ap.add_argument("--json", action="store_true", help="machine-readable output")
+    ap.add_argument(
+        "--spans",
+        help='JSON {"name": "<UTC ISO start>"}: per-group cost since each start '
+             '(use it to align spend with the quota windows in agent-usage)',
+    )
     ap.add_argument(
         "--windows",
         action="store_true",
@@ -331,6 +372,11 @@ def main() -> int:
     tmp.write_text(json.dumps(cache))
     tmp.replace(CACHE)
 
+    if args.spans:
+        starts = json.loads(args.spans)
+        print(json.dumps({"starts": starts, "groups": spans(totals, pricing, starts)}))
+        return 0
+
     if args.windows:
         today = datetime.now(timezone.utc).date().isoformat()
         print(json.dumps({"generated": today, "groups": windows(totals, pricing, today)}))
@@ -345,7 +391,8 @@ def main() -> int:
     for tool, data in totals.items():
         prices = pricing.get(tool, {})
         for key, row in data["rows"].items():
-            date, model = key.split("|", 1)
+            stamp, model = key.split("|", 1)
+            date = stamp[:10]
             if args.since and date < args.since:
                 continue
             if args.until and date > args.until:

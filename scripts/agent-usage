@@ -34,8 +34,8 @@ CODEX_DIR = HOME / ".codex" / "sessions"
 USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
 STALE_SECONDS = 6 * 3600  # a Codex snapshot older than this is dimmed as stale
 STATE = HOME / ".local" / "state" / "agent-usage" / "payload.json"
-CACHE_FRESH = 90   # both rows run every 120s; within this they share one fetch
-CACHE_MAX = 900    # older than this, a failed fetch is an error, not a stale bar
+CACHE_FRESH = 240  # the endpoint rate-limits frequent polling; rows share one fetch
+CACHE_MAX = 3600   # older than this, a failed fetch is an error, not a stale bar
 SESSION_WINDOW = 5 * 3600
 WEEK_WINDOW = 7 * 86400
 
@@ -56,7 +56,13 @@ def claude_usage(timeout: int = 15) -> dict:
     )
     if out.returncode != 0:
         raise RuntimeError(f"curl exit {out.returncode}: {out.stderr.strip()[:200]}")
-    return json.loads(out.stdout)
+    payload = json.loads(out.stdout)
+    # The endpoint answers HTTP 200 with an {"error": ...} body when it rate-limits
+    # (it does, if polled every couple of minutes). Without this check that body
+    # caches as a valid payload and every bar silently disappears.
+    if "limits" not in payload:
+        raise RuntimeError(f"unexpected payload: {json.dumps(payload)[:200]}")
+    return payload
 
 
 def claude_entries(payload: dict) -> list[dict]:
@@ -223,7 +229,7 @@ def reset_note(entry: dict) -> str:
     return f"resets in {hours:.0f}h ({when.astimezone().strftime('%a %H:%M')})"
 
 
-def cached_claude_usage() -> tuple[dict, float]:
+def cached_claude_usage(max_age: float = CACHE_FRESH) -> tuple[dict, float]:
     """(payload, age_seconds). Two waybar rows poll this; within CACHE_FRESH they
     share one fetch. A failed fetch may fall back to a cache younger than CACHE_MAX,
     and the age is then reported — it is never passed off as live."""
@@ -231,7 +237,7 @@ def cached_claude_usage() -> tuple[dict, float]:
     try:
         cached = json.loads(STATE.read_text())
         age = time.time() - cached["fetched_at"]
-        if age <= CACHE_FRESH:
+        if age <= max_age:
             return cached["payload"], age
     except (OSError, ValueError, KeyError):
         cached = None
@@ -255,12 +261,18 @@ def main() -> int:
     ap.add_argument("--waybar", action="store_true", help="emit waybar JSON")
     ap.add_argument("--row", choices=("usage", "time"), default="usage", help="which of the two rows to draw")
     ap.add_argument("--width", type=int, default=10, help="bar width in characters")
+    ap.add_argument("--max-age", type=float, default=CACHE_FRESH, dest="max_age",
+                    help="accept a cached payload this old before refetching (seconds); "
+                         "callers that only need window START times can pass a large value")
     args = ap.parse_args()
 
     entries, problems = [], []
     try:
-        payload, age = cached_claude_usage()
-        entries.extend(claude_entries(payload))
+        payload, age = cached_claude_usage(args.max_age)
+        got = claude_entries(payload)
+        if not got:
+            problems.append(f"claude usage: no usable limits in payload ({sorted(payload)[:6]})")
+        entries.extend(got)
         if age > CACHE_FRESH:
             problems.append(f"claude usage: fetch failed, showing cache {age / 60:.0f} min old")
     except Exception as err:  # network, token, JSON shape: all shown, never silently zeroed
@@ -283,8 +295,10 @@ def main() -> int:
 
     draw = time_segment if args.row == "time" else segment
     text = "  ".join(draw(e, args.width) for e in entries)
-    if problems:
-        text = (text + "  " if text else "") + f"<span color='{COL_CRIT}'>usage ?</span>"
+    if not entries:
+        text = f"<span color='{COL_CRIT}'>usage ?</span>"
+    elif problems:
+        text += f"  <span color='{COL_DIM}'>!</span>"
     tip = []
     for e in entries:
         elapsed = elapsed_percent(e)

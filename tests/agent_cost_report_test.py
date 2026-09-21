@@ -41,22 +41,22 @@ def test_content_blocks_of_one_message_are_counted_once(tmp_path):
         )
     )
     rows = acr.parse_claude(f)["rows"]
-    assert rows["2026-09-01|claude-opus-5"]["output"] == 100
-    assert rows["2026-09-01|claude-opus-5"]["requests"] == 1
+    assert rows["2026-09-01T10:00|claude-opus-5"]["output"] == 100
+    assert rows["2026-09-01T10:00|claude-opus-5"]["requests"] == 1
 
 
 def test_skip_set_excludes_already_counted_records(tmp_path):
     f = tmp_path / "s.jsonl"
     f.write_text(claude_line("msg1", "req1", "text", output_tokens=100) + "\n" + claude_line("msg2", "req2", "text", output_tokens=7))
     rows = acr.parse_claude(f, skip={"msg1|req1"})["rows"]
-    assert rows["2026-09-01|claude-opus-5"]["output"] == 7
+    assert rows["2026-09-01T10:00|claude-opus-5"]["output"] == 7
 
 
 def test_cache_split_falls_back_loudly(tmp_path):
     """No 5m/1h split -> counted as 5m AND flagged, never silently dropped."""
     f = tmp_path / "s.jsonl"
     f.write_text(claude_line("m", "r", "text", cache_creation_input_tokens=500))
-    row = acr.parse_claude(f)["rows"]["2026-09-01|claude-opus-5"]
+    row = acr.parse_claude(f)["rows"]["2026-09-01T10:00|claude-opus-5"]
     assert row["cache_write_5m"] == 500 and row["no_cache_split"] == 500
 
 
@@ -79,7 +79,7 @@ def test_codex_input_excludes_cached_part(tmp_path):
             }
         )
     )
-    row = acr.parse_codex(f)["rows"]["2026-09-01|gpt-6-astra"]
+    row = acr.parse_codex(f)["rows"]["2026-09-01T10:00|gpt-6-astra"]
     assert row["input"] == 200 and row["cache_read"] == 800 and row["output"] == 50
 
 
@@ -122,7 +122,7 @@ def test_old_format_uses_cumulative_deltas_not_repeated_last(tmp_path):
             ]
         )
     )
-    row = acr.parse_codex(f)["rows"]["2026-05-01|gpt-5.5"]
+    row = acr.parse_codex(f)["rows"]["2026-05-01T10:00|gpt-5.5"]
     assert row["cache_read"] == 2000 and row["input"] == 500 and row["output"] == 90
     assert row["requests"] == 2  # the repeated event contributes nothing
 
@@ -150,7 +150,7 @@ def test_new_format_wins_when_both_present(tmp_path):
         )
     )
     rows = acr.parse_codex(f)["rows"]
-    assert rows["2026-09-01|gpt-6-astra"]["output"] == 10 and len(rows) == 1
+    assert rows["2026-09-01T10:00|gpt-6-astra"]["output"] == 10 and len(rows) == 1
 
 
 def test_group_of_splits_fable_from_the_rest():
@@ -272,3 +272,41 @@ def test_the_two_rows_line_up_column_for_column():
     unknown = {"label": "7d", "percent": 47, "severity": "normal", "stale_seconds": 0,
                "window_seconds": None, "resets_at": None}
     assert len(plain(au.segment(unknown))) == len(plain(au.time_segment(unknown)))
+
+
+def test_spans_sum_since_each_window_start():
+    """Quota windows start at 03:00 UTC (weekly) or an arbitrary minute (session),
+    so buckets must be finer than a day and compared as timestamps."""
+    totals = {"claude": {"rows": {
+        "2026-09-18T02:50|claude-opus-5": _row(output=1_000_000, requests=1),  # before the week opened
+        "2026-09-18T03:00|claude-opus-5": _row(output=1_000_000, requests=1),  # exactly at the open
+        "2026-09-20T19:20|claude-opus-5": _row(output=1_000_000, requests=1),  # inside the session too
+    }}}
+    got = acr.spans(totals, PRICES, {"week": "2026-09-18T03:00:00Z", "session": "2026-09-20T19:10:00Z"})
+    assert got["claude"]["week"]["usd"] == 50.0      # the 02:50 row is excluded
+    assert got["claude"]["session"]["usd"] == 25.0
+
+
+def test_bucket_floors_to_ten_minutes():
+    assert acr.bucket("2026-09-21T01:38:02.471Z") == "2026-09-21T01:30"
+    assert acr.bucket("2026-09-21T01:09:59.000Z") == "2026-09-21T01:00"
+    assert acr.bucket(None) == ""
+
+
+def test_error_payload_is_rejected_not_cached(monkeypatch, tmp_path):
+    """The endpoint answers HTTP 200 with an error body when it rate-limits;
+    caching that made every bar vanish with no problem reported."""
+    class FakeRun:
+        returncode = 0
+        stdout = '{"error": {"type": "rate_limit_error", "message": "Rate limited."}}'
+        stderr = ""
+    monkeypatch.setattr(au.subprocess, "run", lambda *a, **k: FakeRun())
+    creds = tmp_path / "credentials.json"
+    creds.write_text('{"claudeAiOauth": {"accessToken": "x"}}')
+    monkeypatch.setattr(au, "CREDENTIALS", creds)
+    try:
+        au.claude_usage()
+    except RuntimeError as err:
+        assert "rate_limit_error" in str(err)
+    else:
+        raise AssertionError("an error payload must raise, not return")

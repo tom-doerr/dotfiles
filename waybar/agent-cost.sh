@@ -1,67 +1,77 @@
 #!/bin/bash
-# Waybar: what today's Codex / Claude Code / Claude Code (Fable) usage would
-# cost at API list prices -- see scripts/agent-cost-report.  Nothing is billed
-# to an API account; these are list-price equivalents of subscription usage.
+# Waybar: what the CURRENT QUOTA WINDOWS would cost at API list prices.
 #
-# Text: "CDX   $78  CC  $117  FBL  $181  30d $9.9k", fixed-width so the numbers
-# do not shift columns as they grow.  A yellow "+?" after a figure means that
-# group has requests whose model has no published price (Codex's auto-review),
-# so the number is a floor, not a total.  Tooltip carries 7d / 30d / all-time.
+# The windows come from agent-usage (Claude's /api/oauth/usage + Codex's logged
+# rate_limits), so each figure sits under the bar it belongs to: the Claude
+# groups are summed since the weekly window opened (Fri 03:00 UTC), Codex since
+# its own weekly window opened, and "5h" is the current Claude session window.
+# Calendar days are deliberately NOT used -- nothing here resets at midnight, in
+# any timezone, so a "today" figure would line up with nothing else on the row.
 #
-# Cost is read from the report's own file cache, so a run is ~0.2 s when no
-# transcript changed and a few seconds when an active session file grew.
+# Text: "CDX $1.2k+? CC $890 FBL $1.4k  5h $12".  Yellow "+?" = that group has
+# requests whose model has no published price (Codex auto-review) -> floor, not total.
 exec python3 - <<'PY'
 import json
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-REPORT = Path.home() / "git/dotfiles/scripts/agent-cost-report"
-LABELS = [("codex", "CDX"), ("claude", "CC"), ("claude_fable", "FBL")]
+DOTFILES = Path.home() / "git/dotfiles/scripts"
+LABELS = [("codex", "CDX", "codex_week"), ("claude", "CC", "week"), ("claude_fable", "FBL", "week")]
 
 
 def fail(msg):
-    print(json.dumps({"text": "<span color='#ff5555'>agents ?</span>", "tooltip": msg}))
+    print(json.dumps({"text": "<span color='#ff5555'>spend ?</span>", "tooltip": msg}))
     raise SystemExit(0)
 
 
-try:
-    out = subprocess.run(
-        ["nice", "-n", "10", str(REPORT), "--windows"],
-        capture_output=True, text=True, timeout=180,
-    )
-except (OSError, subprocess.TimeoutExpired) as err:
-    fail(f"agent-cost-report: {err}")
-if out.returncode != 0:
-    fail(f"agent-cost-report exit {out.returncode}: {out.stderr.strip()[:300]}")
-try:
-    groups = json.loads(out.stdout)["groups"]
-except (ValueError, KeyError) as err:
-    fail(f"unparseable report output: {err}")
+def run(args, timeout):
+    out = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+    if out.returncode != 0:
+        fail(f"{Path(args[0]).name} exit {out.returncode}: {(out.stderr or out.stdout).strip()[:300]}")
+    return json.loads(out.stdout)
+
+
+# Window starts, derived from the same limits the bars above are drawn from.
+# Window STARTS only change at a reset, so an old cached payload is fine here;
+# this must not add fetches to an endpoint that rate-limits.
+usage = run([str(DOTFILES / "agent-usage"), "--max-age", "3600"], 60)
+starts = {}
+for entry in usage["entries"]:
+    window, resets = entry.get("window_seconds"), entry.get("resets_at")
+    if not window or resets is None:
+        continue
+    ends = (datetime.fromtimestamp(resets, timezone.utc) if isinstance(resets, (int, float))
+            else datetime.fromisoformat(str(resets).replace("Z", "+00:00")))
+    began = (ends - timedelta(seconds=window)).astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    key = ("codex_week" if entry["label"].startswith("CDX")
+           else "session" if entry["label"].endswith("5h") else "week")
+    starts.setdefault(key, began)
+if "week" not in starts or "codex_week" not in starts:
+    fail(f"missing quota windows: got {sorted(starts)}; " + "; ".join(usage.get("problems") or []))
+
+groups = run(["nice", "-n", "10", str(DOTFILES / "agent-cost-report"), "--spans", json.dumps(starts)], 180)["groups"]
 
 
 def usd(v):
-    """Compact and fixed-width: $1.2k / $181 / $0."""
     return f"${v / 1000:.1f}k" if v >= 1000 else f"${v:.0f}"
 
 
 parts, tip = [], []
-day_total = 0.0
-for key, label in LABELS:
-    w = groups.get(key) or {}
-    today = (w.get("today") or {}).get("usd", 0.0)
-    day_total += today
-    mark = "<span color='#f1fa8c'>+?</span>" if (w.get("today") or {}).get("unpriced_requests") else "  "
-    d30 = (w.get("d30") or {}).get("usd", 0.0)
-    # bright = today, dim = trailing 30 days, so the row carries rate and recent total
-    parts.append(f"{label} {usd(today):>5}{mark} <span color='#6272a4'>{usd(d30):>5}</span>")
-    tip.append(
-        f"{label}: today {usd(today)}  7d {usd((w.get('d7') or {}).get('usd', 0))}"
-        f"  30d {usd((w.get('d30') or {}).get('usd', 0))}  all {usd((w.get('all') or {}).get('usd', 0))}"
-        + (f"  (+{(w.get('all') or {}).get('unpriced_requests', 0)} unpriced requests)"
-           if (w.get("all") or {}).get("unpriced_requests") else "")
-    )
-month = sum((groups.get(k) or {}).get("d30", {}).get("usd", 0.0) for k, _ in LABELS)
-tip.append(f"\nday total {usd(day_total)}, 30d {usd(month)} at API list prices (UTC days)")
-tip.append("+? = model has no published price (Codex auto-review); figure is a floor")
-print(json.dumps({"text": "  ".join(parts) + f"  30d {usd(month):>5}", "tooltip": "\n".join(tip)}))
+total = 0.0
+for key, label, span in LABELS:
+    cell = (groups.get(key) or {}).get(span) or {}
+    total += cell.get("usd", 0.0)
+    mark = "<span color='#f1fa8c'>+?</span>" if cell.get("unpriced_requests") else "  "
+    parts.append(f"{label} {usd(cell.get('usd', 0.0)):>5}{mark}")
+    tip.append(f"{label}: {usd(cell.get('usd', 0.0))} since its window opened "
+               f"{starts[span].replace('T', ' ').replace('Z', ' UTC')}"
+               + (f"  (+{cell['unpriced_requests']} unpriced requests)" if cell.get("unpriced_requests") else ""))
+session = (groups.get("claude") or {}).get("session", {}).get("usd", 0.0) \
+    + (groups.get("claude_fable") or {}).get("session", {}).get("usd", 0.0)
+tip.append(f"\nCurrent 5h Claude session: {usd(session)}")
+tip.append(f"All groups this quota week: {usd(total)}")
+tip.append("Spans match the bars above (quota windows), not calendar days — nothing resets at midnight.")
+tip.append("+? = model has no published price (Codex auto-review); figure is a floor.")
+print(json.dumps({"text": "  ".join(parts) + f"  5h {usd(session):>5}", "tooltip": "\n".join(tip)}))
 PY
