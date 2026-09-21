@@ -625,6 +625,18 @@ a full restart (SIGUSR2 only reloads CSS), and the unit avoids `pkill` entirely.
 (module `custom/agentusage`, interval 120, 84 chars; row total with the spend segment
 = 1546 px of the 2149 usable). These are SUBSCRIPTION QUOTA percentages, a different
 axis from the dollar figures next to them.
+**★ PACE ROW under it (`--row time`, bar `agentpace`, Sep 21 2026):** same bars filled by
+how far the WINDOW has elapsed, on the next row down, so each pair reads vertically —
+usage bar longer than time bar = burning quota faster than the clock. Window lengths:
+session 5 h, weekly 7 d, Codex from its own `window_minutes`; elapsed = 1 - (resets_at -
+now)/window. **The two rows only work if their visible widths match exactly**, so the
+pace row REPEATS the label (dimmed) instead of shortening it, pads an unknown window as
+`??????????   ?`, and `#custom-agentpace` must keep the same `padding: 0 8px` as
+`#custom-agentusage` — a test asserts markup-stripped `segment()` == `time_segment()`
+length. Pace-row COLOUR is the projection at reset (green ≤100 %, yellow >100 %, red
+>150 %), and it stays neutral below 5 % elapsed because 3 % used at 2 % elapsed is not
+"150 %". Both rows share one fetch through `~/.local/state/agent-usage/payload.json`
+(fresh ≤90 s, usable ≤15 min if a fetch fails — then the row says how old it is).
 **★ Claude's bars come from the SERVER, not from the transcripts:
 `GET https://api.anthropic.com/api/oauth/usage` with the OAuth access token in
 `~/.claude/.credentials.json` (`claudeAiOauth.accessToken`) + header

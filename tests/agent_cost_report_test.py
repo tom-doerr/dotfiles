@@ -3,6 +3,8 @@
 import importlib.machinery
 import importlib.util
 import json
+import re
+import time
 from pathlib import Path
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "agent-cost-report"
@@ -236,3 +238,37 @@ def test_codex_entry_without_rate_limits_returns_none(tmp_path):
     f = tmp_path / "r.jsonl"
     f.write_text(json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {}}}))
     assert au.codex_entry(f) is None
+
+
+def _entry(percent, resets_in_seconds, window):
+    return {"label": "7d", "percent": percent, "severity": "normal", "stale_seconds": 0,
+            "window_seconds": window, "resets_at": time.time() + resets_in_seconds}
+
+
+def test_elapsed_percent_from_reset_time_and_window():
+    assert au.elapsed_percent(_entry(0, 3600, 7200)) == 50      # half the window left
+    assert au.elapsed_percent(_entry(0, 7200, 7200)) == 0       # just reset
+    assert au.elapsed_percent(_entry(0, 1, 7200)) == 100        # about to reset
+    assert au.elapsed_percent({"window_seconds": None, "resets_at": None}) is None
+
+
+def test_pace_colour_projects_to_end_of_window():
+    on_track = _entry(40, 3600, 7200)      # 40% used, 50% elapsed -> projects 80%
+    over = _entry(60, 3600, 7200)          # -> projects 120%
+    way_over = _entry(90, 3600, 7200)      # -> projects 180%
+    assert au.pace_colour(on_track, 50) == au.COL_OK
+    assert au.pace_colour(over, 50) == au.COL_WARN
+    assert au.pace_colour(way_over, 50) == au.COL_CRIT
+    # Early in a window the ratio is noise: 3% used at 2% elapsed is not "150%".
+    assert au.pace_colour(_entry(3, 7000, 7200), 2) is None
+
+
+def test_the_two_rows_line_up_column_for_column():
+    """The pair is only readable if both rows render identical visible widths."""
+    e = _entry(47, 300000, 604800)
+    plain = lambda s: re.sub(r"<[^>]*>", "", s)
+    assert len(plain(au.segment(e))) == len(plain(au.time_segment(e)))
+    # ... including when the window is unknown and the time row has nothing to draw
+    unknown = {"label": "7d", "percent": 47, "severity": "normal", "stale_seconds": 0,
+               "window_seconds": None, "resets_at": None}
+    assert len(plain(au.segment(unknown))) == len(plain(au.time_segment(unknown)))

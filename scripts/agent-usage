@@ -12,12 +12,16 @@ and only ever an OVER-estimate afterwards (the window rolls forward while nothin
 is being logged).  Its age is reported rather than hidden.
 
 --waybar prints a waybar JSON object; default prints the parsed numbers.
+--row time draws the SAME bars filled by how far the window has elapsed, so a second
+waybar row sits directly under the first: usage bar longer than time bar = burning the
+quota faster than the clock.  Both rows share one cached fetch (see STATE).
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -29,9 +33,14 @@ CREDENTIALS = HOME / ".claude" / ".credentials.json"
 CODEX_DIR = HOME / ".codex" / "sessions"
 USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
 STALE_SECONDS = 6 * 3600  # a Codex snapshot older than this is dimmed as stale
+STATE = HOME / ".local" / "state" / "agent-usage" / "payload.json"
+CACHE_FRESH = 90   # both rows run every 120s; within this they share one fetch
+CACHE_MAX = 900    # older than this, a failed fetch is an error, not a stale bar
+SESSION_WINDOW = 5 * 3600
+WEEK_WINDOW = 7 * 86400
 
 FILL, EMPTY = "█", "░"
-COL_DIM, COL_WARN, COL_CRIT = "#6272a4", "#f1fa8c", "#ff5555"
+COL_DIM, COL_WARN, COL_CRIT, COL_OK = "#6272a4", "#f1fa8c", "#ff5555", "#50fa7b"
 
 
 # --------------------------------------------------------------------------- sources
@@ -53,6 +62,7 @@ def claude_usage(timeout: int = 15) -> dict:
 def claude_entries(payload: dict) -> list[dict]:
     """The three bars /usage draws, in its order: session, weekly all, weekly scoped."""
     names = {"session": "CC 5h", "weekly_all": "7d"}
+    windows = {"session": SESSION_WINDOW, "weekly_all": WEEK_WINDOW, "weekly_scoped": WEEK_WINDOW}
     entries = []
     for lim in payload.get("limits") or []:
         kind = lim.get("kind")
@@ -66,6 +76,7 @@ def claude_entries(payload: dict) -> list[dict]:
             "percent": lim.get("percent", 0),
             "severity": lim.get("severity", "normal"),
             "resets_at": lim.get("resets_at"),
+            "window_seconds": windows.get(kind),
             "stale_seconds": 0,
         })
     return entries
@@ -106,8 +117,46 @@ def codex_entry(path: Path, tail_bytes: int = 4_000_000) -> dict | None:
         "percent": round(primary.get("used_percent", 0)),
         "severity": "normal",
         "resets_at": primary.get("resets_at"),
+        "window_seconds": (primary.get("window_minutes") or 0) * 60 or None,
         "stale_seconds": age,
     }
+
+
+# --------------------------------------------------------------------------- pace
+
+
+def reset_epoch(entry: dict) -> float | None:
+    val = entry.get("resets_at")
+    if val is None:
+        return None
+    if isinstance(val, (int, float)):
+        return float(val)
+    return datetime.fromisoformat(str(val).replace("Z", "+00:00")).timestamp()
+
+
+def elapsed_percent(entry: dict, now: float | None = None) -> int | None:
+    """How far through its window this limit is. None when the window is unknown."""
+    window, ends = entry.get("window_seconds"), reset_epoch(entry)
+    if not window or ends is None:
+        return None
+    now = time.time() if now is None else now
+    return round(max(0.0, min(1.0, (window - (ends - now)) / window)) * 100)
+
+
+def pace_colour(entry: dict, elapsed: int) -> str | None:
+    """Colour the TIME bar by what the current burn rate projects to at reset.
+
+    Early in a window the ratio is meaningless (1% elapsed, 3% used = "300%"),
+    so below 5% elapsed it stays neutral rather than crying wolf.
+    """
+    if elapsed < 5:
+        return None
+    projected = entry["percent"] / elapsed * 100
+    if projected > 150:
+        return COL_CRIT
+    if projected > 100:
+        return COL_WARN
+    return COL_OK
 
 
 # --------------------------------------------------------------------------- render
@@ -147,6 +196,20 @@ def segment(entry: dict, width: int = 10) -> str:
     return text
 
 
+def time_segment(entry: dict, width: int = 10) -> str:
+    """Same geometry as segment(), filled by elapsed time — it must line up column
+    for column under the usage row, so the label text is repeated (dimmed), never
+    shortened."""
+    elapsed = elapsed_percent(entry)
+    label = f"<span color='{COL_DIM}'>{entry['label']}</span>"
+    if elapsed is None:
+        return f"{label} <span color='{COL_DIM}'>{'?' * width}   ?</span>"
+    n = filled_cells(elapsed, width)
+    col = pace_colour(entry, elapsed) or COL_DIM
+    body = f"<span color='{col}'>{FILL * n}</span><span color='{COL_DIM}'>{EMPTY * (width - n)}</span>"
+    return f"{label} {body}<span color='{COL_DIM}'>{elapsed:>3}%</span>"
+
+
 def reset_note(entry: dict) -> str:
     val = entry.get("resets_at")
     if val is None:
@@ -160,15 +223,46 @@ def reset_note(entry: dict) -> str:
     return f"resets in {hours:.0f}h ({when.astimezone().strftime('%a %H:%M')})"
 
 
+def cached_claude_usage() -> tuple[dict, float]:
+    """(payload, age_seconds). Two waybar rows poll this; within CACHE_FRESH they
+    share one fetch. A failed fetch may fall back to a cache younger than CACHE_MAX,
+    and the age is then reported — it is never passed off as live."""
+    cached = None
+    try:
+        cached = json.loads(STATE.read_text())
+        age = time.time() - cached["fetched_at"]
+        if age <= CACHE_FRESH:
+            return cached["payload"], age
+    except (OSError, ValueError, KeyError):
+        cached = None
+    try:
+        payload = claude_usage()
+    except Exception:
+        if cached:
+            age = time.time() - cached["fetched_at"]
+            if age <= CACHE_MAX:
+                return cached["payload"], age
+        raise
+    STATE.parent.mkdir(parents=True, exist_ok=True)
+    tmp = STATE.with_suffix(f".tmp{os.getpid()}")
+    tmp.write_text(json.dumps({"fetched_at": time.time(), "payload": payload}))
+    tmp.replace(STATE)
+    return payload, 0.0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--waybar", action="store_true", help="emit waybar JSON")
+    ap.add_argument("--row", choices=("usage", "time"), default="usage", help="which of the two rows to draw")
     ap.add_argument("--width", type=int, default=10, help="bar width in characters")
     args = ap.parse_args()
 
     entries, problems = [], []
     try:
-        entries.extend(claude_entries(claude_usage()))
+        payload, age = cached_claude_usage()
+        entries.extend(claude_entries(payload))
+        if age > CACHE_FRESH:
+            problems.append(f"claude usage: fetch failed, showing cache {age / 60:.0f} min old")
     except Exception as err:  # network, token, JSON shape: all shown, never silently zeroed
         problems.append(f"claude usage: {type(err).__name__}: {err}")
     try:
@@ -182,16 +276,29 @@ def main() -> int:
         problems.append(f"codex: {type(err).__name__}: {err}")
 
     if not args.waybar:
+        for e in entries:
+            e["elapsed_percent"] = elapsed_percent(e)
         print(json.dumps({"entries": entries, "problems": problems}, indent=2))
         return 1 if problems else 0
 
-    text = "  ".join(segment(e, args.width) for e in entries)
+    draw = time_segment if args.row == "time" else segment
+    text = "  ".join(draw(e, args.width) for e in entries)
     if problems:
         text = (text + "  " if text else "") + f"<span color='{COL_CRIT}'>usage ?</span>"
-    tip = [f"{e['label']}: {e['percent']}% used, {reset_note(e)}"
-           + (f"  [snapshot {e['stale_seconds'] // 3600}h old]" if e["stale_seconds"] > STALE_SECONDS else "")
-           for e in entries]
-    tip.append("\nClaude: live from /api/oauth/usage (same source as /usage).")
+    tip = []
+    for e in entries:
+        elapsed = elapsed_percent(e)
+        line = f"{e['label']}: {e['percent']}% used, {reset_note(e)}"
+        if elapsed is not None:
+            pace = f", {e['percent'] / elapsed * 100:.0f}% of quota projected at reset" if elapsed >= 5 else ""
+            line += f"\n    {elapsed}% of the window elapsed{pace}"
+        if e["stale_seconds"] > STALE_SECONDS:
+            line += f"  [snapshot {e['stale_seconds'] // 3600}h old]"
+        tip.append(line)
+    tip.append("\nTop row = quota used, bottom row = window elapsed; bottom bar longer means")
+    tip.append("you are under pace. Bottom-bar colour is the projection: green on track,")
+    tip.append("yellow >100%, red >150% of quota by reset.")
+    tip.append("Claude: live from /api/oauth/usage (same source as /usage).")
     tip.append("Codex: last rate_limits logged in the newest rollout; only ever an over-estimate.")
     print(json.dumps({"text": text, "tooltip": "\n".join(tip + problems)}))
     return 0

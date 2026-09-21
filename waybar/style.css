@@ -109,3 +109,11 @@ window#waybar {
     padding: 0 8px;
     margin-right: 14px;
 }
+
+/* Pace row: same bars as #custom-agentusage filled by elapsed time, drawn on the
+   row directly below. Padding MUST match #custom-agentusage or the two rows stop
+   lining up column for column, which is the whole point of the pair. */
+#custom-agentpace {
+    padding: 0 8px;
+    margin-right: 14px;
+}
