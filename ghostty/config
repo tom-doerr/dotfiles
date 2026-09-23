@@ -55,12 +55,11 @@ font-size = 7
 font-style = Medium
 alpha-blending = linear-corrected
 
-scrollback-limit = 100000000
+scrollback-limit = 10000000
 
 background-opacity = 0
 
-# Blur (works with Hyprland)
-background-blur-radius = 20
+# Blur handled by Hyprland compositor instead (background-blur-radius deprecated)
 
 # GTK titlebar with cwd
 gtk-titlebar = true
@@ -75,3 +74,11 @@ window-padding-y = 4
 
 # Separate process per window (OOM kill only affects one window)
 gtk-single-instance = false
+
+# Interactive title rename prompt
+keybind = ctrl+shift+r=prompt_surface_title
+
+# Close windows without the "Close Window?" dialog, even while a process
+# (claude, ssh, nvim) runs in the foreground. Default `true` asks whenever shell
+# integration reports a running command.
+confirm-close-surface = false
