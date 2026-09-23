@@ -1,0 +1,19 @@
+[Unit]
+Description=hyprmeta resident meta-workspace picker (global shortcut hyprmeta:pick)
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=simple
+# [claude 2026-09-23] Same boot race as swww-daemon: graphical-session.target is
+# reached BEFORE hyprland's exec-once `systemctl --user import-environment`, so
+# wait for WAYLAND_DISPLAY, then pull both vars in at exec time. The daemon
+# needs HYPRLAND_INSTANCE_SIGNATURE for the event socket (it falls back to the
+# newest instance dir, with a log line, if the var is missing).
+ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY=" && exit 0; sleep 1; done; echo "WAYLAND_DISPLAY never appeared in the user manager environment after 60s" >&2; exit 1'
+ExecStart=/bin/sh -c 'export $(systemctl --user show-environment | grep -E "^(WAYLAND_DISPLAY|HYPRLAND_INSTANCE_SIGNATURE)="); exec %h/.local/bin/hyprmeta daemon'
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target
