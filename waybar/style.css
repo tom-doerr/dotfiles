@@ -117,3 +117,24 @@ window#waybar {
     padding: 0 8px;
     margin-right: 14px;
 }
+
+/* ---- "meta" bar: hyprmeta sidebar on the right Dell (one line per meta workspace) */
+window#waybar.meta {
+    background-color: rgba(30, 30, 46, 0.55);
+    border-left: 1px solid rgba(190, 240, 210, 0.35);
+}
+#custom-hyprmeta {
+    font-family: "JetBrains Mono", monospace;
+    font-size: 13px;
+    padding: 10px 12px;
+    color: #cdd6f4;
+}
+#custom-hyprmeta.attention {
+    border-left: 3px solid #f9e2af;
+}
+#custom-hyprmeta.running {
+    border-left: 3px solid #a6e3a1;
+}
+#custom-hyprmeta.error {
+    color: #f38ba8;
+}
