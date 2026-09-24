@@ -788,3 +788,30 @@ vim.api.nvim_create_autocmd("FileType", {
 ### New LSP API (Neovim 0.11+)
 Old: `require("lspconfig").pyright.setup({})`
 New: `vim.lsp.config.pyright = {}` then `vim.lsp.enable({ "pyright" })`
+
+## hyprmeta wiring in this repo (Sep 23-24 2026)
+
+hyprmeta itself lives in `~/git/hyprmeta` (public, own README/CLAUDE.md). What lives HERE:
+- **Binds** (`hypr/hyprland.conf`): `Super+Space` → `global, hyprmeta:pick`,
+  `Super+Shift+Space` → `global, hyprmeta:pick-move`, and since Sep 24 `code:191` (F13 = the
+  Voyager's left inner thumb, formerly the Claude voice toggle) → `global, hyprmeta:pick`.
+  `global` = zero spawn: the daemon owns the shortcuts via hyprland-global-shortcuts-v1.
+  Fallback without the daemon: `exec, /home/tom/.local/bin/hyprmeta pick` (FULL path — exec
+  binds run with the system PATH, `~/.local/bin` is not on it).
+- **Daemon unit** `systemd/user/hyprmeta-daemon.service` (symlinked, force-added —
+  `systemd/` is gitignored). It waits for `WAYLAND_DISPLAY` like `swww-daemon`.
+- **Glass**: `layerrule { name = wofi-glass; match:namespace = ^(wofi|hyprmeta)$; blur =
+  true; ignore_alpha = 0.1; no_anim = true }` — the client pane alpha (0.22) must stay ABOVE
+  ignore_alpha or the blur is silently skipped; `no_anim` because the 200 ms `layersIn` fade
+  was the dominant open latency.
+- **Agent borders**: window rules paint the tags the daemon sets — `agent-done` (blue
+  `#89b4fa` = unread; amber read as a warning) and `agent-running` (mint). Hyprland 0.52 has
+  THREE `border_color` parser bugs (first token dropped; gradient form never fills the
+  inactive colours; two-colour form never reverts), so each tag has TWO rules in a fixed
+  order — read the comment block above them before touching either. Verify a rule without
+  looking: `hyprctl getprop address:<win> inactive_border_color`.
+- **Sidebar CSS** `waybar/style.css` (`window#waybar.meta`, `#custom-hyprmeta.*`); the bar
+  itself is defined in the PRIVATE `~/git/private/waybar/config` (bar "meta", HDMI-A-1).
+- `hyprctl reload config-only` is SAFE for all of the above (skips the monitor modeset that
+  plain `reload` does); `hyprctl keyword` cannot set block-syntax rules (answers `ok`, does
+  nothing).
