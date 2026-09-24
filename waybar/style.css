@@ -138,3 +138,13 @@ window#waybar.meta {
 #custom-hyprmeta.error {
     color: #f38ba8;
 }
+
+/* ---- same overview on ONE line (`hyprmeta agents --row`), bottom row of the
+   center Dell's stack. No sidebar padding/borders: the markers carry the colour. */
+#custom-metarow {
+    font-family: "JetBrains Mono", monospace;
+    padding: 0 8px;
+}
+#custom-metarow.error {
+    color: #f38ba8;
+}
