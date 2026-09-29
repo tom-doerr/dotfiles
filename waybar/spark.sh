@@ -357,17 +357,18 @@ if [[ "$host" == "nas" ]]; then
               scanv=$(yellow "$scanv") ;;
       proc:*) scanv="proc ${orsc#proc:}" ;;
     esac
-    # "Optane <size>: data <live> (uses <allocated>) · pg-cache <cached> · free <free>".
+    # "Optane <size>: data <live> (uses <allocated>) · read cache <cached> · free <free>".
     # data = "used" in bcachefs fs usage: DURABLE live data (almost all btree metadata).
     # uses = size - free - cached: the buckets that data occupies. btree nodes are CoW,
     # so uses can be ~2x data (Sep 29 2026: 234G live in ~520G) -- the old "OPT 234G+cache
     # 11G/566G" hid that and read as "half empty" while only 41G was free.
-    # pg-cache = evictable promote cache (the Optane is promote_target only for pgdata).
+    # read cache = evictable promote cache: extra copies made on READ, not counted for
+    # durability (the Optane is promote_target only for pgdata, so it is Postgres data).
     # free = free buckets x bucket size (7th optv slot, Sep 29 2026); unreadable -> red ?.
-    # data/uses/pg-cache print %6.2f (user: see the rate of change), fixed width.
+    # data/uses/read cache print %6.2f (user: see the rate of change), fixed width.
     optd=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" -v f="${ofree:--1}" 'BEGIN{G=1073741824
-      if (f == "" || f < 0) printf "Optane %.0fG: data %6.2fG · pg-cache %6.2fG · free <span color=\"#ff5555\">?</span>", z/G, u/G, c/G
-      else printf "Optane %.0fG: data %6.2fG (uses %6.2fG) · pg-cache %6.2fG · free %.0fG", z/G, u/G, (z-f-c)/G, c/G, f/G }')
+      if (f == "" || f < 0) printf "Optane %.0fG: data %6.2fG · read cache %6.2fG · free <span color=\"#ff5555\">?</span>", z/G, u/G, c/G
+      else printf "Optane %.0fG: data %6.2fG (uses %6.2fG) · read cache %6.2fG · free %.0fG", z/G, u/G, (z-f-c)/G, c/G, f/G }')
   fi
   # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
   # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.
