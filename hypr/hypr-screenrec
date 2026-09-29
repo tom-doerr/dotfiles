@@ -1,0 +1,527 @@
+#!/usr/bin/python3
+"""Screen recording for Hyprland: the video analog of hypr-screenshot.
+
+  hypr-screenrec region|full|window     start recording, or stop the running recording
+  hypr-screenrec geometry 'X,Y WxH'     start recording a given logical rectangle
+  hypr-screenrec stop                   stop the running recording
+  hypr-screenrec loop FILE              cut a perfect loop out of an existing video
+
+`full` records the focused monitor (wf-recorder records one output at a time).
+
+While recording, a red frame surrounds the captured area. The frame's inner
+edge IS the capture boundary, so the frame never ends up in the video. No
+audio is captured: wf-recorder records audio only when given -a.
+
+On stop the recording becomes a web-ready MP4 (H.264, yuv420p, tv range,
+faststart) plus a JSON sidecar. Then the tool searches it for a repeating
+animation. If it finds one, one exact cycle is cut to <name>-loop.mp4, which
+loops seamlessly. The search needs at least two full cycles in the recording.
+"""
+import datetime as dt
+import fcntl
+import json
+import math
+import os
+import shutil
+import signal
+import socket
+import subprocess
+import sys
+import time
+import traceback
+from fractions import Fraction
+from pathlib import Path
+
+RUNTIME = Path(os.environ.get("XDG_RUNTIME_DIR") or f"/run/user/{os.getuid()}")
+LOCK_PATH = RUNTIME / "hypr-screenrec.lock"
+STATE_PATH = RUNTIME / "hypr-screenrec.json"
+LOG_PATH = RUNTIME / "hypr-screenrec.log"
+OUT_DIR = Path(os.environ.get("SCREENREC_DIR") or Path.home() / "Videos" / "screenrecords")
+FPS = int(os.environ.get("SCREENREC_FPS", "60"))
+CRF = int(os.environ.get("SCREENREC_CRF", "16"))
+MIN_FREE_GB = float(os.environ.get("SCREENREC_MIN_FREE_GB", "20"))
+LOOP_MAX_SECONDS = float(os.environ.get("SCREENREC_LOOP_MAX_SECONDS", "60"))
+# Repeat the cut cycle until the loop file is at least this long (0 = one cycle).
+LOOP_MIN_SECONDS = float(os.environ.get("SCREENREC_LOOP_MIN_SECONDS", "0"))
+
+BAND = 6  # frame thickness in logical px, drawn INSIDE the recorded rectangle
+GUARD = 1  # physical px kept clear of the band; fractional scaling blends its edge
+FRAME_COLOR = "#ff1f3d"
+
+OK, WARN, ERR = "rgb(33ccff)", "rgb(ffcc33)", "rgb(ff3344)"
+
+
+class UserError(Exception):
+    """An expected failure: shown as a notification without a traceback."""
+
+
+def notify(color, message, ms=5000):
+    icon = "3" if color == ERR else "5"
+    subprocess.run(["hyprctl", "notify", icon, str(ms), color, message], capture_output=True)
+
+
+def hypr_json(*args):
+    out = subprocess.run(["hyprctl", *args, "-j"], check=True, capture_output=True, text=True)
+    return json.loads(out.stdout)
+
+
+def parse_geometry(text):
+    pos, size = text.split()
+    x, y = (int(v) for v in pos.split(","))
+    w, h = (int(v) for v in size.split("x"))
+    return x, y, w, h
+
+
+def logical_size(mon):
+    w, h = mon["width"], mon["height"]
+    if mon["transform"] % 2:
+        w, h = h, w
+    return round(w / mon["scale"]), round(h / mon["scale"])
+
+
+def monitor_for(rect, monitors):
+    x, y, w, h = rect
+    for mon in monitors:
+        lw, lh = logical_size(mon)
+        if mon["x"] <= x and mon["y"] <= y and x + w <= mon["x"] + lw and y + h <= mon["y"] + lh:
+            return mon
+    raise UserError("The area spans more than one monitor; recording covers one monitor at a time")
+
+
+def capture_plan(mon, rect):
+    """Map the frame's outer rectangle (monitor-local logical px) to a filter chain.
+
+    wf-recorder captures the whole output buffer, which is unrotated (3840x2160 for
+    a portrait Dell). The chain crops the area inside the frame out of that buffer,
+    then rotates it upright. Returns (filter chain, (x, y, w, h) in physical px of
+    the upright monitor).
+    """
+    sc = mon["scale"]
+    x, y, w, h = rect
+    x0 = math.ceil((x + BAND) * sc) + GUARD
+    y0 = math.ceil((y + BAND) * sc) + GUARD
+    x1 = math.floor((x + w - BAND) * sc) - GUARD
+    y1 = math.floor((y + h - BAND) * sc) - GUARD
+    cw, ch = (x1 - x0) // 2 * 2, (y1 - y0) // 2 * 2  # yuv420p needs even sizes
+    if cw < 16 or ch < 16:
+        raise UserError("Area too small to record")
+    t = mon["transform"]
+    if t == 0:
+        chain = [f"crop={cw}:{ch}:{x0}:{y0}"]
+    elif t == 1:
+        # Buffer pixel (bx, by) shows at upright (H-1-by, bx); verified against grim.
+        H = mon["height"]
+        chain = [f"crop={ch}:{cw}:{y0}:{H - x0 - cw}", "transpose=1"]
+    else:
+        raise UserError(f"{mon['name']}: transform {t} is not implemented (only 0 and 1 are verified)")
+    chain += ["scale=out_range=tv:out_color_matrix=bt709", "format=yuv420p"]
+    return ",".join(chain), (x0, y0, cw, ch)
+
+
+def pick_area(mode, arg):
+    """Returns (monitor, frame rectangle in monitor-local logical px), or None if cancelled."""
+    monitors = hypr_json("monitors")
+    if mode == "full":
+        mon = next((m for m in monitors if m["focused"]), None)
+        if mon is None:
+            raise UserError("No focused monitor")
+        return mon, (0, 0, *logical_size(mon))
+    if mode == "region":
+        p = subprocess.run(["slurp"], capture_output=True, text=True)
+        if p.returncode != 0 or not p.stdout.strip():
+            return None
+        rect = parse_geometry(p.stdout.strip())
+    elif mode == "geometry":
+        rect = parse_geometry(arg)
+    else:  # window
+        win = hypr_json("activewindow")
+        if not win.get("at"):
+            raise UserError("No focused window to record")
+        rect = (*win["at"], *win["size"])
+    mon = monitor_for(rect, monitors)
+    x, y, w, h = rect[0] - mon["x"], rect[1] - mon["y"], rect[2], rect[3]
+    if mode == "window":
+        # Draw the frame over the window's border and gap so the window itself is recorded.
+        lw, lh = logical_size(mon)
+        x0, y0 = max(0, x - BAND), max(0, y - BAND)
+        x, y, w, h = x0, y0, min(lw, x + w + BAND) - x0, min(lh, y + h + BAND) - y0
+    return mon, (x, y, w, h)
+
+
+class RecordingFrame:
+    """Four click-through red strips on the overlay layer, one per side of the rectangle."""
+
+    def __init__(self, mon, rect):
+        import gi
+        gi.require_version("Gdk", "3.0")
+        gi.require_version("Gtk", "3.0")
+        gi.require_version("GtkLayerShell", "0.1")
+        import cairo
+        from gi.repository import Gdk, Gtk, GtkLayerShell as LS
+
+        self.Gtk = Gtk
+        display = Gdk.Display.get_default()
+        gdk_mon = None
+        for i in range(display.get_n_monitors()):
+            g = display.get_monitor(i).get_geometry()
+            if (g.x, g.y) == (mon["x"], mon["y"]):
+                gdk_mon = display.get_monitor(i)
+        if gdk_mon is None:
+            raise UserError(f"GTK does not see monitor {mon['name']}; not recording without the frame")
+        css = Gtk.CssProvider()
+        css.load_from_data(f"window.hypr-screenrec {{ background-color: {FRAME_COLOR}; }}".encode())
+        Gtk.StyleContext.add_provider_for_screen(
+            Gdk.Screen.get_default(), css, Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+        )
+        x, y, w, h = rect
+        b = BAND
+        strips = [(x, y, w, b), (x, y + h - b, w, b), (x, y + b, b, h - 2 * b), (x + w - b, y + b, b, h - 2 * b)]
+        self.windows = []
+        self.mapped = 0
+        for sx, sy, sw, sh in strips:
+            win = Gtk.Window()
+            win.get_style_context().add_class("hypr-screenrec")
+            LS.init_for_window(win)
+            LS.set_namespace(win, "hypr-screenrec")
+            LS.set_layer(win, LS.Layer.OVERLAY)
+            LS.set_monitor(win, gdk_mon)
+            LS.set_exclusive_zone(win, -1)  # position from the output edge, ignoring waybar
+            LS.set_keyboard_mode(win, LS.KeyboardMode.NONE)
+            LS.set_anchor(win, LS.Edge.TOP, True)
+            LS.set_anchor(win, LS.Edge.LEFT, True)
+            LS.set_margin(win, LS.Edge.TOP, sy)
+            LS.set_margin(win, LS.Edge.LEFT, sx)
+            win.set_size_request(sw, sh)
+            win.connect("realize", lambda w: w.input_shape_combine_region(cairo.Region()))
+            win.connect("map-event", self._on_map)
+            win.show_all()
+            self.windows.append(win)
+        deadline = time.monotonic() + 3
+        while self.mapped < len(self.windows) and time.monotonic() < deadline:
+            Gtk.main_iteration_do(False)
+            time.sleep(0.005)
+        if self.mapped < len(self.windows):
+            self.close()
+            raise UserError("The recording frame did not appear; not recording without it")
+
+    def _on_map(self, *_):
+        self.mapped += 1
+        return False
+
+    def close(self):
+        for win in self.windows:
+            win.destroy()
+        self.windows = []
+        while self.Gtk.events_pending():
+            self.Gtk.main_iteration_do(False)
+
+
+def unique_base(stamp):
+    base = OUT_DIR / f"screenrec-{stamp}"
+    i = 1
+    while any(Path(f"{base}{ext}").exists() for ext in (".rec.mkv", ".mp4", ".json")):
+        base = OUT_DIR / f"screenrec-{stamp}-{i}"
+        i += 1
+    return base
+
+
+def free_gb():
+    return shutil.disk_usage(OUT_DIR).free / 1e9
+
+
+def log_tail(n=3):
+    try:
+        lines = [l for l in LOG_PATH.read_text(errors="replace").splitlines() if l.strip()]
+    except FileNotFoundError:
+        return "(no log)"
+    return " | ".join(lines[-n:])
+
+
+def start(mode, arg):
+    wf = shutil.which(os.environ.get("SCREENREC_WF_RECORDER", "wf-recorder"))
+    if wf is None:
+        raise UserError("wf-recorder is not installed: sudo apt install wf-recorder")
+    picked = pick_area(mode, arg)
+    if picked is None:
+        notify(WARN, "Recording cancelled", 1800)
+        return
+    mon, rect = picked
+    filters, cap = capture_plan(mon, rect)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    if free_gb() < MIN_FREE_GB:
+        raise UserError(f"Only {free_gb():.0f} GB free in {OUT_DIR}; recording needs {MIN_FREE_GB:.0f} GB")
+    base = unique_base(dt.datetime.now().strftime("%Y%m%d-%H%M%S"))
+    mkv = Path(f"{base}.rec.mkv")
+    # setpriv: if this supervisor dies, wf-recorder gets SIGINT and closes the file cleanly.
+    argv = [
+        "setpriv", "--pdeathsig", "INT", "--",
+        wf, "-o", mon["name"], "-c", "libx264", "-p", "preset=superfast", "-p", f"crf={CRF}",
+        "-r", str(FPS), "-x", "yuv420p", "-F", filters, "-m", "matroska", "-f", str(mkv),
+    ]
+
+    frame = RecordingFrame(mon, rect)  # before wf-recorder: never capture without the frame
+    from gi.repository import GLib
+
+    started = dt.datetime.now().astimezone()
+    with open(LOG_PATH, "w") as log:
+        rec = subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=log, stderr=subprocess.STDOUT)
+    STATE_PATH.write_text(json.dumps({"supervisor_pid": os.getpid()}))
+    stop_reason = []
+
+    def request_stop(reason):
+        if not stop_reason:
+            stop_reason.append(reason)
+        if rec.poll() is None:
+            rec.send_signal(signal.SIGINT)
+
+    def on_signal():
+        request_stop("stopped by key")
+        return True
+
+    def check_disk():
+        if free_gb() < MIN_FREE_GB:
+            request_stop(f"disk below {MIN_FREE_GB:.0f} GB free")
+        return True
+
+    def check_recorder():
+        if rec.poll() is None:
+            return True
+        frame.Gtk.main_quit()
+        return False
+
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        GLib.unix_signal_add(GLib.PRIORITY_HIGH, sig, on_signal)
+    GLib.timeout_add_seconds(5, check_disk)
+    GLib.timeout_add(100, check_recorder)
+    frame.Gtk.main()
+    frame.close()  # only now: the frame outlives the capture
+    STATE_PATH.unlink(missing_ok=True)
+    stopped = dt.datetime.now().astimezone()
+
+    meta = {
+        "tool": "hypr-screenrec",
+        "mode": mode,
+        "hostname": socket.gethostname(),
+        "started_at_local": started.isoformat(),
+        "stopped_at_local": stopped.isoformat(),
+        "stop_reason": stop_reason[0] if stop_reason else f"wf-recorder exited ({rec.returncode})",
+        "audio": False,
+        "monitor": {k: mon.get(k) for k in (
+            "name", "description", "width", "height", "refreshRate", "scale", "transform", "x", "y", "currentFormat")},
+        "frame_rect_logical": rect,
+        "capture_rect_physical": cap,
+        "wf_recorder": {"argv": argv, "exit_code": rec.returncode, "log_tail": log_tail(5)},
+    }
+    finalize(mkv, Path(f"{base}.mp4"), Path(f"{base}.json"), meta)
+
+
+def probe(path):
+    out = subprocess.run(
+        ["ffprobe", "-v", "error", "-select_streams", "v:0", "-count_packets", "-show_entries",
+         "stream=codec_name,profile,width,height,pix_fmt,color_range,r_frame_rate,nb_read_packets"
+         ":format=duration,size", "-of", "json", str(path)],
+        check=True, capture_output=True, text=True,
+    ).stdout
+    j = json.loads(out)
+    st = j["streams"][0]
+    return {
+        "codec": st["codec_name"], "profile": st.get("profile"), "width": int(st["width"]),
+        "height": int(st["height"]), "pix_fmt": st["pix_fmt"], "color_range": st.get("color_range"),
+        "fps": st["r_frame_rate"], "frames": int(st["nb_read_packets"]),
+        "duration_s": float(j["format"]["duration"]), "bytes": int(j["format"]["size"]),
+    }
+
+
+def finalize(mkv, mp4, meta_path, meta):
+    if not mkv.exists() or mkv.stat().st_size == 0:
+        mkv.unlink(missing_ok=True)
+        raise UserError(f"Recording failed: {log_tail()}")
+    notify(OK, "Saving recording…", 3000)
+    rec_info = probe(mkv)
+    part = Path(f"{mp4}.part")
+    summary = {k: meta[k] for k in ("mode", "started_at_local", "capture_rect_physical")}
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(mkv), "-map", "0:v:0", "-c", "copy",
+         "-bsf:v", "h264_metadata=video_full_range_flag=0:colour_primaries=1"
+                   ":transfer_characteristics=1:matrix_coefficients=1",
+         "-movflags", "+faststart", "-metadata", f"comment=hypr-screenrec {json.dumps(summary)}",
+         "-f", "mp4", str(part)],
+        check=True, capture_output=True,
+    )
+    mp4_info = probe(part)
+    if mp4_info["frames"] != rec_info["frames"]:
+        part.unlink()
+        raise UserError(f"Remux lost frames ({rec_info['frames']} → {mp4_info['frames']}); kept {mkv.name}")
+    part.rename(mp4)
+    mkv.unlink()
+    meta["output_mp4"] = str(mp4)
+    meta["video"] = mp4_info
+
+    loop_path = mp4.with_name(mp4.stem + "-loop.mp4")
+    try:
+        meta["loop"] = make_loop(mp4, loop_path)
+    except Exception as exc:  # the recording is safe; report the failed search, don't hide it
+        with open(LOG_PATH, "a") as log:
+            traceback.print_exc(file=log)
+        meta["loop"] = {"found": False, "reason": f"loop search failed ({exc!r}), see {LOG_PATH}"}
+    meta_path.write_text(json.dumps(meta, indent=2, sort_keys=True) + "\n")
+
+    loop = meta["loop"]
+    keep = loop_path if loop["found"] else mp4
+    # No pipes: wl-copy forks a child that serves the clipboard and would hold them open.
+    subprocess.run(["wl-copy", str(keep)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True)
+    dur = mp4_info["duration_s"]
+    if loop["found"]:
+        notify(OK, f"Loop {loop['period_s']:.2f} s ({loop['period_frames']} frames) + {dur:.1f} s recording saved; "
+                   f"loop path copied", 8000)
+    else:
+        notify(OK, f"Recording {dur:.1f} s saved, path copied; no loop: {loop['reason']}", 8000)
+
+
+def find_loop(path, max_seconds=LOOP_MAX_SECONDS, min_period=4, max_score=0.1, noise_floor=0.5,
+              pixel_budget=16384):
+    """Find the start frame s and period P for which frames s..s+P-1 repeat.
+
+    Every frame is shrunk to ~pixel_budget grey pixels. d[i, j] is the MSE
+    between frames i and j. A cycle (s, P) is scored by how closely the next
+    cycle repeats it, frame by frame (mean d[s+k, s+P+k]), relative to how much
+    the picture changes within the cycle. Comparing whole cycles rejects a
+    pendulum's mirrored half-swing and a pause that matches itself.
+    """
+    import numpy as np
+
+    info = probe(path)
+    fps = Fraction(info["fps"])
+    n = info["frames"]
+    if n > max_seconds * fps:
+        return {"found": False, "reason": f"recording longer than {max_seconds:.0f} s, loop search skipped"}
+    if n < 2 * min_period:
+        return {"found": False, "reason": "recording too short"}
+    f = math.sqrt(pixel_budget / (info["width"] * info["height"]))
+    aw, ah = max(8, round(info["width"] * f)), max(8, round(info["height"] * f))
+    raw = subprocess.run(
+        ["ffmpeg", "-v", "error", "-i", str(path), "-map", "0:v:0", "-vf", f"scale={aw}:{ah}:flags=area,format=gray",
+         "-fps_mode", "passthrough", "-f", "rawvideo", "-"],
+        check=True, capture_output=True,
+    ).stdout
+    x = np.frombuffer(raw, np.uint8).reshape(-1, aw * ah).astype(np.float32)
+    n = len(x)
+    x -= x.mean(0)  # distances are unchanged; centring keeps float32 precise
+    sq = (x * x).sum(1)
+    d = np.maximum((sq[:, None] + sq[None, :] - 2.0 * (x @ x.T)) / x.shape[1], 0).astype(np.float64)
+    sat = np.zeros((n + 1, n + 1))
+    sat[1:, 1:] = d.cumsum(0).cumsum(1)
+
+    rows = []  # (period, score, start, cycle_err, spread, seam)
+    for p in range(min_period, n // 2 + 1):
+        diag = np.diagonal(d, p)  # diag[i] = d[i, i+p]
+        c = np.concatenate(([0.0], np.cumsum(diag)))
+        s = np.arange(0, n - 2 * p + 1)
+        cycle_err = (c[s + p] - c[s]) / p
+        e = s + p
+        spread = (sat[e, e] - sat[s, e] - sat[e, s] + sat[s, s]) / (p * p)
+        norm = np.maximum(spread, noise_floor)
+        score = cycle_err / norm
+        # Among good cycles, prefer the start whose seam (last frame -> first) is cleanest.
+        i = int(np.argmin(score + diag[s] / norm))
+        rows.append((p, float(score[i]), int(s[i]), float(cycle_err[i]), float(spread[i]), float(diag[s[i]])))
+
+    moving = [r for r in rows if r[4] >= noise_floor]
+    if not moving:
+        return {"found": False, "reason": "nothing moves in the recording"}
+    ok = [r for r in moving if r[1] <= max_score]
+    if not ok:
+        best = min(moving, key=lambda r: r[1])
+        return {"found": False, "best_period_frames": best[0], "best_score": round(best[1], 4),
+                "reason": f"no repeating cycle (best score {best[1]:.2f} > {max_score}); record at least 2 full cycles"}
+    # The shortest repeating period is the fundamental. Slow motion also matches at
+    # P±1, so take the best score within that first run of consecutive periods.
+    run = [ok[0]]
+    for r in ok[1:]:
+        if r[0] != run[-1][0] + 1:
+            break
+        run.append(r)
+    p, score, s, cycle_err, spread, seam = min(run, key=lambda r: r[1])
+    return {"found": True, "start_frame": s, "period_frames": p, "period_s": float(p / fps), "fps": str(fps),
+            "score": round(score, 5), "cycle_mse": round(cycle_err, 4), "seam_mse": round(seam, 4),
+            "motion_mse": round(spread, 3), "analysis_size": [aw, ah]}
+
+
+def cut_loop(src, dst, start, period, fps, repeats=1):
+    fps = Fraction(fps)
+    rate = f"{fps.numerator}/{fps.denominator}"
+    vf = f"trim=start_frame={start}:end_frame={start + period},setpts=N/(({rate})*TB)"
+    if repeats > 1:
+        vf += f",loop=loop={repeats - 1}:size={period}:start=0,setpts=N/(({rate})*TB)"
+    part = Path(f"{dst}.part")
+    subprocess.run(
+        ["ffmpeg", "-v", "error", "-y", "-i", str(src), "-map", "0:v:0", "-an", "-vf", vf,
+         "-fps_mode", "cfr", "-r", rate, "-c:v", "libx264", "-preset", "slow", "-crf", "17",
+         "-pix_fmt", "yuv420p", "-color_range", "tv", "-colorspace", "bt709", "-color_primaries", "bt709",
+         "-color_trc", "bt709", "-movflags", "+faststart", "-f", "mp4", str(part)],
+        check=True, capture_output=True,
+    )
+    got = probe(part)["frames"]
+    if got != period * repeats:
+        part.unlink()
+        raise UserError(f"Loop cut has {got} frames, expected {period * repeats}")
+    part.rename(dst)
+
+
+def make_loop(src, dst):
+    loop = find_loop(src)
+    if loop["found"]:
+        fps = Fraction(loop["fps"])
+        repeats = max(1, math.ceil(LOOP_MIN_SECONDS * fps / loop["period_frames"]))
+        cut_loop(src, dst, loop["start_frame"], loop["period_frames"], fps, repeats)
+        loop.update(repeats=repeats, output=str(dst))
+    return loop
+
+
+def stop_running():
+    try:
+        state = json.loads(STATE_PATH.read_text())
+    except FileNotFoundError:
+        notify(WARN, "A recording is starting or still saving", 2500)
+        return
+    try:
+        os.kill(state["supervisor_pid"], signal.SIGINT)
+    except ProcessLookupError:
+        notify(WARN, "Recording already stopped, still saving", 2500)
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else "region"
+    if cmd == "loop" and len(argv) == 3:
+        src = Path(argv[2])
+        result = make_loop(src, src.with_name(src.stem + "-loop.mp4"))
+        print(json.dumps(result, indent=2))
+        return 0 if result["found"] else 1
+    if cmd not in ("region", "full", "window", "geometry", "stop") or (cmd == "geometry") != (len(argv) == 3):
+        print(__doc__, file=sys.stderr)
+        return 2
+    # Held for the whole recording: a second key press finds it taken and stops instead.
+    lock_fd = os.open(LOCK_PATH, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        stop_running()
+        return 0
+    if cmd == "stop":
+        notify(WARN, "Not recording", 1800)
+        return 0
+    try:
+        start(cmd, argv[2] if cmd == "geometry" else None)
+    except UserError as exc:
+        notify(ERR, str(exc), 8000)
+        return 1
+    except Exception:
+        with open(LOG_PATH, "a") as log:
+            traceback.print_exc(file=log)
+        notify(ERR, f"hypr-screenrec crashed; traceback in {LOG_PATH}", 10000)
+        raise
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

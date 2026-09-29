@@ -185,6 +185,42 @@ Modes: `region` (slurp), `full`, `window` (focused window via `hyprctl activewin
 Binds: `Super+M` region, `Super+Shift+M` full, `Super+Ctrl+M` window.
 No cursor in any mode (grim omits pointer unless `-c`). `window` guards on `*null*` (no focused window).
 
+### Screen recording: hypr-screenrec (Sep 29 2026)
+Script `hypr/hypr-screenrec` (one Python file; tests `tests/hypr_screenrec_test.py`). Same three
+modes as the screenshots, plus Alt: `Super+Alt+M` region, `Super+Alt+Shift+M` full (= the FOCUSED
+monitor; wf-recorder records one output), `Super+Alt+Ctrl+M` window. Any of the three stops a running
+recording (flock `$XDG_RUNTIME_DIR/hypr-screenrec.lock` held by the supervisor; the second press
+SIGINTs the supervisor via `hypr-screenrec.json`). Also `geometry 'X,Y WxH'`, `stop`, `loop FILE`.
+No audio (wf-recorder records audio only with `-a`). Needs `sudo apt install wf-recorder` (0.4.1).
+- **Red frame = recording.** Four click-through GTK3 layer-shell strips (namespace
+  `hypr-screenrec`, overlay layer, `no_anim` layerrule) drawn INSIDE the chosen rectangle; the
+  capture starts 1 physical px inside the band, so the frame never lands in the video (verified:
+  0 frame-red pixels in the edge band of 203 frames). Window mode draws the frame over the
+  border/gap so the window itself is recorded. The frame appears BEFORE wf-recorder starts, and
+  no frame = no recording (a failed frame aborts with a notification).
+- **Why full-output capture + our own crop:** wf-recorder `-g` on a `transform = 1` output
+  returned rotated frames of the WRONG AREA. So it records `-o <monitor>` and the ffmpeg chain
+  does `crop` in the unrotated 3840x2160 buffer, then `transpose=1` (matches grim to 0.41 grey
+  levels). Only transforms 0/1 are implemented; others raise. Regions spanning two monitors raise.
+- **Encoder = libx264 superfast crf 16 on the CPU, 60 fps CFR, yuv420p tv-range bt709.** NVENC
+  works on GB10 but its `cuCtxCreate` intermittently fails with CUDA_ERROR_OUT_OF_MEMORY on
+  spark-1 (the CUDA-context/fragmentation problem), so it is not used. 4K costs: transpose ~1 ms
+  and 10-bit RGB→yuv420p ~8 ms per frame (scale-before-transpose is 40 % slower; swscale
+  `threads=8` is 3x SLOWER). wf-recorder's first frame arrives ~1.2-2.5 s after start.
+- On stop: `.rec.mkv` (crash-safe) is remuxed to `.mp4` (faststart, `h264_metadata` bsf sets
+  tv-range/bt709 VUI; packet counts must match before the mkv is deleted) + `.json` sidecar;
+  output `~/Videos/screenrecords/`. Path copied with `wl-copy` — **never with pipes attached:
+  wl-copy forks a clipboard server that holds them open and hangs the caller** (hit live).
+  Records refuse to start below 20 GB free and stop when free space drops below it.
+- **Loop cut:** frames shrunk to ~16k grey px, MSE matrix, a cycle (s, P) is scored by mean
+  d[s+k, s+P+k] over a whole period divided by the motion inside the cycle (summed-area table).
+  Smallest period under score 0.1, best within its run of consecutive periods. Needs ≥2 full
+  cycles; recordings >60 s are skipped. Output `-loop.mp4` = exactly one cycle (libx264 slow crf
+  17). Synthetic checks: pendulum → full swing not the half; 74.07-frame period → 74; 1.3 cycles →
+  refused; seam step within the normal frame-step range. Knobs: `SCREENREC_{DIR,FPS,CRF,
+  MIN_FREE_GB,LOOP_MAX_SECONDS,LOOP_MIN_SECONDS}` (MIN_SECONDS repeats the cycle), and
+  `SCREENREC_WF_RECORDER`.
+
 ### Notifications: swaync (not mako)
 Use swaync (SwayNotificationCenter), not mako. Both were enabled causing DBus conflicts.
 
