@@ -61,7 +61,7 @@ if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
 DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); of=$(awk "/^free/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}|$(( ${of:--1} * ${obs:-0} ))"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
@@ -344,7 +344,7 @@ fi
 if [[ "$host" == "nas" ]]; then
   optd=""; scanv=""
   if [[ "${optv:-}" == *"|"* ]]; then
-    IFS='|' read -r oused osize _ot ofg ocached orsc <<< "$optv"
+    IFS='|' read -r oused osize _ot ofg ocached orsc ofree <<< "$optv"
     # 6th optv slot (Sep 20 2026) = first line of the pool's reconcile_status, packed:
     # scan:<type>:<pct>:<done>/<total> (fs/metadata scans carry bcachefs's own node
     # progress; device/inum scans have none), proc:<prio>_<kind>, wait, between.
@@ -357,10 +357,16 @@ if [[ "$host" == "nas" ]]; then
               scanv=$(yellow "$scanv") ;;
       proc:*) scanv="proc ${orsc#proc:}" ;;
     esac
-    # "used" in bcachefs fs usage = DURABLE data only (btree/journal/user); the
-    # promote cache is separate and evictable — show both (Sep 12 2026: the
-    # shrinking OPTuse was btree copies draining to the Lexars, not the cache).
-    optd=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" 'BEGIN{printf "OPT %.0fG+cache %.0fG/%.0fG", u/1073741824, c/1073741824, z/1073741824}')
+    # "Optane <size>: data <live> (uses <allocated>) · pg-cache <cached> · free <free>".
+    # data = "used" in bcachefs fs usage: DURABLE live data (almost all btree metadata).
+    # uses = size - free - cached: the buckets that data occupies. btree nodes are CoW,
+    # so uses can be ~2x data (Sep 29 2026: 234G live in ~520G) -- the old "OPT 234G+cache
+    # 11G/566G" hid that and read as "half empty" while only 41G was free.
+    # pg-cache = evictable promote cache (the Optane is promote_target only for pgdata).
+    # free = free buckets x bucket size (7th optv slot, Sep 29 2026); unreadable -> red ?.
+    optd=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" -v f="${ofree:--1}" 'BEGIN{G=1073741824
+      if (f == "" || f < 0) printf "Optane %.0fG: data %.0fG · pg-cache %.0fG · free <span color=\"#ff5555\">?</span>", z/G, u/G, c/G
+      else printf "Optane %.0fG: data %.0fG (uses %.0fG) · pg-cache %.0fG · free %.0fG", z/G, u/G, (z-f-c)/G, c/G, f/G }')
   fi
   # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
   # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.

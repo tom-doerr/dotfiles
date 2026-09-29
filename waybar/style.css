@@ -148,3 +148,9 @@ window#waybar.meta {
 #custom-metarow.error {
     color: #f38ba8;
 }
+
+/* nas-postgres WAL flush module, sharing the nas8 (congestion) bar. Adjacent
+   GTK labels have no gap of their own. */
+#custom-pgwal {
+    margin-left: 16px;
+}

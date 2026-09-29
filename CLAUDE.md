@@ -375,6 +375,16 @@ rendered before the new CSS applied, which read as "the selector doesn't work".
 bar count) need a full waybar restart (`pkill -x waybar && waybar &`).
 SIGUSR2 with the multi-bar config also logs "Cannot merge config" and
 later SEGFAULTed on hyprctl reload — avoid it, always full-restart.
+**nas8 row also carries `custom/pgwal` (Sep 29 2026):** `~/git/private/waybar/pg-wal.sh` (symlinked,
+PRIVATE: it reads the nas-postgres URL from `~/.config/idea_rank/nas-postgres.env`, never printed) shows
+`WAL flush <avg fsync> <flushes/s> <bytes>/write <MB/s>` from `pg_stat_wal` deltas between runs (interval
+30 s; state in `$XDG_RUNTIME_DIR/waybar-pgwal.state`; runs <10 s apart repeat the last rendering). One psql
+connection per run, no SSH. Flush >=100 ms yellow, >=1 s red; query failure = red `WAL ?` with the error
+in the tooltip. `#custom-pgwal { margin-left: 16px; }`; nas8's `min-length` 122 keeps it at a fixed x.
+**FILL/TEMP Optane item reworded (Sep 29 2026, user asked what `OPT 235G+cache 11G/566G` meant):** now
+`Optane <size>: data <live> (uses <allocated>) · pg-cache <cached> · free <free>`. data = fs-usage "used"
+(durable, ~all btree); uses = size - free - cached (CoW btree ≈ 2x data); free = 7th `optv` slot (free
+buckets x bucket_size, unreadable -> red `?`). Row 5 = 204 visible chars.
 **Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
 socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
 without the symlink the workspaces/window modules silently get NO data.
