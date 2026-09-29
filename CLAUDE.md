@@ -381,18 +381,17 @@ PRIVATE: it reads the nas-postgres URL from `~/.config/idea_rank/nas-postgres.en
 30 s; state in `$XDG_RUNTIME_DIR/waybar-pgwal.state`; runs <10 s apart repeat the last rendering). One psql
 connection per run, no SSH. Flush >=100 ms yellow, >=1 s red; query failure = red `WAL ?` with the error
 in the tooltip. `#custom-pgwal { margin-left: 16px; }`; nas8's `min-length` 122 keeps it at a fixed x.
-**FILL/TEMP Optane item = its own two-line module `custom/nas5opt` (Sep 29 2026, user asked what
-`OPT 235G+cache 11G/566G` meant, then for deltas under the values):** `spark.sh` writes
-`/tmp/spark_nas.row5opt` = `Optane 566G  data 221G  uses 487G  read cache 13G  free 67G` and below it
-`Δ 1 min -0.64G -1.20G +0.07G +1.13G`, each delta right-aligned in the same 6-char field as its value
-(JetBrains Mono; ASCII-only aligned parts because mawk printf widths count bytes; `Δ` = octal bytes in
-fixed padding). Deltas = actual change over 60 s from `/tmp/spark_nas.opthist` (successful probes only,
-pruned to 10 min; "collecting" for the first minute). data = fs-usage "used" (durable, ~all btree);
-uses = size - free - cached (CoW btree ≈ 2x data); read cache = promote copies made on read, not durable
-(Postgres data: the Optane is promote_target only for pgdata); free = 7th `optv` slot (free buckets x
-bucket_size; unreadable -> red `?`, no deltas). `nas-row.sh <n> 2` prints two-line waybar JSON (a plain
-second line would be the tooltip); the device module `custom/nas5` uses it too, with a blank second line,
-so both first lines stay level. The nas5 bar is therefore two lines tall: rows below it sit lower.
+**Row 9 = Optane + reconcile backlog with 1-minute deltas (Sep 29 2026, user):** bar `nas9` (after
+`nas6`, two lines tall), `nas-row.sh 9 2` (two-line waybar JSON; a plain second line would be the
+tooltip). Line 1: `Optane 566G  data 216G  uses 475G  read cache 13G  free 78G   backlog  repl 133M
+ec 1.6T  recmpr 2.9T  destage 39G  misc 89G`; line 2: `Δ 1 min` and the actual change over 60 s, each
+right-aligned under its value (line 2 is built from the same label list as line 1, labels ASCII because
+awk counts bytes; `Δ` sits in a fixed 18-char lead). History: `/tmp/spark_nas.hist9` (successful probes
+only, 10 min). Optane: data = fs-usage "used" (durable, ~all btree); uses = size - free - cached (CoW
+btree ≈ 2x data); read cache = promote copies made on read, not durable (Postgres data: the Optane is
+promote_target only for pgdata); free = 7th `optv` slot (free buckets x bucket_size). Backlog = the
+"Pending reconcile" data column (repl/ec/recmpr/destage, misc = other+metadata, yellow if >0); it LEFT
+row 6, which now ends with the reconcile phase and `fg:`. The FILL/TEMP row (5) is single-line again.
 **Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
 socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
 without the symlink the workspaces/window modules silently get NO data.

@@ -342,7 +342,7 @@ fi
 # to a SECOND bar, rendered here and handed to `custom/nas2` via this file, so the
 # NAS is still probed ONCE per cycle rather than twice.
 if [[ "$host" == "nas" ]]; then
-  optd=""; opt2=""; scanv=""
+  optd=""; scanv=""
   if [[ "${optv:-}" == *"|"* ]]; then
     IFS='|' read -r oused osize _ot ofg ocached orsc ofree <<< "$optv"
     # 6th optv slot (Sep 20 2026) = first line of the pool's reconcile_status, packed:
@@ -357,41 +357,6 @@ if [[ "$host" == "nas" ]]; then
               scanv=$(yellow "$scanv") ;;
       proc:*) scanv="proc ${orsc#proc:}" ;;
     esac
-    # Optane item = its own two-line module, /tmp/spark_nas.row5opt (Sep 29 2026, user:
-    # show how much each value changed, directly below it). Line 1 = values, line 2 = the
-    # actual change over the last 60 s, taken from a history of SUCCESSFUL probes
-    # ($cache.opthist, pruned to 10 min; a failed probe adds nothing, so it cannot fake a
-    # zero change). Every value and its delta share one 6-char right-aligned field, so the
-    # delta ends exactly under its value (JetBrains Mono). Aligned parts are ASCII only:
-    # awk printf widths count bytes, so the multibyte "Δ" sits in fixed padding instead.
-    # data = fs-usage "used": durable live data (almost all btree metadata).
-    # uses = size - free - cached: the buckets that data occupies (CoW btree, ~2x data).
-    # read cache = promote copies made on READ, not durable (the Optane is promote_target
-    # only for pgdata, so it is Postgres data). free = free buckets x bucket size (7th
-    # optv slot); unreadable -> red ? and no deltas.
-    hist="$cache.opthist"; touch "$hist"
-    if [[ ${fetch_ok:-0} -eq 1 && "${ofree:-}" =~ ^[0-9]+$ ]]; then
-      echo "$now ${oused:-0} ${ocached:-0} ${osize:-0} $ofree" >> "$hist"
-      awk -v cut=$((now - 600)) '$1 >= cut' "$hist" > "$hist.tmp" && mv -f "$hist.tmp" "$hist"
-    fi
-    opt2=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" -v f="${ofree:--1}" -v W=60 '
-      { ts[NR] = $1; hu[NR] = $2; hc[NR] = $3; hz[NR] = $4; hf[NR] = $5; n = NR }
-      END {
-        G = 1073741824
-        if (f == "" || f < 0) {
-          printf "Optane %3.0fG  data %5.0fG  read cache %5.0fG  free <span color=\"#ff5555\">?</span>\n \n", z/G, u/G, c/G
-          exit
-        }
-        printf "Optane %3.0fG  data %5.0fG  uses %5.0fG  read cache %5.0fG  free %5.0fG\n", z/G, u/G, (z-f-c)/G, c/G, f/G
-        # "Optane 566G  data " is 18 chars; the label below it must be 18 chars too.
-        lead = "          \316\224 1 min "
-        b = 0
-        if (n > 0) for (i = n; i >= 1; i--) if (ts[i] <= ts[n] - W) { b = i; break }
-        if (!b) { printf "<span color=\"#a6adc8\">%s(collecting 1 min of samples)</span>\n", lead; exit }
-        du = (hu[n] - hu[b]) / G; dc = (hc[n] - hc[b]) / G; df = (hf[n] - hf[b]) / G
-        dz = (hz[n] - hz[b]) / G
-        printf "<span color=\"#a6adc8\">%s%+5.2fG%7s%+5.2fG%13s%+5.2fG%7s%+5.2fG</span>\n", lead, du, "", dz - df - dc, "", dc, "", df
-      }' "$hist")
   fi
   # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
   # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.
@@ -405,12 +370,78 @@ if [[ "$host" == "nas" ]]; then
   printf '%s\n' "${latv:-LAT n/a}"  > "$cache.row4"
   printf '%s\n' "${utilv:-UTIL n/a}" > "$cache.row7"
   printf '%s\n' "${occv:-FILL n/a}" > "$cache.row5"
-  printf '%s\n' "${opt2:-<span color='#ff5555'>Optane n/a</span>}" > "$cache.row5opt"
+  # Row 9 (Sep 29 2026, user): the Optane item and the reconcile backlog on their own
+  # two-line row, each value with its actual change over the last 60 s right below it.
+  # History = successful probes only ($cache.hist9, pruned to 10 min), so a failed probe
+  # cannot fake "no change". Line 2 is built from the SAME label list as line 1 (each
+  # label replaced by spaces of equal length, every value and delta a 6-char right-aligned
+  # field), so each delta ends exactly under its value. Labels are ASCII: awk length()
+  # and printf widths count bytes; the multibyte "Δ" lives in a fixed 18-char lead.
+  # data = fs-usage "used": durable live data (almost all btree metadata).
+  # uses = size - free - cached: the buckets that data occupies (CoW btree, ~2x data).
+  # read cache = promote copies made on READ, not durable (the Optane is promote_target
+  # only for pgdata). free = free buckets x bucket size (7th optv slot).
+  # backlog = "Pending reconcile" data column: repl=extra copies owed, ec=awaiting stripe,
+  # recmpr=lz4->zstd, destage=wrong device (SSD->HDD), misc=other+metadata (yellow if >0).
+  hist9="$cache.hist9"; touch "$hist9"
+  bl_ok=0; [[ "${bc_backlog:-}" == *"|"* ]] && bl_ok=1
+  of_ok=0; [[ "${ofree:-}" =~ ^[0-9]+$ ]] && of_ok=1
+  if [[ ${fetch_ok:-0} -eq 1 && ( $bl_ok -eq 1 || $of_ok -eq 1 ) ]]; then
+    IFS='|' read -r h_r h_e h_c h_t h_o h_m <<< "${bc_backlog:-}"
+    if [[ $bl_ok -eq 1 ]]; then h_misc=$(( ${h_o:-0} + ${h_m:-0} )); else h_r=-1; h_e=-1; h_c=-1; h_t=-1; h_misc=-1; fi
+    if [[ $of_ok -eq 1 ]]; then h_u=${oused:-0}; h_ca=${ocached:-0}; h_z=${osize:-0}; h_f=$ofree
+    else h_u=-1; h_ca=-1; h_z=-1; h_f=-1; fi
+    echo "$now $h_u $h_ca $h_z $h_f ${h_r:-0} ${h_e:-0} ${h_c:-0} ${h_t:-0} $h_misc" >> "$hist9"
+    awk -v cut=$((now - 600)) '$1 >= cut' "$hist9" > "$hist9.tmp" && mv -f "$hist9.tmp" "$hist9"
+  fi
+  row9=$(awk -v W=60 '
+    function sp(n,  s) { s = ""; while (n-- > 0) s = s " "; return s }
+    function hbv(b,  u, i, c) { if (b < 0) return "?"; if (b == 0) return "0"
+      u = "BKMGTP"; i = 1; while (b >= 1024 && i < 6) { b /= 1024; i++ }
+      return sprintf((b < 10 ? "%.1f%s" : "%.0f%s"), b, substr(u, i, 1)) }
+    function hbd(d,  s) { if (d == "") return "?"; if (d == 0) return "0"
+      s = (d < 0) ? "-" : "+"; return s hbv(d < 0 ? -d : d) }
+    function gv(b) { return (b < 0) ? "?" : sprintf("%.0fG", b / 1073741824) }
+    function gd(d) { return (d == "") ? "?" : sprintf("%+.2fG", d / 1073741824) }
+    function add(label, v, dl, color) {
+      v = sprintf("%6s", v); dl = sprintf("%6s", dl)
+      if (color != "") v = "<span color=\"" color "\">" v "</span>"
+      l1 = l1 label v; l2 = l2 sp(length(label)) dl }
+    { for (k = 1; k <= 10; k++) h[NR, k] = $k; n = NR }
+    END {
+      if (!n) { print "<span color=\"#ff5555\">Optane/backlog: no successful probe yet</span>"; print " "; exit }
+      b = 0; for (i = n; i >= 1; i--) if (h[i, 1] <= h[n, 1] - W) { b = i; break }
+      for (k = 2; k <= 10; k++) {
+        cur[k] = h[n, k]
+        d[k] = (b && h[n, k] >= 0 && h[b, k] >= 0) ? h[n, k] - h[b, k] : ""
+      }
+      z = cur[4]; f = cur[5]; c = cur[3]
+      uses = (f >= 0 && z >= 0) ? z - f - c : -1
+      duses = (d[5] != "" && d[3] != "" && d[4] != "") ? d[4] - d[5] - d[3] : ""
+      l1 = sprintf("Optane %3sG  data ", (z < 0 ? "?" : sprintf("%.0f", z / 1073741824)))
+      l2 = ""
+      v = sprintf("%6s", gv(cur[2])); l1 = l1 v; lead_d = sprintf("%6s", gd(d[2]))
+      add("  uses ", gv(uses), gd(duses), (uses < 0 ? "#ff5555" : ""))
+      add("  read cache ", gv(cur[3]), gd(d[3]), "")
+      add("  free ", gv(f), gd(d[5]), (f < 0 ? "#ff5555" : ""))
+      add("   backlog  repl ", hbv(cur[6]), hbd(d[6]), (cur[6] < 0 ? "#ff5555" : ""))
+      add("  ec ", hbv(cur[7]), hbd(d[7]), "")
+      add("  recmpr ", hbv(cur[8]), hbd(d[8]), "")
+      add("  destage ", hbv(cur[9]), hbd(d[9]), "")
+      add("  misc ", hbv(cur[10]), hbd(d[10]), (cur[10] > 0 ? "#f1fa8c" : ""))
+      print l1
+      if (!b) { printf "<span color=\"#a6adc8\">          \316\224 1 min (collecting 1 min of samples)</span>\n"; exit }
+      # "Optane 566G  data " is 18 chars: the lead under it is 10 spaces + "Δ 1 min " (18 visible).
+      printf "<span color=\"#a6adc8\">          \316\224 1 min %s%s</span>\n", lead_d, l2
+    }' "$hist9")
+  printf '%s\n' "${row9:-<span color='#ff5555'>Optane/backlog n/a</span>}" > "$cache.row9"
   # row 8 = per-device congestion (user request Sep 6 2026: keep the LAST row pure
   # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
   printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
   row6=""
-  for v in "$mdv" "$scanv" "$rclv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
+  # backlog moved to row 9 (Sep 29 2026) so it can carry deltas; its red "backlog:?"
+  # failure shows there as red "?" values.
+  for v in "$mdv" "$scanv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
   printf '%s\n' "$row6" > "$cache.row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi

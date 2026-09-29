@@ -154,9 +154,3 @@ window#waybar.meta {
 #custom-pgwal {
     margin-left: 16px;
 }
-
-/* Optane item of the FILL/TEMP bar: values with their 1-minute deltas on a
-   second line below, a separate module so the two lines align on their own. */
-#custom-nas5opt {
-    margin-left: 16px;
-}
