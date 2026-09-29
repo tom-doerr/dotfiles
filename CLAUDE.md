@@ -384,7 +384,8 @@ in the tooltip. `#custom-pgwal { margin-left: 16px; }`; nas8's `min-length` 122 
 **FILL/TEMP Optane item reworded (Sep 29 2026, user asked what `OPT 235G+cache 11G/566G` meant):** now
 `Optane <size>: data <live> (uses <allocated>) · pg-cache <cached> · free <free>`. data = fs-usage "used"
 (durable, ~all btree); uses = size - free - cached (CoW btree ≈ 2x data); free = 7th `optv` slot (free
-buckets x bucket_size, unreadable -> red `?`). Row 5 = 204 visible chars.
+buckets x bucket_size, unreadable -> red `?`). data/uses/pg-cache are `%6.2f` (user: see the rate of
+change), fixed width. Row 5 = 214 visible chars (capacity ~221).
 **Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
 socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
 without the symlink the workspaces/window modules silently get NO data.
