@@ -381,11 +381,18 @@ PRIVATE: it reads the nas-postgres URL from `~/.config/idea_rank/nas-postgres.en
 30 s; state in `$XDG_RUNTIME_DIR/waybar-pgwal.state`; runs <10 s apart repeat the last rendering). One psql
 connection per run, no SSH. Flush >=100 ms yellow, >=1 s red; query failure = red `WAL ?` with the error
 in the tooltip. `#custom-pgwal { margin-left: 16px; }`; nas8's `min-length` 122 keeps it at a fixed x.
-**FILL/TEMP Optane item reworded (Sep 29 2026, user asked what `OPT 235G+cache 11G/566G` meant):** now
-`Optane <size>: data <live> (uses <allocated>) · read cache <cached> · free <free>`. data = fs-usage "used"
-(durable, ~all btree); uses = size - free - cached (CoW btree ≈ 2x data); free = 7th `optv` slot (free
-buckets x bucket_size, unreadable -> red `?`). data/uses/read cache are `%6.2f` (user: see the rate of
-change), fixed width. Row 5 = 216 visible chars (capacity ~221). "read cache" (was pg-cache) = promote copies made on read, not durable.
+**FILL/TEMP Optane item = its own two-line module `custom/nas5opt` (Sep 29 2026, user asked what
+`OPT 235G+cache 11G/566G` meant, then for deltas under the values):** `spark.sh` writes
+`/tmp/spark_nas.row5opt` = `Optane 566G  data 221G  uses 487G  read cache 13G  free 67G` and below it
+`Δ 1 min -0.64G -1.20G +0.07G +1.13G`, each delta right-aligned in the same 6-char field as its value
+(JetBrains Mono; ASCII-only aligned parts because mawk printf widths count bytes; `Δ` = octal bytes in
+fixed padding). Deltas = actual change over 60 s from `/tmp/spark_nas.opthist` (successful probes only,
+pruned to 10 min; "collecting" for the first minute). data = fs-usage "used" (durable, ~all btree);
+uses = size - free - cached (CoW btree ≈ 2x data); read cache = promote copies made on read, not durable
+(Postgres data: the Optane is promote_target only for pgdata); free = 7th `optv` slot (free buckets x
+bucket_size; unreadable -> red `?`, no deltas). `nas-row.sh <n> 2` prints two-line waybar JSON (a plain
+second line would be the tooltip); the device module `custom/nas5` uses it too, with a blank second line,
+so both first lines stay level. The nas5 bar is therefore two lines tall: rows below it sit lower.
 **Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
 socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
 without the symlink the workspaces/window modules silently get NO data.

@@ -342,7 +342,7 @@ fi
 # to a SECOND bar, rendered here and handed to `custom/nas2` via this file, so the
 # NAS is still probed ONCE per cycle rather than twice.
 if [[ "$host" == "nas" ]]; then
-  optd=""; scanv=""
+  optd=""; opt2=""; scanv=""
   if [[ "${optv:-}" == *"|"* ]]; then
     IFS='|' read -r oused osize _ot ofg ocached orsc ofree <<< "$optv"
     # 6th optv slot (Sep 20 2026) = first line of the pool's reconcile_status, packed:
@@ -357,18 +357,41 @@ if [[ "$host" == "nas" ]]; then
               scanv=$(yellow "$scanv") ;;
       proc:*) scanv="proc ${orsc#proc:}" ;;
     esac
-    # "Optane <size>: data <live> (uses <allocated>) · read cache <cached> · free <free>".
-    # data = "used" in bcachefs fs usage: DURABLE live data (almost all btree metadata).
-    # uses = size - free - cached: the buckets that data occupies. btree nodes are CoW,
-    # so uses can be ~2x data (Sep 29 2026: 234G live in ~520G) -- the old "OPT 234G+cache
-    # 11G/566G" hid that and read as "half empty" while only 41G was free.
-    # read cache = evictable promote cache: extra copies made on READ, not counted for
-    # durability (the Optane is promote_target only for pgdata, so it is Postgres data).
-    # free = free buckets x bucket size (7th optv slot, Sep 29 2026); unreadable -> red ?.
-    # data/uses/read cache print %6.2f (user: see the rate of change), fixed width.
-    optd=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" -v f="${ofree:--1}" 'BEGIN{G=1073741824
-      if (f == "" || f < 0) printf "Optane %.0fG: data %6.2fG · read cache %6.2fG · free <span color=\"#ff5555\">?</span>", z/G, u/G, c/G
-      else printf "Optane %.0fG: data %6.2fG (uses %6.2fG) · read cache %6.2fG · free %.0fG", z/G, u/G, (z-f-c)/G, c/G, f/G }')
+    # Optane item = its own two-line module, /tmp/spark_nas.row5opt (Sep 29 2026, user:
+    # show how much each value changed, directly below it). Line 1 = values, line 2 = the
+    # actual change over the last 60 s, taken from a history of SUCCESSFUL probes
+    # ($cache.opthist, pruned to 10 min; a failed probe adds nothing, so it cannot fake a
+    # zero change). Every value and its delta share one 6-char right-aligned field, so the
+    # delta ends exactly under its value (JetBrains Mono). Aligned parts are ASCII only:
+    # awk printf widths count bytes, so the multibyte "Δ" sits in fixed padding instead.
+    # data = fs-usage "used": durable live data (almost all btree metadata).
+    # uses = size - free - cached: the buckets that data occupies (CoW btree, ~2x data).
+    # read cache = promote copies made on READ, not durable (the Optane is promote_target
+    # only for pgdata, so it is Postgres data). free = free buckets x bucket size (7th
+    # optv slot); unreadable -> red ? and no deltas.
+    hist="$cache.opthist"; touch "$hist"
+    if [[ ${fetch_ok:-0} -eq 1 && "${ofree:-}" =~ ^[0-9]+$ ]]; then
+      echo "$now ${oused:-0} ${ocached:-0} ${osize:-0} $ofree" >> "$hist"
+      awk -v cut=$((now - 600)) '$1 >= cut' "$hist" > "$hist.tmp" && mv -f "$hist.tmp" "$hist"
+    fi
+    opt2=$(awk -v u="${oused:-0}" -v c="${ocached:-0}" -v z="${osize:-0}" -v f="${ofree:--1}" -v W=60 '
+      { ts[NR] = $1; hu[NR] = $2; hc[NR] = $3; hz[NR] = $4; hf[NR] = $5; n = NR }
+      END {
+        G = 1073741824
+        if (f == "" || f < 0) {
+          printf "Optane %3.0fG  data %5.0fG  read cache %5.0fG  free <span color=\"#ff5555\">?</span>\n \n", z/G, u/G, c/G
+          exit
+        }
+        printf "Optane %3.0fG  data %5.0fG  uses %5.0fG  read cache %5.0fG  free %5.0fG\n", z/G, u/G, (z-f-c)/G, c/G, f/G
+        # "Optane 566G  data " is 18 chars; the label below it must be 18 chars too.
+        lead = "          \316\224 1 min "
+        b = 0
+        if (n > 0) for (i = n; i >= 1; i--) if (ts[i] <= ts[n] - W) { b = i; break }
+        if (!b) { printf "<span color=\"#a6adc8\">%s(collecting 1 min of samples)</span>\n", lead; exit }
+        du = (hu[n] - hu[b]) / G; dc = (hc[n] - hc[b]) / G; df = (hf[n] - hf[b]) / G
+        dz = (hz[n] - hz[b]) / G
+        printf "<span color=\"#a6adc8\">%s%+5.2fG%7s%+5.2fG%13s%+5.2fG%7s%+5.2fG</span>\n", lead, du, "", dz - df - dc, "", dc, "", df
+      }' "$hist")
   fi
   # fg = pool-wide foreground_target (4th optv slot, added Sep 6 2026). ssd = normal;
   # hdd = the governor (or a human) parked writes on HDD -> yellow so it is not forgotten.
@@ -381,7 +404,8 @@ if [[ "$host" == "nas" ]]; then
   printf '%s\n' "${iopsv:-IOPS n/a}" > "$cache.row3"
   printf '%s\n' "${latv:-LAT n/a}"  > "$cache.row4"
   printf '%s\n' "${utilv:-UTIL n/a}" > "$cache.row7"
-  printf '%s\n' "${occv:-FILL n/a}${optd:+  $optd}" > "$cache.row5"
+  printf '%s\n' "${occv:-FILL n/a}" > "$cache.row5"
+  printf '%s\n' "${opt2:-<span color='#ff5555'>Optane n/a</span>}" > "$cache.row5opt"
   # row 8 = per-device congestion (user request Sep 6 2026: keep the LAST row pure
   # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
   printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
