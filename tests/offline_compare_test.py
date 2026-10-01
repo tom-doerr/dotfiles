@@ -3,6 +3,7 @@ import importlib.util
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 from argparse import Namespace
 from pathlib import Path
 
@@ -13,6 +14,44 @@ spec.loader.exec_module(compare)
 
 
 class OfflineCompareTest(unittest.TestCase):
+    def test_render_preserves_audio_and_signals_bt709(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / 'source.mkv'
+            compare.run(['ffmpeg', '-v', 'error', '-f', 'lavfi', '-i',
+                         'testsrc2=size=160x120:rate=5:duration=1',
+                         '-f', 'lavfi', '-i', 'sine=frequency=440:duration=1',
+                         '-c:v', 'ffv1', '-c:a', 'pcm_s16le', source])
+            real_run = compare.run
+
+            def without_gpu(command):
+                if command[0] == 'fake-mpv':
+                    output = next(x[4:] for x in command if str(x).startswith('--o='))
+                    real_run(['ffmpeg', '-v', 'error', '-i', source, '-an',
+                              '-vf', 'scale=320:240', '-c:v', 'libx264', output])
+                else:
+                    real_run(command)
+
+            args = Namespace(source=source, output=root / 'result.mkv',
+                             engine=root / 'model.engine', mode='rgb',
+                             mpv='fake-mpv', title='Test')
+            with patch.object(compare, 'run', side_effect=without_gpu):
+                compare.render(args)
+            import json
+            info = json.loads(subprocess.check_output([
+                'ffprobe', '-v', 'error', '-select_streams', 'v:0',
+                '-show_entries', 'stream=color_range,color_space,color_transfer,color_primaries',
+                '-of', 'json', str(args.output)]))['streams'][0]
+            self.assertEqual(info, dict(color_range='tv', color_space='bt709',
+                                        color_transfer='bt709', color_primaries='bt709'))
+            hashes = [subprocess.check_output([
+                'ffmpeg', '-v', 'error', '-i', str(p), '-map', '0:a:0',
+                '-c', 'copy', '-f', 'hash', '-hash', 'sha256', '-'])
+                for p in (source, args.output)]
+            self.assertEqual(*hashes)
+            self.assertTrue(json.loads(args.output.with_suffix('.json').read_text())[
+                'full_decode_passed'])
+
     def test_offsets_do_not_shift_panels_and_short_inputs_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

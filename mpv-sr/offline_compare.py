@@ -46,6 +46,8 @@ def render(args):
         raise RuntimeError(f'Expected exact 2x dimensions: {rendered_info}')
     run(['ffmpeg', '-v', 'error', '-n', '-i', intermediate, '-i', args.source,
          '-map', '0:v:0', '-map', '1:a?', '-c', 'copy',
+         '-bsf:v', 'h264_metadata=video_full_range_flag=0:colour_primaries=1:'
+         'transfer_characteristics=1:matrix_coefficients=1',
          '-color_range', 'tv', '-colorspace', 'bt709', '-color_trc', 'bt709',
          '-color_primaries', 'bt709', '-metadata', f'title={args.title}', output])
     # Decode the actual deliverable before publishing its completion record.
