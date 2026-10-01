@@ -842,6 +842,19 @@ vim.api.nvim_create_autocmd("FileType", {
 Old: `require("lspconfig").pyright.setup({})`
 New: `vim.lsp.config.pyright = {}` then `vim.lsp.enable({ "pyright" })`
 
+## `mpv-sr/` — live 2x neural upscaling in mpv (Oct 1 2026)
+
+`mpv-sr/mpv-sr` (symlinked to `~/.local/bin/mpv-sr`; `scripts/yt-span` calls it) runs a second,
+VapourSynth-enabled mpv build with `sr.lua`, which inserts `sr.vpy` (2xLiveActionV1_SPAN through
+vs-mlrt's TensorRT plugin) only when the source fits the real-time budget (`budget_mps`, 13 MP/s)
+and removes it again if shown frames fall behind; every decision is an OSD line, `n` forces on/off.
+`build_engine.py` builds one static fp16 engine per input size on first use.
+**Measured on the GB10: ~16 MP/s idle, ~7.5 MP/s with other CUDA jobs, so 1080p (7 fps) and 720p
+(18 fps) are not real-time; ≤ 540p is.** The venv, the mpv build recipe, the hand-written
+`vapoursynth-script.pc`, TensorRT 11 gotchas (no FP16 flag, absolute engine paths) and the numbers
+are in `~/claude-notes/mpv-live-superres.md`. `mpv-sr/` is a normal tracked dir (not under the
+gitignored `scripts/`).
+
 ## hyprmeta wiring in this repo (Sep 23-24 2026)
 
 hyprmeta itself lives in `~/git/hyprmeta` (public, own README/CLAUDE.md). What lives HERE:

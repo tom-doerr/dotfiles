@@ -1,0 +1,5 @@
+#!/bin/sh
+# mpv with live 2x neural upscaling for low-resolution sources (see sr.lua).
+# Uses the VapourSynth-enabled build; the system mpv has no vapoursynth filter.
+dir=$(dirname "$(readlink -f "$0")")
+exec "$HOME/.local/opt/mpv-vs/bin/mpv" --script="$dir/sr.lua" "$@"
