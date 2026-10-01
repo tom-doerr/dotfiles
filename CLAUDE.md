@@ -853,6 +853,15 @@ hyprmeta itself lives in `~/git/hyprmeta` (public, own README/CLAUDE.md). What l
   binds run with the system PATH, `~/.local/bin` is not on it).
 - **Daemon unit** `systemd/user/hyprmeta-daemon.service` (symlinked, force-added —
   `systemd/` is gitignored). It waits for `WAYLAND_DISPLAY` like `swww-daemon`.
+  **★ Started by an `exec-once` in `hyprland.conf` since Oct 1 2026, NOT by its `[Install]`:**
+  `graphical-session.target` is never reached in this session (`start-hyprland` does not
+  activate it; `systemctl --user status graphical-session.target` = inactive), so
+  `WantedBy=graphical-session.target` starts NOTHING at boot. The unit was installed Sep 23 and
+  only ever started by hand; the first reboots (Sep 30, Oct 1) left F13 / Super+Space dead:
+  the binds existed but `hyprctl globalshortcuts` printed `none`. waybar and hypridle work
+  because they have the same exec-once; swww-daemon only because `wallpaper-switcher.service`
+  Requires it. **swaync has the same problem (inactive after a reboot, D-Bus-activatable only).**
+  Any new session daemon needs an exec-once line, or the target itself must be started.
 - **Glass**: `layerrule { name = wofi-glass; match:namespace = ^(wofi|hyprmeta)$; blur =
   true; ignore_alpha = 0.1; no_anim = true }` — the client pane alpha (0.22) must stay ABOVE
   ignore_alpha or the blur is silently skipped; `no_anim` because the 200 ms `layersIn` fade

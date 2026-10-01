@@ -5,9 +5,10 @@ After=graphical-session.target
 
 [Service]
 Type=simple
-# [claude 2026-09-23] Same boot race as swww-daemon: graphical-session.target is
-# reached BEFORE hyprland's exec-once `systemctl --user import-environment`, so
-# wait for WAYLAND_DISPLAY, then pull both vars in at exec time. The daemon
+# [claude 2026-10-01] graphical-session.target is NEVER reached in this session
+# (start-hyprland does not activate it), so the [Install] below starts nothing.
+# The real start is an exec-once in hypr/hyprland.conf. The WAYLAND_DISPLAY wait
+# stays as a guard for manual starts; both vars are pulled in at exec time. The daemon
 # needs HYPRLAND_INSTANCE_SIGNATURE for the event socket (it falls back to the
 # newest instance dir, with a log line, if the var is missing).
 ExecStartPre=/bin/sh -c 'for i in $(seq 1 60); do systemctl --user show-environment | grep -q "^WAYLAND_DISPLAY=" && exit 0; sleep 1; done; echo "WAYLAND_DISPLAY never appeared in the user manager environment after 60s" >&2; exit 1'
