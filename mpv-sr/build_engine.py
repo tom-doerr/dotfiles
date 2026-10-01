@@ -60,6 +60,7 @@ def main() -> int:
 
         model = float16.convert_float_to_float16(model, keep_io_types=False)
     inp = model.graph.input[0].name
+    ch = model.graph.input[0].type.tensor_type.shape.dim[1].dim_value  # 3 = RGB, 1 = luma-only models
 
     logger = trt.Logger(trt.Logger.WARNING)
     builder = trt.Builder(logger)
@@ -75,7 +76,7 @@ def main() -> int:
     config = builder.create_builder_config()
     config.builder_optimization_level = args.opt_level
     profile = builder.create_optimization_profile()
-    profile.set_shape(inp, (1, 3, hmin, wmin), (1, 3, h, w), (1, 3, hmax, wmax))
+    profile.set_shape(inp, (1, ch, hmin, wmin), (1, ch, h, w), (1, ch, hmax, wmax))
     config.add_optimization_profile(profile)
 
     t0 = time.time()
