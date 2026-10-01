@@ -115,10 +115,42 @@ over the whole excerpt and each streaming segment.
 Full-song outputs are kept in `full/`. Only files with adjacent completion JSON
 and `full_decode_passed: true` should be treated as verified deliverables.
 
+Queue full-song SeedVR2 FP16 renders sequentially on one GPU:
+
+```sh
+python ~/git/dotfiles/mpv-sr/seedvr2_full.py \
+  ~/Videos/sr-compare/pink-hyhOSLsNIvY --models 3b 7b --drop-caches
+```
+
+Run that command in a detached window in tmux session `base`. The optional
+`--drop-caches` flag verifies the session name before invoking `sudo -n drop-caches`
+before each model. Both checkpoints must already be installed. The queue survives
+terminal/client disconnects and writes live progress to
+`work/seedvr-full/status.json`, with per-model inference and encoding logs.
+
+The queue passes the actual decoded frame count to SeedVR2: OpenCV estimates
+6,394 frames for this source, but it contains 6,393. Both models use 91-frame
+chunks, batch size 33, overlap 4, seed 42, SDPA and LAB correction. PNG frames are
+retained. The source supplies the final video timestamps and nominal rate, while
+all output pixels come from the generated frames. Original Opus packets are copied.
+
+Outputs are `full/pink-seedvr2-3b-2x.mkv` and `full/pink-seedvr2-7b-2x.mkv`, using
+H.264 CRF 14, 10-bit 4:4:4 and BT.709 signalling. The queue validates the complete
+PNG sequence, dimensions, full video decode, exact source frame timestamps and
+audio packet hash before publishing each file and adding it to `full-versions.m3u`.
+It records completion separately for each model. A failed model is reported in
+the status file; the other model still runs.
+
+Rerunning skips completed outputs only when their settings, input and hashes
+match. Completed inference can be encoded again if no output/partial encode
+exists. Incomplete inference and partial encodes are preserved for inspection and
+cause an explicit failure; they are never silently overwritten or called complete.
+
 Validation:
 
 ```sh
 PYTHONDONTWRITEBYTECODE=1 python ~/git/dotfiles/tests/offline_compare_test.py
 PYTHONDONTWRITEBYTECODE=1 python ~/git/dotfiles/tests/seedvr2_run_test.py
+PYTHONDONTWRITEBYTECODE=1 python ~/git/dotfiles/tests/seedvr2_full_test.py
 ffmpeg -v error -xerror -threads 2 -i compare-3x3.mp4 -f null -
 ```
