@@ -50,6 +50,10 @@ def main() -> int:
     out = args.out or engine_path(args.onnx, fp16, shape)
     out.parent.mkdir(parents=True, exist_ok=True)
 
+    if out.exists():  # callers use this as "make sure the engine exists"
+        print(out)
+        return 0
+
     model = onnx.load(str(args.onnx))
     if fp16:
         from onnxconverter_common import float16
@@ -79,7 +83,8 @@ def main() -> int:
     if plan is None:
         raise SystemExit("engine build failed (see TensorRT log above)")
     out.write_bytes(bytes(plan))
-    print(f"{out}  ({out.stat().st_size / 1e6:.1f} MB, built in {time.time() - t0:.0f} s)")
+    print(f"built in {time.time() - t0:.0f} s, {out.stat().st_size / 1e6:.1f} MB", file=sys.stderr)
+    print(out)  # stdout carries only the engine path
     return 0
 
 

@@ -31,6 +31,8 @@ local disabled = false  -- switched off for this file (by hand or by the watchdo
 local behind = 0
 local last = nil        -- previous watchdog sample
 local inserted_at = 0
+local preparing = false  -- an engine build/lookup is running
+local generation = 0     -- bumped per file, so a late build result is not applied to the next one
 local timer = nil
 
 local function say(msg)
@@ -84,21 +86,43 @@ local function watchdog()
     end
 end
 
-local function insert(p)
+local function insert(p, engine)
     -- vapoursynth needs frames in system memory
     local hw = mp.get_property("hwdec-current", "no")
     if hw ~= "no" and not hw:match("%-copy$") then mp.set_property("hwdec", "auto-copy") end
-    local ud = (p.colormatrix or "?") .. "|" .. o.model
-    mp.commandv("vf", "add", ("@%s:vapoursynth=file=%s:buffered-frames=3:concurrent-frames=2:user-data=%s")
-        :format(LABEL, quote(dir .. "sr.vpy"), quote(ud)))
+    -- concurrent-frames below 4 throttles mpv to about half the model rate (measured)
+    mp.commandv("vf", "add", ("@%s:vapoursynth=file=%s:buffered-frames=8:concurrent-frames=4:user-data=%s")
+        :format(LABEL, quote(dir .. "sr.vpy"), quote(p.colormatrix .. "|" .. engine)))
     active = true
     behind = 0
     last, inserted_at = nil, mp.get_time()
     timer = mp.add_periodic_timer(2, watchdog)
 end
 
+-- Engines are per input size. Building one takes 10-20 s, so it runs in the
+-- background while the video plays unfiltered; the filter goes in when it is ready.
+local function prepare(p, desc)
+    local gen = generation
+    preparing = true
+    local slow = mp.add_timeout(2, function() say("building engine for " .. desc .. " (one-off)") end)
+    mp.command_native_async({
+        name = "subprocess", playback_only = false, capture_stdout = true,
+        args = { dir .. "build_engine.py", o.model, "--size", ("%dx%d"):format(p.w, p.h) },
+    }, function(ok, res, err)
+        slow:kill()
+        preparing = false
+        if gen ~= generation or disabled then return end  -- another file, or switched off meanwhile
+        if not ok or res.status ~= 0 then
+            disabled = true
+            return say("off: engine build failed (" .. tostring(err or res.status) .. "), see terminal")
+        end
+        insert(p, res.stdout:match("([^\n]+)%s*$"))
+        say(("on%s: %s -> %dx%d"):format(forced and " (forced)" or "", desc, p.w * 2, p.h * 2))
+    end)
+end
+
 local function decide()
-    if active or disabled then return end
+    if active or disabled or preparing then return end
     local p, fps = source()
     if not p then return end
     local desc = ("%dx%d@%.4g"):format(p.w, p.h, fps or 0)
@@ -115,21 +139,21 @@ local function decide()
             return say(("off: %s needs %.0f MP/s, budget %g, n = force on"):format(desc, mps, o.budget_mps))
         end
     end
-    insert(p)
-    say(("on%s: %s -> %dx%d"):format(forced and " (forced)" or "", desc, p.w * 2, p.h * 2))
+    prepare(p, desc)
 end
 
 -- vf chains survive into the next playlist entry, so start each file clean.
 mp.register_event("start-file", function()
     remove()
     forced, disabled = false, false
+    generation = generation + 1
 end)
 mp.observe_property("video-dec-params", "native", function(_, v)
     if v and v.w then decide() end
 end)
 
 mp.add_key_binding("n", "sr-toggle", function()
-    if active then
+    if active or preparing then
         remove()
         forced, disabled = false, true
         say("off (manual)")
