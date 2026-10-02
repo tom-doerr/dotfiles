@@ -417,6 +417,13 @@ PRIVATE: it reads the nas-postgres URL from `~/.config/idea_rank/nas-postgres.en
 30 s; state in `$XDG_RUNTIME_DIR/waybar-pgwal.state`; runs <10 s apart repeat the last rendering). One psql
 connection per run, no SSH. Flush >=100 ms yellow, >=1 s red; query failure = red `WAL ?` with the error
 in the tooltip. `#custom-pgwal { margin-left: 16px; }`; nas8's `min-length` 122 keeps it at a fixed x.
+**Durability on the FILL/TEMP row (Oct 2 2026, user):** each SSD member's entry ends with its
+bcachefs durability, `l1 93%/41° dur2  l2 93%/37° dur2  op 87%/37° dur1` (lexar2 = the Optane btree
+lever: 1 = on, 2 = off or tripped by the NAS guard). Shipped as a 9th `:` subfield of each `devs`
+entry (`…:temp_mC:durability`, from `dev-*/durability`), so the 42-field cache format did not change;
+`-1` or a missing subfield renders red `dur?`. Row 5 = 157 visible chars. **Trap hit while adding it:
+an apostrophe in a comment inside the embedded awk program ends the shell's single-quoted string**
+(`bash -n` then reports a syntax error lines further down, and every NAS row stops updating).
 **Row 9 = Optane + reconcile backlog with 1-minute deltas (Sep 29 2026, user):** bar `nas9` (after
 `nas6`, two lines tall), `nas-row.sh 9 2` (two-line waybar JSON; a plain second line would be the
 tooltip). Line 1: `Optane 566G  data 216G  uses 475G  read cache 13G  free 78G   backlog  repl 133M

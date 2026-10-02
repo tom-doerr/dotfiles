@@ -60,7 +60,7 @@ echo "$errs"
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
-DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
+DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); dr=$(cat "$d/durability" 2>/dev/null); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}:${dr:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
 OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); of=$(awk "/^free/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}|$(( ${of:--1} * ${obs:-0} ))"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
 
@@ -297,6 +297,10 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
       t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.(nand\.)?lexar/,"l",t); if(t ~ /optane/)t="op"
       grp=(l ~ /optane/)?"opt":((l ~ /^hdd/)?"hdd":"ssd")
       fill[t]=F[6]+0; lat[t]=F[7]+0; tmp[t]=F[8]+0
+      # 9th subfield (Oct 2 2026) = bcachefs durability of the member; -1 = unreadable or an
+      # old cache line. Shown for the SSD members only (the HDDs are always 1). No apostrophes
+      # in these comments: the awk program sits inside a single-quoted shell string.
+      dur[t]=(F[9]=="")?-1:F[9]+0; dg[t]=grp
       if(l in p){split(p[l],Q,":")
         u=(F[5]-Q[5])/dt/10; if(u<0)u=0; if(u>100)u=100
       } else u=0
@@ -323,6 +327,7 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L " \xe2\x94\x82"; U=U " \xe2\x94\x82"
     for(i=1;i<=cnt;i++){t=order[i]
       O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
+      if(dg[t]!="hdd"){ if(dur[t]<0) O=O " <span color=\"#ff5555\">dur?</span>"; else O=O sprintf(" dur%d", dur[t]) }
       # the Optane is the only member of the "opt" aggregate, so its per-device entry on the
       # BW/IOPS/LAT/UTIL rows repeated the aggregate verbatim; dropped to fit (Sep 20 2026).
       if(t=="op") continue
