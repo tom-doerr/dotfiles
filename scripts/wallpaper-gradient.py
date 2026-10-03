@@ -9,8 +9,10 @@ import os
 import hashlib
 
 HOME = os.path.expanduser("~")
-DAY_WALLPAPER = f"{HOME}/Pictures/anime-girl.png"
-NIGHT_WALLPAPER = f"{HOME}/Pictures/wallpaper-night.png"
+# Brightened copies (gamma 0.45, half hue-preserving luma curve, half per-channel)
+# of anime-girl.png / wallpaper-night.png; the originals are kept unchanged.
+DAY_WALLPAPER = f"{HOME}/Pictures/anime-girl-bright.png"
+NIGHT_WALLPAPER = f"{HOME}/Pictures/wallpaper-night-bright.png"
 OUTPUT_WALLPAPER = f"{HOME}/Pictures/wallpaper-current.png"
 SWWW = f"{HOME}/.local/bin/swww"
 

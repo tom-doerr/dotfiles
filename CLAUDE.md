@@ -221,6 +221,18 @@ No audio (wf-recorder records audio only with `-a`). Needs `sudo apt install wf-
   MIN_FREE_GB,LOOP_MAX_SECONDS,LOOP_MIN_SECONDS}` (MIN_SECONDS repeats the cycle), and
   `SCREENREC_WF_RECORDER`.
 
+### Wallpaper: day/night blend, brightened (Oct 3 2026)
+`scripts/wallpaper-gradient.py` (run by `wallpaper-switcher.timer`, every minute in the fade hours)
+blends a day and a night image into `~/Pictures/wallpaper-current.png` and hands it to `swww`.
+Fade: day until 22:00, → night by 00:00, night until 06:00, → day by 07:00.
+**Sources are BRIGHTENED copies since Oct 3 2026 (user: "much brighter"):**
+`~/Pictures/anime-girl-bright.png` / `wallpaper-night-bright.png` (mean luma 51 → ~115 of 255).
+The originals `anime-girl.png` / `wallpaper-night.png` are untouched (revert = the two paths).
+Curve = gamma 0.45, averaged 50/50 between a hue-preserving luma-ratio curve and a per-channel
+curve: per-channel alone washed the neon out, luma-ratio alone pushed everything to saturated blue.
+Never brighten inside the script: it already costs 5-8 s CPU per tick; a static copy costs nothing.
+Swapping the image with `swww img` alone does not stick: the next tick overwrites it.
+
 ### Notifications: swaync (not mako)
 Use swaync (SwayNotificationCenter), not mako. Both were enabled causing DBus conflicts.
 
