@@ -18,13 +18,13 @@
 # plain second line as the tooltip.
 #
 # Non-silent: a missing file, or one older than STALE seconds (the writer runs
-# on the nas bar's 5s interval), is reported in red rather than shown as an
-# innocent-looking stale line.
+# on the nas bar's 5s interval), is reported in red INSTEAD of its content: no
+# old numbers on screen. A failed probe already writes red "no data" rows itself.
 
 n=${1:?usage: nas-row.sh <row-number> [lines]}
 lines=${2:-1}
 f=/tmp/spark_nas.row$n
-STALE=${NAS_ROW_STALE:-30}
+STALE=${NAS_ROW_STALE:-15}
 
 if [ ! -r "$f" ]; then
     first="<span color='#ff5555'>row$n: no data from spark.sh nas</span>"
@@ -34,8 +34,10 @@ else
     first=$(sed -n 1p "$f")
     second=$(sed -n 2p "$f")
     [ -z "$first" ] && first="<span color='#ff5555'>row$n: empty</span>"
+    # Old numbers are never shown (user, Oct 8 2026): past STALE the row says only how old it is.
     if [ "$age" -gt "$STALE" ]; then
-        first="$first <span color='#ff5555'>${age}s!</span>"
+        first="<span color='#ff5555'>row$n: no data for ${age}s (spark.sh nas not writing)</span>"
+        second=" "
     fi
 fi
 

@@ -187,6 +187,13 @@ else
     age=$(printf "%5s" "${dt}s")
   fi
 fi
+# No cached values on screen (user, Oct 8 2026: old numbers look current while diagnosing). A failed
+# probe shows how long the host has been silent; the NAS storage rows get the same, right away.
+if [[ $fetch_ok -eq 0 ]]; then
+  last="never"; [[ -n "$pt" ]] && last="$((now - pt))s ago"
+  [[ "$host" == "nas" ]] && for r in 2 3 4 5 6 7 8 9; do red "row$r: no data, probe failed" > "$cache.row$r"; echo >> "$cache.row$r"; done
+  echo "$(red "$host: no data, last probe ok $last")${wallv:+ $wallv}${cyclev:+ $cyclev}"; exit
+fi
 rxs=$(( (rx - ${rate_prx:-$rx}) / rate_dt )); txs=$(( (tx - ${rate_ptx:-$tx}) / rate_dt ))
 [[ $rxs -lt 0 ]] && rxs=0
 [[ $txs -lt 0 ]] && txs=0
@@ -374,14 +381,11 @@ if [[ "$host" == "nas" ]]; then
     hdd*) fgv=$(yellow "fg:${ofg}") ;;
     *)    fgv=$(red "fg:?") ;;
   esac
-  # Row files are written ONLY after a complete probe: on a failed one they keep the last good
-  # content and nas-row.sh marks them stale (red age) instead of showing "n/a" or old data as new.
-  wrow() { [[ ${fetch_ok:-0} -eq 1 ]] && printf '%s\n' "$2" > "$cache.row$1"; }
-  wrow 2 "${bwv:-BW n/a}"
-  wrow 3 "${iopsv:-IOPS n/a}"
-  wrow 4 "${latv:-LAT n/a}"
-  wrow 7 "${utilv:-UTIL n/a}"
-  wrow 5 "${occv:-FILL n/a}"
+  printf '%s\n' "${bwv:-BW n/a}" > "$cache.row2"
+  printf '%s\n' "${iopsv:-IOPS n/a}" > "$cache.row3"
+  printf '%s\n' "${latv:-LAT n/a}" > "$cache.row4"
+  printf '%s\n' "${utilv:-UTIL n/a}" > "$cache.row7"
+  printf '%s\n' "${occv:-FILL n/a}" > "$cache.row5"
   # Row 9 (Sep 29 2026, user): the Optane item and the reconcile backlog on their own
   # two-line row, each value with its actual change over the last 60 s right below it.
   # History = successful probes only ($cache.hist9, pruned to 10 min), so a failed probe
@@ -446,15 +450,15 @@ if [[ "$host" == "nas" ]]; then
       # "Optane 566G  data " is 18 chars: the lead under it is 10 spaces + "Δ 1 min " (18 visible).
       printf "<span color=\"#a6adc8\">          \316\224 1 min %s%s</span>\n", lead_d, l2
     }' "$hist9")
-  wrow 9 "${row9:-<span color='#ff5555'>Optane/backlog n/a</span>}"
+  printf '%s\n' "${row9:-<span color='#ff5555'>Optane/backlog n/a</span>}" > "$cache.row9"
   # row 8 = per-device congestion (user request Sep 6 2026: keep the LAST row pure
   # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
-  wrow 8 "${cgvv:-congestion n/a}"
+  printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
   row6=""
   # backlog moved to row 9 (Sep 29 2026) so it can carry deltas; its red "backlog:?"
   # failure shows there as red "?" values.
   for v in "$mdv" "$scanv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
-  wrow 6 "$row6"
+  printf '%s\n' "$row6" > "$cache.row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
 prefix="$host"

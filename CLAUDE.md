@@ -605,9 +605,15 @@ while congestion/cmp/Optane looked fine. Three fixes:
    from drivetemp; NVMe hwmon reads stay (2-26 ms). The probe never touches the HDDs any more.
 2. The remote cmd ends with `echo PROBE_END`; output without it is a FAILED probe (`data=""`), so a
    cut-off probe can never half-parse again (applies to every host).
-3. Row files go through `wrow N "text"`, which writes only when `fetch_ok=1`: a failed probe leaves
-   the last good rows and `nas-row.sh` shows their red age after 30 s instead of "n/a" or stale data
-   that looks fresh.
+3. **No cached values on screen (user, Oct 8: old numbers look current while diagnosing).** A failed
+   probe (`fetch_ok=0`) makes `spark.sh` print only red `<host>: no data, last probe ok Ns ago` (plus
+   the PDU/cycle parts, which have their own sources) and write red `rowN: no data, probe failed` into
+   every NAS row file; and `nas-row.sh` replaces a row file older than `NAS_ROW_STALE` (now 15 s, was
+   30 s with the old content + red age) with red `rowN: no data for Ns (spark.sh nas not writing)`.
+   The cache still supplies the PREVIOUS sample for rates (CPU %, network, per-device deltas), but
+   no cached value is ever displayed. Verified: normal probe, a fake failing `ssh` on PATH, and an
+   over-age row file. Before this, a failed probe showed every cached value with only a red
+   `Ns!` at the far right edge of the row.
 Result: probe 0.6-0.8 s (was 5.1-5.2 s). The probe also no longer queues a SMART command every 5 s
 behind a failing disk's error recovery.
 
