@@ -60,9 +60,10 @@ echo "$errs"
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi
 CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
-DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1); dr=$(cat "$d/durability" 2>/dev/null); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}:${dr:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
+DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; case "$l" in hdd.*) tp=$(awk "/^nas_smart_temperature_celsius\\{disk=\"$pb\"\\}/{print \$2*1000; exit}" /var/lib/prometheus/node-exporter/nas_smart.prom 2>/dev/null);; *) tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1);; esac; dr=$(cat "$d/durability" 2>/dev/null); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}:${dr:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
 OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); of=$(awk "/^free/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}|$(( ${of:--1} * ${obs:-0} ))"; else echo -1; fi
-PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi'
+PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi
+echo PROBE_END'
 
 # Read cached data (validate 26 fields: g p c m d rx tx pt zd zc zse zs zw nv nvs sf sfs ncd iop md1u md2u md1t md2t ci ct _)
 # NOTE: the 4 slots at positions 20-23 (once md1u/md2u/md1t/md2t) are repurposed on the NAS for bcachefs: bc_saved=compression saved GiB, bc_ssd=SSD fast-tier share %, bc_ratio=overall ratio x100, bc_backlog="Pending reconcile" bytes packed replicas|compression|target|other|metadata (was reconcile_scan_pending GiB, dropped Jul 8 as meaningless). md1/md2 RAID devices no longer exist post-reinstall.
@@ -107,6 +108,9 @@ ssh_opts=(
 )
 if [[ "$host" == "$(hostname)" ]]; then data=$(eval "$cmd" 2>/dev/null)
 else data=$(timeout --kill-after=1s "$ssh_timeout" ssh "${ssh_opts[@]}" "$host" "$cmd" 2>/dev/null); fi
+# A probe cut off by the timeout returns PARTIAL output, which used to parse as a success with the
+# later fields empty (NAS rows BW..FILL showed "n/a", Oct 8 2026). No end marker = failed probe.
+if [[ "$data" == *PROBE_END* ]]; then data=${data%PROBE_END*}; else data=""; fi
 
 # Update cache on success, use cached on failure
 if [[ -n "$data" ]]; then
@@ -370,11 +374,14 @@ if [[ "$host" == "nas" ]]; then
     hdd*) fgv=$(yellow "fg:${ofg}") ;;
     *)    fgv=$(red "fg:?") ;;
   esac
-  printf '%s\n' "${bwv:-BW n/a}"   > "$cache.row2"
-  printf '%s\n' "${iopsv:-IOPS n/a}" > "$cache.row3"
-  printf '%s\n' "${latv:-LAT n/a}"  > "$cache.row4"
-  printf '%s\n' "${utilv:-UTIL n/a}" > "$cache.row7"
-  printf '%s\n' "${occv:-FILL n/a}" > "$cache.row5"
+  # Row files are written ONLY after a complete probe: on a failed one they keep the last good
+  # content and nas-row.sh marks them stale (red age) instead of showing "n/a" or old data as new.
+  wrow() { [[ ${fetch_ok:-0} -eq 1 ]] && printf '%s\n' "$2" > "$cache.row$1"; }
+  wrow 2 "${bwv:-BW n/a}"
+  wrow 3 "${iopsv:-IOPS n/a}"
+  wrow 4 "${latv:-LAT n/a}"
+  wrow 7 "${utilv:-UTIL n/a}"
+  wrow 5 "${occv:-FILL n/a}"
   # Row 9 (Sep 29 2026, user): the Optane item and the reconcile backlog on their own
   # two-line row, each value with its actual change over the last 60 s right below it.
   # History = successful probes only ($cache.hist9, pruned to 10 min), so a failed probe
@@ -439,15 +446,15 @@ if [[ "$host" == "nas" ]]; then
       # "Optane 566G  data " is 18 chars: the lead under it is 10 spaces + "Δ 1 min " (18 visible).
       printf "<span color=\"#a6adc8\">          \316\224 1 min %s%s</span>\n", lead_d, l2
     }' "$hist9")
-  printf '%s\n' "${row9:-<span color='#ff5555'>Optane/backlog n/a</span>}" > "$cache.row9"
+  wrow 9 "${row9:-<span color='#ff5555'>Optane/backlog n/a</span>}"
   # row 8 = per-device congestion (user request Sep 6 2026: keep the LAST row pure
   # bcachefs stats; the bar order in the config puts row 8 directly above row 6).
-  printf '%s\n' "${cgvv:-congestion n/a}" > "$cache.row8"
+  wrow 8 "${cgvv:-congestion n/a}"
   row6=""
   # backlog moved to row 9 (Sep 29 2026) so it can carry deltas; its red "backlog:?"
   # failure shows there as red "?" values.
   for v in "$mdv" "$scanv" "$fgv" "$errv"; do [[ -n "$v" ]] && row6="${row6:+$row6 }$v"; done
-  printf '%s\n' "$row6" > "$cache.row6"
+  wrow 6 "$row6"
   mdv=""; rclv=""; cgvv=""; errv=""; tputv=""
 fi
 prefix="$host"

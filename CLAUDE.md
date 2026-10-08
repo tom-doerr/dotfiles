@@ -593,6 +593,24 @@ Fix: removed both — reuse the master, no aggressive keepalive. Dead-host detec
 still bounded by `timeout --kill-after=1s $ssh_timeout` + `ConnectTimeout`. NOT a
 network/DNS/auth issue (ping 1.7ms, bare ssh 0.01s, cmd runs 0.03s on the NAS).
 
+### NAS rows BW/IOPS/LAT/UTIL/FILL flickering to "n/a" (fixed Oct 8 2026)
+Cause: the probe ran into its 5 s ssh timeout (`ssh_timeout=5`), every run 5.1-5.2 s. The per-device
+loop (`DV`) read every member's `hwmon*/temp1_input`; on SATA disks drivetemp sends a live SMART
+command, and the failing `hdd.exos3` (sdb, growing bad sectors) answered after ~2.8 s (others 30-175
+ms). `timeout` then killed ssh mid-output, and the PARTIAL output parsed as a success: fields up to
+`cgv` were filled, `devs` defaulted to -1, so exactly the five rows built from `devs` printed "n/a"
+while congestion/cmp/Optane looked fine. Three fixes:
+1. HDD temperatures come from the NAS SMART textfile `/var/lib/prometheus/node-exporter/nas_smart.prom`
+   (`nas_smart_temperature_celsius{disk="sdX"}`, world-readable, refreshed by the NAS collector), never
+   from drivetemp; NVMe hwmon reads stay (2-26 ms). The probe never touches the HDDs any more.
+2. The remote cmd ends with `echo PROBE_END`; output without it is a FAILED probe (`data=""`), so a
+   cut-off probe can never half-parse again (applies to every host).
+3. Row files go through `wrow N "text"`, which writes only when `fetch_ok=1`: a failed probe leaves
+   the last good rows and `nas-row.sh` shows their red age after 30 s instead of "n/a" or stale data
+   that looks fresh.
+Result: probe 0.6-0.8 s (was 5.1-5.2 s). The probe also no longer queues a SMART command every 5 s
+behind a failing disk's error recovery.
+
 ### OpenRouter module (`waybar/openrouter.sh`)
 Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
 **API map — what is actually available with a NORMAL key:**
