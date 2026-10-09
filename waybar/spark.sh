@@ -4,7 +4,7 @@ host=${1:-spark-1}
 script_dir=$(dirname "$(readlink -f "$0")")
 if [[ "${SPARK_WAYBAR_INNER:-0}" != "1" ]]; then
   outer_timeout=4
-  [[ "$host" == "nas" ]] && outer_timeout=8
+  [[ "$host" == "nas" ]] && outer_timeout=13
   exec timeout --kill-after=1s "$outer_timeout" env SPARK_WAYBAR_INNER=1 "$0" "$@"
 fi
 bar() { v=$1; [[ $v -lt 0 || $v -gt 100 ]] && v=0; filled=$((v/10)); for ((i=0; i<filled; i++)); do printf '█'; done; for ((i=filled; i<10; i++)); do printf '░'; done; }
@@ -91,7 +91,9 @@ now=$(date +%s); fetch_ok=0
 ssh_timeout=2
 connect_timeout=1
 if [[ "$host" == "nas" ]]; then
-  ssh_timeout=5
+  # 10 s (was 5, Oct 9 2026): the probe takes ~0.5 s, but under heavy NAS load (load 60+, IO full
+  # pressure 30 %+) an occasional run stalled past 5 s and blanked every NAS row with "no data".
+  ssh_timeout=10
   connect_timeout=3
 fi
 ssh_opts=(
