@@ -616,6 +616,11 @@ while congestion/cmp/Optane looked fine. Three fixes:
    `Ns!` at the far right edge of the row.
 Result: probe 0.6-0.8 s (was 5.1-5.2 s). The probe also no longer queues a SMART command every 5 s
 behind a failing disk's error recovery.
+**Oct 9 2026: NAS `ssh_timeout` 5 → 10 s, `outer_timeout` 13 s (c444436).** After the ENOSPC outage
+the NAS ran at load ~63 with IO pressure `full` 27-38 %, and the rows kept showing "no data, probe
+failed". Each part of the probe stayed fast (117 timed rounds, none ≥ 500 ms), but whole runs
+sometimes stalled past 5 s (1 in 12 at 5,047 ms), outside the measured commands. With 10 s: 15/15
+OK. A failed probe still shows no values; the longer timeout only delays the red row by up to 5 s.
 
 ### OpenRouter module (`waybar/openrouter.sh`)
 Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
