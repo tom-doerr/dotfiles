@@ -17,6 +17,12 @@ red() { printf "<span color='#ff5555'>%s</span>" "$1"; }
 yellow() { printf "<span color='#f1fa8c'>%s</span>" "$1"; }
 cache="/tmp/spark_$host"
 
+# NAS: everything that takes the pool's sb_lock (`bcachefs fs usage` = superblock-read ioctl, member options
+# durability/bucket_size, io_errors, options/foreground_target) runs in ONE background job that gets 3 s
+# (Oct 10 2026). Superblock-write bursts hold sb_lock for up to ~40 s at a time and an uninterruptible
+# reader cannot be killed, so before this every NAS row went "no data". Now a stall marks only those
+# fields unknown (-1 / ?, rendered red); a late job finishes into the already-deleted temp file. Labels
+# come from internal/disk_groups (RCU, no lock): the deepest group listing a block device is its label.
 cmd='if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=utilization.gpu,power.draw --format=csv,noheader,nounits | head -1; else echo "-1 0"; fi
 awk "/^cpu /{i=\$5+\$6; t=\$2+\$3+\$4+\$5+\$6+\$7+\$8; print i, t}" /proc/stat
 awk "/MemTotal/{t=\$2}/MemAvailable/{a=\$2}END{printf \"%.0f\n\",100-a*100/t}" /proc/meminfo
@@ -25,8 +31,13 @@ if grep -q " /pool " /proc/mounts 2>/dev/null; then disk=/pool
 elif grep -q " /volume1 " /proc/mounts 2>/dev/null; then disk=/volume1
 elif [ -d /pool ] || [ -d /volume1 ]; then disk=""
 fi
-FU=""; [ "$disk" = /pool ] && [ -x ~/.local/bin/bcachefs ] && FU=$(~/.local/bin/bcachefs fs usage /pool 2>/dev/null)
-if [ -n "$disk" ]; then ssdf=""; if [ -n "$FU" ]; then sv=$(printf "%s\n" "$FU" | awk "/^ssd/{for(i=1;i<=NF;i++)if(\$i~/%\$/){p=\$i;gsub(/%/,\"\",p);s+=p;n++}}END{if(n>0)printf \"%d\",s/n+0.5}"); [ -n "$sv" ] && ssdf="|$sv"; fi; echo "$(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")|$(df -h "$disk" --output=used | tail -1 | tr -dc "0-9.TGMKP")${ssdf}"; else echo -1; fi
+BASE=$(find /sys/fs/bcachefs -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1)
+FU=""; SB=""; SBF=""; if [ "$disk" = /pool ] && [ -n "$BASE" ] && [ -x ~/.local/bin/bcachefs ]; then SBF=$(mktemp /dev/shm/spark-sb.XXXXXX)
+( ~/.local/bin/bcachefs fs usage /pool | sed "s/^/U /"; for d in "$BASE"/dev-*; do echo "D ${d##*/} $(cat "$d/durability" || echo -1) $(cat "$d/bucket_size" || echo -1) $(awk "/IO errors since filesystem creation/{f=1;next} /IO errors since/{f=0;next} f&&/read:|write:|checksum:/{n=\$0;sub(/.*:/,\"\",n);gsub(/[^0-9]/,\"\",n);s+=n} END{print s+0}" "$d/io_errors" || echo -1)"; done; echo "G $(cat "$BASE/options/foreground_target")"; echo SB_OK ) < /dev/null > "$SBF" 2> /dev/null &
+for i in $(seq 30); do [ "$(tail -n 1 "$SBF")" = SB_OK ] && SB=$(cat "$SBF") && break; sleep 0.1; done; rm -f "$SBF"; FU=$(printf "%s\n" "$SB" | sed -n "s/^U //p"); fi
+declare -A LB; while read -r b l; do LB[$b]=$l; done < <(awk "{for(i=4;i<=NF;i++) if(length(\$2)>length(L[\$i])) L[\$i]=\$2} END{for(b in L) print b, L[b]}" "$BASE/internal/disk_groups" 2>/dev/null)
+lbl() { local b; b=$(readlink -f "$1/block" 2>/dev/null); [ -n "$b" ] && echo "${LB[${b##*/}]}"; }
+if [ -n "$disk" ]; then ssdf=""; if [ -n "$FU" ]; then sv=$(printf "%s\n" "$FU" | awk "/^ssd/{for(i=1;i<=NF;i++)if(\$i~/%\$/){p=\$i;gsub(/%/,\"\",p);s+=p;n++}}END{if(n>0)printf \"%d\",s/n+0.5}"); [ -n "$sv" ] && ssdf="|$sv"; elif [ -n "$SBF" ]; then ssdf="|-1"; fi; echo "$(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")|$(df -h "$disk" --output=used | tail -1 | tr -dc "0-9.TGMKP")${ssdf}"; else echo -1; fi
 awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 if command -v zramctl >/dev/null 2>&1; then
   zramctl -b --raw --noheadings -o DATA,COMPR 2>/dev/null | awk "{zd+=\$1; zc+=\$2} END{print zd+0, zc+0}"
@@ -44,7 +55,6 @@ awk "/Zswap:/{zs=\$2}/Zswapped:/{zw=\$2}END{print zs+0, zw+0}" /proc/meminfo
 awk "NR>1 && \$1 !~ /^\\/dev\\/zram/ {if(\$2==\"partition\"){nvs+=\$3;nv+=\$4}else if(\$2==\"file\"){sfs+=\$3;sf+=\$4}} END{print nv+0, nvs+0, sf+0, sfs+0}" /proc/swaps 2>/dev/null
 if [ -r /tmp/waybar-nvme-cache-dirty ]; then awk "NR==1{print \$1+0; exit}" /tmp/waybar-nvme-cache-dirty; else echo -1; fi
 awk "/^full /{for(i=1;i<=NF;i++)if(\$i~/^avg60=/){v=\$i; sub(/^avg60=/,0,v); print v+0; found=1}}END{if(!found)print -1}" /proc/pressure/io 2>/dev/null
-BASE=$(find /sys/fs/bcachefs -maxdepth 1 -mindepth 1 -type d 2>/dev/null | head -1)
 CS="$BASE/compression_stats"; DU="$BASE/counters/data_update"; RC="$BASE/counters/reconcile_data"
 TB="function tb(s,  n,u){n=s+0;u=substr(s,length(s),1);if(u==\"k\")n*=1024;else if(u==\"M\")n*=1048576;else if(u==\"G\")n*=1073741824;else if(u==\"T\")n*=1099511627776;return n}"
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"||\$1==\"zstd\"{c+=tb(\$2);u+=tb(\$3)} END{if(u>c)print int((u-c)/1073741824);else print 0}" "$CS"; else echo -1; fi
@@ -52,16 +62,14 @@ DUV=0; for F in "$DU" "$RC"; do [ -r "$F" ] && DUV=$((DUV + $(awk "$TB /since mo
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"||\$1==\"zstd\"||\$1==\"incompressible\"{c+=tb(\$2);u+=tb(\$3)} END{if(c>0)print int(u*100/c);else print -1}" "$CS"; else echo -1; fi
 if [ -n "$FU" ]; then printf "%s\n" "$FU" | awk "/^Pending reconcile:/{f=1;next} f&&NF<2{f=0} f{n=\$1;sub(/:\$/,\"\",n); if(n==\"replicas\")r=\$2; else if(n==\"erasure_code\")e=\$2; else if(n==\"high_priority\"){} else if(n==\"compression\")c=\$2; else if(n==\"target\")t=\$2; else o+=\$2; m+=\$3} END{printf \"%d|%d|%d|%d|%d|%d\n\",r,e,c,t,o,m}"; else echo -1; fi
 sdevs=""; hdevs=""
-for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); case "$l" in ssd.*) sdevs="$sdevs $b";; hdd.*) hdevs="$hdevs $b";; esac; done
+for d in "$BASE"/dev-*; do l=$(lbl "$d"); b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); case "$l" in ssd.*) sdevs="$sdevs $b";; hdd.*) hdevs="$hdevs $b";; esac; done
 awk -v s="$sdevs" -v h="$hdevs" "BEGIN{n=split(s,S,\" \");for(i=1;i<=n;i++)ss[S[i]]=1;m=split(h,H,\" \");for(i=1;i<=m;i++)hh[H[i]]=1} {if(\$3 in ss){sr+=\$6;sw+=\$10}else if(\$3 in hh){hr+=\$6;hw+=\$10;hc+=\$8;ht+=\$11}} END{printf \"%d %d %d %d %d %d\n\",sr,sw,hr,hw,hc,ht}" /proc/diskstats
-errs=0
-for d in "$BASE"/dev-*; do e=$(awk "/IO errors since filesystem creation/{f=1;next} /IO errors since/{f=0;next} f&&/read:|write:|checksum:/{n=\$0;sub(/.*:/,\"\",n);gsub(/[^0-9]/,\"\",n);s+=n} END{print s+0}" "$d/io_errors" 2>/dev/null); errs=$((errs + ${e:-0})); done
-echo "$errs"
+if [ -n "$SB" ]; then printf "%s\n" "$SB" | awk "\$1==\"D\"{if(\$5<0)u=1; s+=\$5} END{print (u?-1:s+0)}"; elif [ -n "$SBF" ]; then echo -1; else echo 0; fi
 if [ -r "$CS" ]; then awk "$TB \$1==\"lz4\"{l4=tb(\$3);l4c=tb(\$2)} \$1==\"zstd\"{zl=tb(\$3);zc=tb(\$2)} \$1==\"incompressible\"{il=tb(\$3)} END{printf \"%d %d %d %d %d\n\", l4/1073741824,(l4c>0?l4*100/l4c:0),zl/1073741824,(zc>0?zl*100/zc:0),il/1073741824}" "$CS"; else echo "0 0 0 0 0"; fi
-CGV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
+CGV=""; for d in "$BASE"/dev-*; do l=$(lbl "$d"); case "$l" in ssd.*) ;; *) continue;; esac; cg=$(awk "/^current:/{gsub(/%/,\"\"); print \$2; exit}" "$d/congested" 2>/dev/null); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit}" "$d/congested" 2>/dev/null); CGV="$CGV|${l##*.}:${cg:--1}:${mr:--1}"; done
 if [ -n "$CGV" ]; then echo "${CGV#|}"; else echo -1; fi
-DV=""; for d in "$BASE"/dev-*; do l=$(cat "$d/label" 2>/dev/null); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; case "$l" in hdd.*) tp=$(awk "/^nas_smart_temperature_celsius\\{disk=\"$pb\"\\}/{print \$2*1000; exit}" /var/lib/prometheus/node-exporter/nas_smart.prom 2>/dev/null);; *) tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1);; esac; dr=$(cat "$d/durability" 2>/dev/null); DV="$DV|$l:$st:${up:-0}:${mr:--1}:${tp:--1}:${dr:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
-OB=""; for d in "$BASE"/dev-*; do case "$(cat "$d/label" 2>/dev/null)" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ] && [ -n "$FU" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(cat "$BASE/options/foreground_target" 2>/dev/null); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); of=$(awk "/^free/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(cat "$OB/bucket_size" 2>/dev/null | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:-0}|${os:-0}|${ot:-0}|${fg:-?}|$(( ${oc:-0} * ${obs:-0} ))|${rs:--}|$(( ${of:--1} * ${obs:-0} ))"; else echo -1; fi
+DV=""; for d in "$BASE"/dev-*; do l=$(lbl "$d"); [ -z "$l" ] && continue; b=$(basename "$(readlink -f "$d/block" 2>/dev/null)" 2>/dev/null); [ -z "$b" ] && continue; st=$(awk -v n="$b" "\$3==n{printf \"%d:%d:%d:%d:%d\", \$4,\$8,\$6,\$10,\$13; f=1; exit} END{if(!f)printf \"0:0:0:0:0\"}" /proc/diskstats); up=$(printf "%s\n" "$FU" | awk -v L="$l" "\$1==L{for(i=1;i<=NF;i++)if(\$i~/%\$/){q=\$i;gsub(/%/,\"\",q);print q;exit}}"); mr=$(awk "/median read latency:/{v=\$4; if(\$5==\"ms\")v*=1000; if(\$5==\"s\")v*=1000000; printf \"%d\", v; exit} END{}" "$d/congested" 2>/dev/null); pb=${b%p[0-9]*}; case "$l" in hdd.*) tp=$(awk "/^nas_smart_temperature_celsius\\{disk=\"$pb\"\\}/{print \$2*1000; exit}" /var/lib/prometheus/node-exporter/nas_smart.prom 2>/dev/null);; *) tp=$(cat /sys/block/$pb/device/hwmon*/temp1_input /sys/block/$pb/device/hwmon/hwmon*/temp1_input 2>/dev/null | head -1);; esac; dr=$(printf "%s\n" "$SB" | awk -v n="${d##*/}" "\$1==\"D\"&&\$2==n{print \$3}"); DV="$DV|$l:$st:${up:--1}:${mr:--1}:${tp:--1}:${dr:--1}"; done; if [ -n "$DV" ]; then echo "${DV#|}"; else echo -1; fi
+OB=""; for d in "$BASE"/dev-*; do case "$(lbl "$d")" in *optane*) OB="$d";; esac; done; if [ -n "$OB" ]; then ou=$(printf "%s\n" "$FU" | awk "/optane/{print \$7; exit}"); os=$(printf "%s\n" "$FU" | awk "/optane/{print \$6; exit}"); ob=$(basename "$(readlink -f "$OB/block" 2>/dev/null)" 2>/dev/null); pn=${ob%p[0-9]*}; ot=$(cat /sys/block/$pn/device/hwmon*/temp1_input 2>/dev/null | head -1); fg=$(printf "%s\n" "$SB" | awk "\$1==\"G\"{print \$2}"); oc=$(awk "/^cached/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); of=$(awk "/^free/{print \$2; exit}" "$OB/alloc_debug" 2>/dev/null); obs=$(printf "%s\n" "$SB" | awk -v n="${OB##*/}" "\$1==\"D\"&&\$2==n{print \$4}" | awk "{v=\$1+0; u=substr(\$1,length(\$1)); if(u==\"k\")v*=1024; else if(u==\"M\")v*=1048576; else if(u==\"G\")v*=1073741824; printf \"%d\", v}"); rs=$(head -1 "$BASE/reconcile_status" 2>/dev/null | awk "{ if(\$1==\"scanning:\"){ t=\$2; sub(/,\$/,\"\",t); if(\$3 ~ /%/){p=\$3; sub(/%,?/,\"\",p); d=\$5; sub(/,\$/,\"\",d); printf \"scan:%s:%s:%s\", t, p, d} else printf \"scan:%s:-:-\", t } else if(\$1==\"processing\"){ k=\$2\"_\"\$3; sub(/:\$/,\"\",k); printf \"proc:%s\", k } else if(\$1==\"waiting:\") printf \"wait\"; else if(\$1==\"between\") printf \"between\"; else printf \"-\" }"); echo "${ou:--1}|${os:--1}|${ot:-0}|${fg:-?}|$([ -n "$obs" ] && echo $(( ${oc:-0} * obs )) || echo -1)|${rs:--}|$([ -n "$obs" ] && echo $(( ${of:--1} * obs )) || echo -1)"; else echo -1; fi
 PR="$BASE/counters/data_read_promote"; if [ -r "$PR" ]; then awk "$TB /since mount:/{print int(tb(\$NF)); f=1; exit} END{if(!f)print 0}" "$PR"; else echo 0; fi
 echo PROBE_END'
 
@@ -205,6 +213,7 @@ memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && mem
 # d is "pct|used" (e.g. "9|8.0T"); bar shows pct, label shows used storage
 dpct=${d%%|*}; drest=${d#*|}; [[ "$drest" == "$d" ]] && drest=""; dused=${drest%%|*}; dssd=${drest#*|}; [[ "$dssd" == "$drest" ]] && dssd=""
 ssdv=""; [[ -n "$dssd" ]] && ssdv=$(printf "%-7s" "SSD:${dssd}%")
+[[ "$dssd" == -1 ]] && ssdv=$(red "$(printf "%-7s" "SSD:?")")
 if [[ ${dpct:--1} -lt 0 ]]; then
   dskv=$(red "$(pad "DSK NO-POOL" 18)")
 elif [[ -n "$dused" ]]; then
@@ -265,6 +274,7 @@ if [[ "$host" == "nas" && -n "$psrd" ]]; then
 fi
 errv=""
 [[ "$host" == "nas" && ${errs:-0} -gt 0 ]] && errv=$(red "$(printf "ERR:%d" "${errs:-0}")")
+[[ "$host" == "nas" && ${errs:-0} -lt 0 ]] && errv=$(red "ERR:?")
 zram=""; [[ $zc -gt 0 ]] && zram=$(echo "$zd $zc" | awk '{printf "%-15s", sprintf("Z:%.1fG/%.1fx",$1/1073741824,$1/$2)}')
 zswap=""; if [[ "${zse:-N}" == "Y" || ${zs:-0} -gt 0 || ${zw:-0} -gt 0 ]]; then zswap=$(awk -v zs="${zs:-0}" -v zw="${zw:-0}" 'BEGIN{if(zw<=0&&zs<=0)v="ZS:0";else if(zs>0)v=sprintf("ZS:%.1fG/%.1fx",zw/1048576,zw/zs);else v=sprintf("ZS:%.1fG",zw/1048576); printf "%-13s", v}'); fi
 nv=${nv:-0}; nvs=${nvs:-0}; sf=${sf:-0}; sfs=${sfs:-0}
@@ -339,7 +349,9 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
     }
     B=B "MB \xe2\x94\x82"; I=I " \xe2\x94\x82"; L=L " \xe2\x94\x82"; U=U " \xe2\x94\x82"
     for(i=1;i<=cnt;i++){t=order[i]
-      O=O sprintf("  %s %2d%%/%2d\xc2\xb0", t, fill[t], tmp[t]/1000)
+      # fill comes from fs usage (sb_lock job): -1 = the job missed its deadline
+      if(fill[t]<0) fs="<span color=\"#ff5555\"> ?%</span>"; else fs=sprintf("%2d%%", fill[t])
+      O=O sprintf("  %s %s/%2d\xc2\xb0", t, fs, tmp[t]/1000)
       if(dg[t]!="hdd"){ if(dur[t]<0) O=O " <span color=\"#ff5555\">dur?</span>"; else O=O sprintf(" dur%d", dur[t]) }
       # the Optane is the only member of the "opt" aggregate, so its per-device entry on the
       # BW/IOPS/LAT/UTIL rows repeated the aggregate verbatim; dropped to fit (Sep 20 2026).
@@ -404,7 +416,8 @@ if [[ "$host" == "nas" ]]; then
   hist9="$cache.hist9"; touch "$hist9"
   bl_ok=0; [[ "${bc_backlog:-}" == *"|"* ]] && bl_ok=1
   of_ok=0; [[ "${ofree:-}" =~ ^[0-9]+$ ]] && of_ok=1
-  if [[ ${fetch_ok:-0} -eq 1 && ( $bl_ok -eq 1 || $of_ok -eq 1 ) ]]; then
+  # every successful probe adds a line, unknown parts as -1: skipping it left the previous sample on screen
+  if [[ ${fetch_ok:-0} -eq 1 ]]; then
     IFS='|' read -r h_r h_e h_c h_t h_o h_m <<< "${bc_backlog:-}"
     if [[ $bl_ok -eq 1 ]]; then h_misc=$(( ${h_o:-0} + ${h_m:-0} )); else h_r=-1; h_e=-1; h_c=-1; h_t=-1; h_misc=-1; fi
     if [[ $of_ok -eq 1 ]]; then h_u=${oused:-0}; h_ca=${ocached:-0}; h_z=${osize:-0}; h_f=$ofree
@@ -438,15 +451,17 @@ if [[ "$host" == "nas" ]]; then
       duses = (d[5] != "" && d[3] != "" && d[4] != "") ? d[4] - d[5] - d[3] : ""
       l1 = sprintf("Optane %3sG  data ", (z < 0 ? "?" : sprintf("%.0f", z / 1073741824)))
       l2 = ""
-      v = sprintf("%6s", gv(cur[2])); l1 = l1 v; lead_d = sprintf("%6s", gd(d[2]))
+      if (z < 0) l1 = "Optane <span color=\"#ff5555\">  ?</span>G  data "
+      v = sprintf("%6s", gv(cur[2])); if (cur[2] < 0) v = "<span color=\"#ff5555\">" v "</span>"
+      l1 = l1 v; lead_d = sprintf("%6s", gd(d[2]))
       add("  uses ", gv(uses), gd(duses), (uses < 0 ? "#ff5555" : ""))
-      add("  read cache ", gv(cur[3]), gd(d[3]), "")
+      add("  read cache ", gv(cur[3]), gd(d[3]), (cur[3] < 0 ? "#ff5555" : ""))
       add("  free ", gv(f), gd(d[5]), (f < 0 ? "#ff5555" : ""))
       add("   backlog  repl ", hbv(cur[6]), hbd(d[6]), (cur[6] < 0 ? "#ff5555" : ""))
-      add("  ec ", hbv(cur[7]), hbd(d[7]), "")
-      add("  recmpr ", hbv(cur[8]), hbd(d[8]), "")
-      add("  destage ", hbv(cur[9]), hbd(d[9]), "")
-      add("  misc ", hbv(cur[10]), hbd(d[10]), (cur[10] > 0 ? "#f1fa8c" : ""))
+      add("  ec ", hbv(cur[7]), hbd(d[7]), (cur[7] < 0 ? "#ff5555" : ""))
+      add("  recmpr ", hbv(cur[8]), hbd(d[8]), (cur[8] < 0 ? "#ff5555" : ""))
+      add("  destage ", hbv(cur[9]), hbd(d[9]), (cur[9] < 0 ? "#ff5555" : ""))
+      add("  misc ", hbv(cur[10]), hbd(d[10]), (cur[10] < 0 ? "#ff5555" : (cur[10] > 0 ? "#f1fa8c" : "")))
       print l1
       if (!b) { printf "<span color=\"#a6adc8\">          \316\224 1 min (collecting 1 min of samples)</span>\n"; exit }
       # "Optane 566G  data " is 18 chars: the lead under it is 10 spaces + "Δ 1 min " (18 visible).

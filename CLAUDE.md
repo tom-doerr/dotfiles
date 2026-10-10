@@ -626,8 +626,14 @@ in the probe (`dev-*/label` 4× per member, `dev-*/durability`, `options/foregro
 usage` (superblock-read ioctl) waits on the pool's `sb_lock`, which superblock-write bursts hold for up to ~40 s
 at a time (Oct 8-9; Oct 10 15:46-16:30Z after the Optane re-add), so the 10 s budget runs out. The Oct 9 timed
 rounds missed it because the stalls are bursty. Lock-free sources: `internal/disk_groups` (label → block devices,
-e.g. `19: ssd.optane.optane1 devs nvme1n1p2`), `dev-*/alloc_debug`, `congested`, `reconcile_status`. Fix not
-applied yet (user's call): bcachefs_admin BOARD 20, notes "2026-10-10 16:09-16:40Z".
+e.g. `19: ssd.optane.optane1 devs nvme1n1p2`), `dev-*/alloc_debug`, `congested`, `reconcile_status`.
+**Fixed Oct 10 (user):** labels come from `internal/disk_groups` (deepest group listing the block device);
+`fs usage`, durability, bucket_size, io_errors and fg run in ONE background job (`/dev/shm/spark-sb.*`, removed
+after; a late job writes into the unlinked file) with a 3 s deadline. A stall turns only those fields red: `SSD:?`,
+fill `?%`, `dur?`, `fg:?`, `ERR:?`, row-9 Optane/backlog `?`. Row 9 now logs every successful probe (unknown = -1);
+before, a probe without backlog and Optane values added no line and the previous sample stayed on screen.
+Verified: real run 0.5 s; stall simulated with a fake `ssh` on PATH that prepends `sleep 5` to the job: 3.5 s,
+same 39 fields, no temp files left. Notes: bcachefs_admin "2026-10-10 16:09-16:40Z", BOARD 20.
 
 ### OpenRouter module (`waybar/openrouter.sh`)
 Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
