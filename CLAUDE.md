@@ -621,6 +621,13 @@ the NAS ran at load ~63 with IO pressure `full` 27-38 %, and the rows kept showi
 failed". Each part of the probe stayed fast (117 timed rounds, none ≥ 500 ms), but whole runs
 sometimes stalled past 5 s (1 in 12 at 5,047 ms), outside the measured commands. With 10 s: 15/15
 OK. A failed probe still shows no values; the longer timeout only delays the red row by up to 5 s.
+**Oct 10 2026: the remaining "no data, probe failed" = bcachefs `sb_lock` stalls.** Every sysfs OPTION read
+in the probe (`dev-*/label` 4× per member, `dev-*/durability`, `options/foreground_target`) and `bcachefs fs
+usage` (superblock-read ioctl) waits on the pool's `sb_lock`, which superblock-write bursts hold for up to ~40 s
+at a time (Oct 8-9; Oct 10 15:46-16:30Z after the Optane re-add), so the 10 s budget runs out. The Oct 9 timed
+rounds missed it because the stalls are bursty. Lock-free sources: `internal/disk_groups` (label → block devices,
+e.g. `19: ssd.optane.optane1 devs nvme1n1p2`), `dev-*/alloc_debug`, `congested`, `reconcile_status`. Fix not
+applied yet (user's call): bcachefs_admin BOARD 20, notes "2026-10-10 16:09-16:40Z".
 
 ### OpenRouter module (`waybar/openrouter.sh`)
 Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
