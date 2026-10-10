@@ -317,8 +317,8 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
       # short names: e1-e8, l1/l2, op. The Lexars were relabelled ssd.nand.lexarN on Sep 6 2026
       # and the old /^ssd\.lexar/ pattern silently stopped matching -> 15-char names overflowed
       # the BW and IOPS rows off the right edge (fixed Sep 20 2026).
-      # fk = the Thunderbolt FIKWOT 4 TB (ssd.nand.fikwot, member since Oct 10 2026)
-      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.(nand\.)?lexar/,"l",t); if(t ~ /optane/)t="op"; if(t ~ /fikwot/)t="fk"
+      # fi = the Thunderbolt FIKWOT 4 TB (ssd.nand.fikwot, member since Oct 10 2026); first two letters, like op
+      t=l; sub(/^hdd\.exos/,"e",t); sub(/^ssd\.(nand\.)?lexar/,"l",t); if(t ~ /optane/)t="op"; if(t ~ /fikwot/)t="fi"
       grp=(l ~ /optane/)?"opt":((l ~ /^hdd/)?"hdd":"ssd")
       fill[t]=F[6]+0; lat[t]=F[7]+0; tmp[t]=F[8]+0
       # 9th subfield (Oct 2 2026) = bcachefs durability of the member; -1 = unreadable or an
