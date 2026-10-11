@@ -37,7 +37,7 @@ FU=""; SB=""; SBF=""; if [ "$disk" = /pool ] && [ -n "$BASE" ] && [ -x ~/.local/
 for i in $(seq 30); do [ "$(tail -n 1 "$SBF")" = SB_OK ] && SB=$(cat "$SBF") && break; sleep 0.1; done; rm -f "$SBF"; FU=$(printf "%s\n" "$SB" | sed -n "s/^U //p"); fi
 declare -A LB; while read -r b l; do LB[$b]=$l; done < <(awk "{for(i=4;i<=NF;i++) if(length(\$2)>length(L[\$i])) L[\$i]=\$2} END{for(b in L) print b, L[b]}" "$BASE/internal/disk_groups" 2>/dev/null)
 lbl() { local b; b=$(readlink -f "$1/block" 2>/dev/null); [ -n "$b" ] && echo "${LB[${b##*/}]}"; }
-if [ -n "$disk" ]; then ssdf=""; if [ -n "$FU" ]; then sv=$(printf "%s\n" "$FU" | awk "/^ssd/{for(i=1;i<=NF;i++)if(\$i~/%\$/){p=\$i;gsub(/%/,\"\",p);s+=p;n++}}END{if(n>0)printf \"%d\",s/n+0.5}"); [ -n "$sv" ] && ssdf="|$sv"; elif [ -n "$SBF" ]; then ssdf="|-1"; fi; echo "$(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")|$(df -h "$disk" --output=used | tail -1 | tr -dc "0-9.TGMKP")${ssdf}"; else echo -1; fi
+if [ -n "$disk" ]; then ssdf=""; if [ -n "$FU" ]; then sv=$(printf "%s\n" "$FU" | awk "/^ssd/{for(i=1;i<=NF;i++)if(\$i~/%\$/){p=\$i;gsub(/%/,\"\",p);s+=p;n++}}END{if(n>0)printf \"%d\",s/n+0.5}"); [ -n "$sv" ] && ssdf="|$sv"; elif [ -n "$SBF" ]; then ssdf="|-1"; fi; echo "$(df "$disk" --output=pcent | tail -1 | tr -dc "0-9")|$(df -h "$disk" --output=avail | tail -1 | tr -dc "0-9.TGMKP")${ssdf}"; else echo -1; fi
 awk "/^[[:space:]]*(wl|en|eth|bond)/{gsub(/:/, \"\"); rx+=\$2; tx+=\$10} END{printf \"%.0f %.0f\n\", rx, tx}" /proc/net/dev
 if command -v zramctl >/dev/null 2>&1; then
   zramctl -b --raw --noheadings -o DATA,COMPR 2>/dev/null | awk "{zd+=\$1; zc+=\$2} END{print zd+0, zc+0}"
@@ -210,16 +210,16 @@ rxs=$(( (rx - ${rate_prx:-$rx}) / rate_dt )); txs=$(( (tx - ${rate_ptx:-$tx}) / 
 gpuv=""; [[ ${g:-0} -ge 0 ]] && gpuv=$(printf "GPU%s%3d%% %3dW" "$(bar $g)" "$g" "$p")
 cpuv=$(printf "CPU%s%3d%%" "$(bar $c)" "$c")
 memv=$(pad "$(printf "MEM%s%3d%%" "$(bar $m)" "$m")" 17); [[ $m -gt 95 ]] && memv=$(red "$memv")
-# d is "pct|used" (e.g. "9|8.0T"); bar shows pct, label shows used storage
-dpct=${d%%|*}; drest=${d#*|}; [[ "$drest" == "$d" ]] && drest=""; dused=${drest%%|*}; dssd=${drest#*|}; [[ "$dssd" == "$drest" ]] && dssd=""
+# d is "pct|avail" (e.g. "89|415G"); bar shows pct used, label shows FREE space (user, Oct 11 2026)
+dpct=${d%%|*}; drest=${d#*|}; [[ "$drest" == "$d" ]] && drest=""; dfree=${drest%%|*}; dssd=${drest#*|}; [[ "$dssd" == "$drest" ]] && dssd=""
 ssdv=""; [[ -n "$dssd" ]] && ssdv=$(printf "%-7s" "SSD:${dssd}%")
 [[ "$dssd" == -1 ]] && ssdv=$(red "$(printf "%-7s" "SSD:?")")
 if [[ ${dpct:--1} -lt 0 ]]; then
-  dskv=$(red "$(pad "DSK NO-POOL" 18)")
-elif [[ -n "$dused" ]]; then
-  dskv=$(pad "$(printf "DSK%s%5s" "$(bar $dpct)" "$dused")" 18); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
+  dskv=$(red "$(pad "DSK NO-POOL" 23)")
+elif [[ -n "$dfree" ]]; then
+  dskv=$(pad "$(printf "DSK%s%5s free" "$(bar $dpct)" "$dfree")" 23); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
 else
-  dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $dpct)" "$dpct")" 18); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
+  dskv=$(pad "$(printf "DSK%s%3d%%" "$(bar $dpct)" "$dpct")" 23); [[ $dpct -gt 90 ]] && dskv=$(red "$dskv")
 fi
 iopv=""; iop_pct=$(awk -v p="${iop:--1}" 'BEGIN{if(p<0)print -1; else printf "%d", p+0.5}')
 if [[ $iop_pct -ge 0 ]]; then iopv=$(printf "%-7s" "IO:${iop_pct}%"); [[ $iop_pct -ge 20 ]] && iopv=$(red "$iopv"); fi

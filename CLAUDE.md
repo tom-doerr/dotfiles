@@ -447,6 +447,10 @@ btree ≈ 2x data); read cache = promote copies made on read, not durable (Postg
 promote_target only for pgdata); free = 7th `optv` slot (free buckets x bucket_size). Backlog = the
 "Pending reconcile" data column (repl/ec/recmpr/destage, misc = other+metadata, yellow if >0); it LEFT
 row 6, which now ends with the reconcile phase and `fg:`. The FILL/TEMP row (5) is single-line again.
+**DSK shows FREE space since Oct 11 2026 (user: "for each machine, please let it show how much disk space is
+free"):** the probe's disk field is `pct|avail` (`df -h --output=avail`; it was `--output=used`), rendered
+`DSK<bar> 422G free`: the bar is still % used (red above 90 %), the label is what is left. All DSK variants pad to
+23 chars (was 18); spark rows 148 → 153 visible chars. The NAS row's value is /pool.
 **Waybar IPC fix (Jul 13):** this waybar build looks for the Hyprland
 socket in `/tmp/hypr/` (Hyprland puts it in `$XDG_RUNTIME_DIR/hypr/`) —
 without the symlink the workspaces/window modules silently get NO data.
