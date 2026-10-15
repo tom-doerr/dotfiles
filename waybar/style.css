@@ -49,18 +49,16 @@ window#waybar {
 }
 
 /* min-width in px, not config min-length — the latter would count the
-   Pango markup characters and pad the module far too wide. */
+   Pango markup characters and pad the module far too wide. Impressions
+   carries the 24h hourly graph, followers a 7-day graph; the min-widths
+   keep the bar from shifting when a figure gains a digit. */
 #custom-impressions {
-    min-width: 120px;
+    min-width: 290px;
     margin-right: 20px;
 }
 
-/* Revenue carries three label/value pairs, so it needs a wider gap to its
-   neighbours than the 2 spaces separating the pairs inside it. min-width in
-   px (not config min-length, which would miscount the Pango markup) keeps
-   the bar from shifting when a figure gains a digit. */
-#custom-revenue {
-    min-width: 430px;
+#custom-followers {
+    min-width: 140px;
     margin-right: 20px;
 }
 

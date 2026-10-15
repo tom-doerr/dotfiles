@@ -639,6 +639,17 @@ before, a probe without backlog and Optane values added no line and the previous
 Verified: real run 0.5 s; stall simulated with a fake `ssh` on PATH that prepends `sleep 5` to the job: 3.5 s,
 same 39 fields, no temp files left. Notes: bcachefs_admin "2026-10-10 16:09-16:40Z", BOARD 20.
 
+### X modules on the main bar: IMP graph + FOL (Oct 15 2026)
+**REV/RUN/NXT removed (user: X stopped the payment program); `waybar/revenue.sh` deleted.**
+`impressions.sh` is JSON now (`return-type: json` in the private config): `IMP 12k→22k` plus a
+24-glyph graph of impressions gained per hour (tooltip: the hourly figures). New
+`followers.sh` (interval 300): `FOL +134 ▂▄▁▃▃▂█` = net new followers over 7 days + one glyph
+per 24 h span ending now (follows − unfollows; X only reports the count). Logic for both lives in
+`~/git/x_twitter_production` (`revenue_model --waybar-impressions`, `follower_growth --waybar`).
+Failures print red `IMP ?` / `FOL ?` JSON, never old numbers. CSS: `#custom-impressions`
+min-width 290px, `#custom-followers` 140px (the `#custom-revenue` rule is gone). The main bar
+had ~10 chars more room after the swap; no extra row was needed.
+
 ### OpenRouter module (`waybar/openrouter.sh`)
 Shows `OR $<balance> d$<day> w$<week> m$<month>` (Aug 13 2026; was balance only).
 **API map — what is actually available with a NORMAL key:**
