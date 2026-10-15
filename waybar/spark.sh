@@ -360,9 +360,8 @@ if [[ "$host" == "nas" && "${devs:-}" == *:* && "${pdevs:-}" == *:* ]]; then
       B=B sprintf("  %s %3d\xe2\x86\x93%3d\xe2\x86\x91", t, dbw[t]+0.5, dbr[t]+0.5)
       I=I sprintf("  %s %4d\xe2\x86\x93%4d\xe2\x86\x91", t, dw[t]+0.5, dr[t]+0.5)
       if(lat[t]>=0) L=L sprintf("  %s %s", t, fl(lat[t]))
-      useg=sprintf("  %s %3d%%", t, du[t]+0.5)
-      if(du[t]>=90) useg="<span color=\"#ff5555\">" useg "</span>"
-      U=U useg
+      # no red for high %util (Oct 15 2026, user request): busy disks are normal, not a fault
+      U=U sprintf("  %s %3d%%", t, du[t]+0.5)
     }
     print B; print I; print L; print U; print O
   }')
