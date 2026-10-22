@@ -7,6 +7,8 @@ import re
 import time
 from pathlib import Path
 
+import pytest
+
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "agent-cost-report"
 # The script has no .py suffix, so importlib needs the loader named explicitly.
 SPEC = importlib.util.spec_from_loader(
@@ -223,25 +225,64 @@ def test_colour_only_warns_near_the_limit():
     assert au.colour({"percent": 10, "severity": "warning"}) == au.COL_WARN
 
 
-def test_codex_entry_reads_the_last_snapshot(tmp_path):
-    f = tmp_path / "rollout.jsonl"
-    def ev(ts, pct):
-        return json.dumps({"type": "event_msg", "timestamp": ts, "payload": {
-            "type": "token_count",
-            "rate_limits": {"primary": {"used_percent": pct, "window_minutes": 10080, "resets_at": 1790441439}}}})
-    f.write_text(ev("2026-09-20T10:00:00.000Z", 12.0) + "\n" + ev("2026-09-20T23:14:07.000Z", 19.4))
-    e = au.codex_entry(f)
-    assert e["percent"] == 19 and e["label"] == "CDX 7d" and e["stale_seconds"] > 0
+def test_codex_entries_one_bar_per_window():
+    """/wham/usage `rate_limit`: Pro has a weekly primary and no secondary."""
+    limits = {"allowed": True, "limit_reached": False,
+              "primary_window": {"used_percent": 14.4, "limit_window_seconds": 604800,
+                                 "reset_after_seconds": 591356, "reset_at": 1793262577},
+              "secondary_window": None}
+    assert au.codex_entries(limits) == [{"label": "CDX 7d", "percent": 14, "severity": "normal",
+                                         "resets_at": 1793262577, "window_seconds": 604800}]
+    limits["secondary_window"] = {"used_percent": 3, "limit_window_seconds": 18000, "reset_at": 1793000000}
+    limits["limit_reached"] = True
+    got = au.codex_entries(limits)
+    assert [(e["label"], e["severity"]) for e in got] == [("CDX 7d", "critical"), ("CDX 5h", "critical")]
 
 
-def test_codex_entry_without_rate_limits_returns_none(tmp_path):
-    f = tmp_path / "r.jsonl"
-    f.write_text(json.dumps({"type": "event_msg", "payload": {"type": "token_count", "info": {}}}))
-    assert au.codex_entry(f) is None
+def test_codex_payload_without_rate_limit_is_rejected(monkeypatch, tmp_path):
+    """An expired token answers with a JSON body too; it must raise, not cache."""
+    class FakeRun:
+        returncode = 0
+        stdout = '{"detail": "Could not parse your authentication token."}'
+        stderr = ""
+    monkeypatch.setattr(au.subprocess, "run", lambda *a, **k: FakeRun())
+    auth = tmp_path / "auth.json"
+    auth.write_text('{"tokens": {"access_token": "x", "account_id": "y"}}')
+    monkeypatch.setattr(au, "CODEX_AUTH", auth)
+    with pytest.raises(RuntimeError, match="authentication token"):
+        au.codex_usage()
+
+
+def test_bearer_tokens_go_to_curl_on_stdin_not_argv(monkeypatch):
+    seen = {}
+    class FakeRun:
+        returncode = 0
+        stdout = "{}"
+        stderr = ""
+    def fake_run(args, **kwargs):
+        seen["argv"], seen["input"] = args, kwargs.get("input")
+        return FakeRun()
+    monkeypatch.setattr(au.subprocess, "run", fake_run)
+    au.fetch_json("https://example.invalid/usage", {"Authorization": "Bearer s3cret"})
+    assert not any("s3cret" in a for a in seen["argv"])   # `ps` shows argv to every user
+    assert seen["input"] == "Authorization: Bearer s3cret\n"
+
+
+def test_failed_fetch_never_falls_back_to_an_old_payload(monkeypatch, tmp_path):
+    monkeypatch.setattr(au, "STATE_DIR", tmp_path)
+    (tmp_path / "codex.json").write_text(json.dumps({"fetched_at": time.time() - 600, "payload": {"old": 1}}))
+    def down():
+        raise RuntimeError("network down")
+    with pytest.raises(RuntimeError, match="network down"):
+        au.cached_payload("codex", down, max_age=240)
+    # ... while a payload young enough to share between the rows is used without a fetch
+    assert au.cached_payload("codex", down, max_age=900) == {"old": 1}
+    assert 590 < au.last_ok_age("codex") < 700
+    assert au.last_ok_age("never-fetched") is None
 
 
 def _entry(percent, resets_in_seconds, window):
-    return {"label": "7d", "percent": percent, "severity": "normal", "stale_seconds": 0,
+    return {"label": "7d", "percent": percent, "severity": "normal",
             "window_seconds": window, "resets_at": time.time() + resets_in_seconds}
 
 
@@ -269,9 +310,15 @@ def test_the_two_rows_line_up_column_for_column():
     plain = lambda s: re.sub(r"<[^>]*>", "", s)
     assert len(plain(au.segment(e))) == len(plain(au.time_segment(e)))
     # ... including when the window is unknown and the time row has nothing to draw
-    unknown = {"label": "7d", "percent": 47, "severity": "normal", "stale_seconds": 0,
+    unknown = {"label": "7d", "percent": 47, "severity": "normal",
                "window_seconds": None, "resets_at": None}
     assert len(plain(au.segment(unknown))) == len(plain(au.time_segment(unknown)))
+    # ... and when a source could not be read at all: a red "no data" in its place
+    for age in (None, 42, 3 * 3600, 400 * 86400):
+        gone = {"label": "CDX", "percent": None, "last_ok_age": age}
+        assert plain(au.segment(gone)) == plain(au.time_segment(gone))
+        assert len(plain(au.segment(gone))) == len(plain(au.segment({**e, "label": "CDX"})))
+    assert plain(au.segment({"label": "CDX", "percent": None, "last_ok_age": 720})).startswith("CDX no data 12m")
 
 
 def test_spans_sum_since_each_window_start():

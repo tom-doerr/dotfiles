@@ -755,50 +755,49 @@ Prices are data, not code: verified Sep 20 2026 against platform.claude.com and
 developers.openai.com. Unknown models are printed in an UNPRICED block with their token
 counts, never priced by a guessed default.
 
-**Waybar row `agents` (Sep 20 2026, bars `agents` y=2472 / `agentpace` y=2496 for grim):**
-`waybar/agent-cost.sh` (symlinked into `~/.config/waybar/`, `custom/agentcost`, return-type
-json, interval 300) renders `CDX $319+?  CC $1.0k  FBL $452  5h $44`.
-**★ SPANS ARE QUOTA WINDOWS, NOT CALENDAR DAYS (user decision Sep 21 2026):** each group is
-summed since ITS window opened — Claude groups from the weekly `window_started_at`
-(Fri 03:00 UTC), Codex from its own `window_minutes` window, plus the current 5 h Claude
-session — so every figure sits under the bar it belongs to. Nothing in either product
-resets at midnight in any timezone, so a "today" column lined up with nothing (it also
-jumped at 02:00 CEST, which is what prompted this). The cost script gets the window starts
-by calling `agent-usage --max-age 3600` (starts only change at a reset — it must not add
-fetches) and passes them to `agent-cost-report --spans '{"name":"<UTC ISO>"}'`.
-**That required 10-MINUTE BUCKET KEYS in the cost cache** (`bucket()`, key
-`2026-09-21T01:30|model`, CACHE_VERSION 4, one full re-parse): day keys cannot answer
-"since 03:00 UTC". A span start is floored to its bucket, so it can over-count by at most
-the first partial bucket. Groups: `codex` = every Codex model, `claude` = Claude Code minus Fable,
-`claude_fable` = `claude-fable-*`. Yellow `+?` = that group has requests whose model has no
-published price (Codex's `codex-auto-review`, 75k requests / 11.1B cache-read tokens here),
-so the figure is a FLOOR — never silently omitted. Tooltip carries today/7d/30d/all per group.
-Fed by `agent-cost-report --windows` (one JSON blob, all four windows) — **0.2-0.5 s on a warm
-cache**, so the module runs the report directly and needs no timer or probe file. The cache
-write is atomic (tmp + `os.replace`) because the waybar run and a manual run overlap; a
-half-written 23 MB cache would be discarded silently and cost a 12-min full re-parse.
-CSS `#custom-agentcost { padding: 0 8px }` — without it the row sits flush on the screen edge
-once the text outgrows `min-length`. Row is 65 visible chars / 659 px of the 2149 usable.
+**`--spans` (Sep 21 2026): sums since a given UTC start per group** (`--spans '{"name":"<UTC ISO>"}'`),
+built for the waybar spend module (below). **That required 10-MINUTE BUCKET KEYS in the cost cache**
+(`bucket()`, key `2026-09-21T01:30|model`, CACHE_VERSION 4, one full re-parse): day keys cannot answer
+"since 03:00 UTC". A span start is floored to its bucket, so it can over-count by at most the first
+partial bucket. Groups: `codex` = every Codex model, `claude` = Claude Code minus Fable,
+`claude_fable` = `claude-fable-*`. `unpriced_requests` = requests whose model has no published price
+(Codex's `codex-auto-review`), so a figure is a FLOOR, never silently completed. `--windows` gives
+today/7d/30d/all per group in one blob (0.2-0.5 s on a warm cache). The cache write is atomic (tmp +
+`os.replace`): a half-written 23 MB cache would be discarded silently and cost a 12-min re-parse.
+**Price table gap (Oct 22 2026): `agent-cost-pricing.json` has no entry for `claude-opus-5-5`**, the
+model of every Claude Code request since Oct 16 (11,743 of them, all UNPRICED, so Claude totals read
+$0). Add its price (verified against platform.claude.com) before trusting any Claude figure.
+
+**The waybar spend module is GONE (removed Oct 22 2026, user: "what is this spend ?, can we get rid
+of that"):** `waybar/agent-cost.sh` (`custom/agentcost`, right of the quota bars) showed the API-list-
+price value of the usage since each quota window opened (`CDX $319+?  CC $1.0k  FBL $452  5h $44`)
+and a red `spend ?` whenever `agent-usage` exited nonzero, i.e. on any problem in either source. Its
+window starts came from `agent-usage --max-age 3600`. It is in git history if it is ever wanted back.
 **waybar has a USER UNIT here: `systemctl --user restart waybar`** — bar-structure changes need
 a full restart (SIGUSR2 only reloads CSS), and the unit avoids `pkill` entirely.
 
-**Quota bars on the same row (`scripts/agent-usage`, Sep 21 2026):**
-`CC 5h █░░░░░░░░░  3%  7d ████░░░░░░ 43%  Fable ██████░░░░ 63%  CDX 7d ██░░░░░░░░ 19%`
-(module `custom/agentusage`, interval 120, 84 chars; row total with the spend segment
-= 1546 px of the 2149 usable). These are SUBSCRIPTION QUOTA percentages, a different
-axis from the dollar figures next to them.
+**Quota bars, row `agents` (`scripts/agent-usage`, Sep 21 2026; bars `agents` / `agentpace` sit
+just above the hyprmeta `metarow` on Unknown-3, physical y ~440-480 at 1.25 scale in Oct 2026):**
+`CC 5h █░░░░░░░░░  2%  7d █████░░░░░ 53%  Fable ░░░░░░░░░░  0%  CDX 7d ░░░░░░░░░░  0%`
+(module `custom/agentusage`, interval 300, min-length 84). These are SUBSCRIPTION QUOTA percentages.
 **★ PACE ROW under it (`--row time`, bar `agentpace`, Sep 21 2026):** same bars filled by
 how far the WINDOW has elapsed, on the next row down, so each pair reads vertically —
 usage bar longer than time bar = burning quota faster than the clock. Window lengths:
-session 5 h, weekly 7 d, Codex from its own `window_minutes`; elapsed = 1 - (resets_at -
+session 5 h, weekly 7 d, Codex from the server's `limit_window_seconds`; elapsed = 1 - (resets_at -
 now)/window. **The two rows only work if their visible widths match exactly**, so the
 pace row REPEATS the label (dimmed) instead of shortening it, pads an unknown window as
 `??????????   ?`, and `#custom-agentpace` must keep the same `padding: 0 8px` as
-`#custom-agentusage` — a test asserts markup-stripped `segment()` == `time_segment()`
-length. Pace-row COLOUR is the projection at reset (green ≤100 %, yellow >100 %, red
->150 %), and it stays neutral below 5 % elapsed because 3 % used at 2 % elapsed is not
-"150 %". Both rows share one fetch through `~/.local/state/agent-usage/payload.json`
-(fresh ≤90 s, usable ≤15 min if a fetch fails — then the row says how old it is).
+`#custom-agentusage` — tests assert markup-stripped `segment()` == `time_segment()`
+length, for the no-data segment too. Pace-row COLOUR is the projection at reset (green ≤100 %,
+yellow >100 %, red >150 %), and it stays neutral below 5 % elapsed because 3 % used at 2 % elapsed
+is not "150 %".
+**Caching: one fetch per SOURCE shared by both rows, `~/.local/state/agent-usage/{claude,codex}.json`**
+(usage row refetches when older than 240 s, pace row rides it up to `--max-age 900`).
+**★ A failed fetch shows a red `CC no data 12m` / `CDX no data 12m` segment (minutes since the last good
+fetch) in place of that source's bars, exactly as wide as a bar segment (Oct 22 2026).** Never old
+values (user rule Oct 8: no cached metrics on displays; the old ≤1 h stale-cache grace with a dim `!`
+is gone) and never a silently vanished segment (the user's complaint that day). Error text, HTML-escaped,
+is in the tooltip. Tokens go to curl on stdin (`-H @-`), never argv, so `ps` cannot show them.
 **★ Claude's bars come from the SERVER, not from the transcripts:
 `GET https://api.anthropic.com/api/oauth/usage` with the OAuth access token in
 `~/.claude/.credentials.json` (`claudeAiOauth.accessToken`) + header
@@ -811,21 +810,27 @@ here Fable), each `percent` / `severity` / `resets_at`, plus `five_hour`/`seven_
 objects, `extra_usage`, and `seven_day_breakdown` (Claude Code 97 % vs chat 3 %).
 Only the dialog's "what's contributing" list is computed locally — nothing in
 `~/.claude/` stores the percentages, so they cannot be read offline.
-**Codex quota = the last `rate_limits` block in the newest rollout** (`primary.used_percent`,
-`window_minutes` 10080 = weekly, `resets_at` epoch; `plan_type`). Read from the file TAIL
-(4 MB) — rollouts reach 100s of MB. It is exact as of the last request and afterwards only
-an OVER-estimate (the window rolls forward while nothing is logged), so a snapshot older
-than 6 h renders dim and its age goes in the tooltip.
-**★ THE ENDPOINT RATE-LIMITS AND SAYS SO WITH HTTP 200:** polled every 120 s by two rows
-it started returning `{"error":{"type":"rate_limit_error"}}` with status 200, which cached
-as a valid payload and made every Claude bar SILENTLY VANISH (no problem reported, row just
-short). Fixes: `claude_usage()` rejects any payload without `limits`; an empty entry list is
-now itself a reported problem; red `usage ?` only when there is nothing to draw, a merely
-stale row gets a dim `!`. Polling: usage row 300 s (fetches), pace row `--max-age 900` and
-cost module `--max-age 3600` (both ride the shared cache) → ~1 request/5 min.
-Colour = proximity, not activity: ≥70 % yellow, ≥90 % red, plus the server's own
-`severity`. A nonzero percent always lights ≥1 cell (a 3 % bar that renders empty reads
-as "no data"). Unknown `limits[].kind` values are SKIPPED, never guessed into a bar.
+**★ Codex's bars come from the SERVER too since Oct 22 2026: `GET https://chatgpt.com/backend-api/wham/usage`**
+with `tokens.access_token` (Bearer) + `ChatGPT-Account-Id: tokens.account_id` from `~/.codex/auth.json`;
+curl's default User-Agent works. Endpoint found in the Codex binary (`strings … | grep wham/usage`; the
+non-ChatGPT variant is `/api/codex/usage`); the app-server serves the TUIs' `account/rateLimits/read` from
+it. Response `rate_limit` = `{allowed, limit_reached, primary_window, secondary_window}`, each window
+`{used_percent, limit_window_seconds, reset_after_seconds, reset_at}` (Pro: weekly primary, secondary
+null); only `rate_limit` is cached (the rest names the account), plus `credits`, `model_usage`,
+`spend_control`. The token lives ~10 days and Codex refreshes it into auth.json (`last_refresh`); an
+expired one = `no data` with the server's answer in the tooltip.
+**Why not the rollouts any more:** Codex logs `rate_limits` into `~/.codex/sessions/**.jsonl` only when
+it makes a request. On Oct 22 the newest block was 127 h old from a window that had reset that morning,
+so the row drew a dead window (14 % used, 100 % elapsed), and a rollout created without a request (the
+app-server daemon re-opening threads, a fresh session) has no block at all, so the CDX segment vanished.
+**★ THE CLAUDE ENDPOINT RATE-LIMITS AND SAYS SO WITH HTTP 200:** polled every 120 s by two rows
+it returned `{"error":{"type":"rate_limit_error"}}` with status 200, which cached as a valid payload
+and made every Claude bar SILENTLY VANISH. So each fetch function rejects a payload without its key
+(`limits` / `rate_limit`), an empty bar list counts as a failure, and polling is ~1 request per
+source per 5 min. Colour = proximity, not activity: ≥70 % yellow, ≥90 % red, plus the server's own
+`severity` (Codex: `limit_reached` → critical). A nonzero percent always lights ≥1 cell (a 3 % bar
+that renders empty reads as "no data"). Unknown `limits[].kind` values are SKIPPED, never guessed
+into a bar.
 
 **★ Claude Code writes ONE JSONL LINE PER CONTENT BLOCK** (thinking / text / tool_use), each
 repeating the SAME `usage` object → a naive sum double-counts (57,475 records vs 29,143 real

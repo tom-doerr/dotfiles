@@ -6,20 +6,24 @@ Code already stores in ~/.claude/.credentials.json.  That is the SAME source the
 /usage dialog draws its bars from (server-side truth), not a local estimate — its
 "limits" array carries session (5h), weekly-all and weekly-scoped (Fable) percents.
 
-Codex: the last `rate_limits` block logged in the newest ~/.codex/sessions rollout.
-Codex writes it on every token_count event, so it is exact as of the last request
-and only ever an OVER-estimate afterwards (the window rolls forward while nothing
-is being logged).  Its age is reported rather than hidden.
+Codex: GET https://chatgpt.com/backend-api/wham/usage with the ChatGPT token Codex
+stores in ~/.codex/auth.json, the endpoint the Codex client reads its own limits
+from.  (The `rate_limits` logged in the rollout files, used before, are only as
+fresh as the last Codex request: after a quiet week they described a window that
+had already reset, and a new rollout without a request yet had none at all.)
 
 --waybar prints a waybar JSON object; default prints the parsed numbers.
 --row time draws the SAME bars filled by how far the window has elapsed, so a second
 waybar row sits directly under the first: usage bar longer than time bar = burning the
-quota faster than the clock.  Both rows share one cached fetch (see STATE).
+quota faster than the clock.  Both rows share one cached fetch per source (STATE_DIR).
+A source that cannot be read shows as a red "no data" segment in its place: never as
+old numbers, and never by silently dropping out of the row.
 """
 
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import subprocess
@@ -30,12 +34,11 @@ from pathlib import Path
 
 HOME = Path.home()
 CREDENTIALS = HOME / ".claude" / ".credentials.json"
-CODEX_DIR = HOME / ".codex" / "sessions"
+CODEX_AUTH = HOME / ".codex" / "auth.json"
 USAGE_URL = "https://api.anthropic.com/api/oauth/usage"
-STALE_SECONDS = 6 * 3600  # a Codex snapshot older than this is dimmed as stale
-STATE = HOME / ".local" / "state" / "agent-usage" / "payload.json"
-CACHE_FRESH = 240  # the endpoint rate-limits frequent polling; rows share one fetch
-CACHE_MAX = 3600   # older than this, a failed fetch is an error, not a stale bar
+CODEX_USAGE_URL = "https://chatgpt.com/backend-api/wham/usage"
+STATE_DIR = HOME / ".local" / "state" / "agent-usage"
+CACHE_FRESH = 240  # the endpoints rate-limit frequent polling; rows share one fetch
 SESSION_WINDOW = 5 * 3600
 WEEK_WINDOW = 7 * 86400
 
@@ -46,17 +49,24 @@ COL_DIM, COL_WARN, COL_CRIT, COL_OK = "#6272a4", "#f1fa8c", "#ff5555", "#50fa7b"
 # --------------------------------------------------------------------------- sources
 
 
-def claude_usage(timeout: int = 15) -> dict:
-    """Raw /api/oauth/usage payload. Raises on any failure — callers show that."""
-    creds = json.loads(CREDENTIALS.read_text())["claudeAiOauth"]
+def fetch_json(url: str, headers: dict[str, str], timeout: int = 15) -> dict:
+    """GET `url`. The headers carry bearer tokens, so curl reads them from stdin
+    (`-H @-`), never from its command line, where `ps` would show them."""
     out = subprocess.run(
-        ["curl", "-sS", "-m", str(timeout), "-H", f"Authorization: Bearer {creds['accessToken']}",
-         "-H", "anthropic-beta: oauth-2025-04-20", USAGE_URL],
+        ["curl", "-sS", "-m", str(timeout), "-H", "@-", url],
+        input="".join(f"{k}: {v}\n" for k, v in headers.items()),
         capture_output=True, text=True, timeout=timeout + 5,
     )
     if out.returncode != 0:
         raise RuntimeError(f"curl exit {out.returncode}: {out.stderr.strip()[:200]}")
-    payload = json.loads(out.stdout)
+    return json.loads(out.stdout)
+
+
+def claude_usage(timeout: int = 15) -> dict:
+    """Raw /api/oauth/usage payload. Raises on any failure — callers show that."""
+    creds = json.loads(CREDENTIALS.read_text())["claudeAiOauth"]
+    payload = fetch_json(USAGE_URL, {"Authorization": f"Bearer {creds['accessToken']}",
+                                     "anthropic-beta": "oauth-2025-04-20"}, timeout)
     # The endpoint answers HTTP 200 with an {"error": ...} body when it rate-limits
     # (it does, if polled every couple of minutes). Without this check that body
     # caches as a valid payload and every bar silently disappears.
@@ -83,49 +93,41 @@ def claude_entries(payload: dict) -> list[dict]:
             "severity": lim.get("severity", "normal"),
             "resets_at": lim.get("resets_at"),
             "window_seconds": windows.get(kind),
-            "stale_seconds": 0,
         })
     return entries
 
 
-def newest_codex_session() -> Path | None:
-    files = list(CODEX_DIR.glob("**/*.jsonl")) if CODEX_DIR.exists() else []
-    return max(files, key=lambda f: f.stat().st_mtime) if files else None
+def codex_usage(timeout: int = 15) -> dict:
+    """The `rate_limit` object of /wham/usage (the rest of the payload names the
+    account, so it is not cached). Raises on any failure — callers show that."""
+    tokens = json.loads(CODEX_AUTH.read_text())["tokens"]
+    payload = fetch_json(CODEX_USAGE_URL, {"Authorization": f"Bearer {tokens['access_token']}",
+                                           "ChatGPT-Account-Id": tokens["account_id"]}, timeout)
+    # An expired token or a refused request is a JSON body too: without this check
+    # it would cache as a valid payload with no bars in it.
+    if not isinstance(payload.get("rate_limit"), dict):
+        raise RuntimeError(f"unexpected payload: {json.dumps(payload)[:200]}")
+    return payload["rate_limit"]
 
 
-def codex_entry(path: Path, tail_bytes: int = 4_000_000) -> dict | None:
-    """Last rate_limits block in a rollout file (tail only — these files reach 100s of MB)."""
-    size = path.stat().st_size
-    with path.open("rb") as fh:
-        if size > tail_bytes:
-            fh.seek(size - tail_bytes)
-            fh.readline()  # discard the partial line
-        last = None
-        for raw in fh:
-            if b'"rate_limits"' not in raw:
-                continue
-            try:
-                rec = json.loads(raw)
-            except ValueError:
-                continue
-            limits = (rec.get("payload") or {}).get("rate_limits")
-            if limits and limits.get("primary"):
-                last = (rec.get("timestamp"), limits["primary"])
-    if not last:
-        return None
-    stamp, primary = last
-    age = 0
-    if stamp:
-        age = max(0, int(time.time() - datetime.fromisoformat(stamp.replace("Z", "+00:00")).timestamp()))
-    window_h = round((primary.get("window_minutes") or 0) / 60)
-    return {
-        "label": f"CDX {window_h // 24}d" if window_h >= 24 else f"CDX {window_h}h",
-        "percent": round(primary.get("used_percent", 0)),
-        "severity": "normal",
-        "resets_at": primary.get("resets_at"),
-        "window_seconds": (primary.get("window_minutes") or 0) * 60 or None,
-        "stale_seconds": age,
-    }
+def codex_entries(limits: dict) -> list[dict]:
+    """One bar per window the plan has: `primary_window`, then `secondary_window`
+    (Pro has only a weekly primary; a null window is not drawn)."""
+    entries = []
+    for key in ("primary_window", "secondary_window"):
+        win = limits.get(key)
+        if not win:
+            continue
+        seconds = win.get("limit_window_seconds") or 0
+        hours = round(seconds / 3600)
+        entries.append({
+            "label": f"CDX {hours // 24}d" if hours >= 24 else f"CDX {hours}h",
+            "percent": round(win.get("used_percent", 0)),
+            "severity": "critical" if limits.get("limit_reached") else "normal",
+            "resets_at": win.get("reset_at"),
+            "window_seconds": seconds or None,
+        })
+    return entries
 
 
 # --------------------------------------------------------------------------- pace
@@ -191,21 +193,37 @@ def bar(percent: int, width: int = 10) -> str:
 
 
 def segment(entry: dict, width: int = 10) -> str:
+    if entry["percent"] is None:
+        return no_data_segment(entry, width)
     n = filled_cells(entry["percent"], width)
     col = colour(entry)
     fill = f"<span color='{col}'>{FILL * n}</span>" if col else FILL * n
     # The unfilled part stays dim so the filled part alone reads as the value.
     body = fill + f"<span color='{COL_DIM}'>{EMPTY * (width - n)}</span>"
-    text = f"{entry['label']} {body}{entry['percent']:>3}%"
-    if entry["stale_seconds"] > STALE_SECONDS:
-        text = f"<span color='{COL_DIM}'>{text}</span>"
-    return text
+    return f"{entry['label']} {body}{entry['percent']:>3}%"
+
+
+def short_age(seconds: float) -> str:
+    minutes = seconds / 60
+    if minutes < 60:
+        return f"{minutes:.0f}m"
+    return f"{minutes / 60:.0f}h" if minutes < 48 * 60 else f"{minutes / 1440:.0f}d"
+
+
+def no_data_segment(entry: dict, width: int = 10) -> str:
+    """A source that could not be read: red, saying how long it has been silent,
+    and exactly as wide as a bar segment, so the two rows still line up."""
+    age = entry.get("last_ok_age")
+    note = "no data" + (f" {short_age(age)}" if age is not None else "")
+    return f"{entry['label']} <span color='{COL_CRIT}'>{note[:width + 4]:<{width + 4}}</span>"
 
 
 def time_segment(entry: dict, width: int = 10) -> str:
     """Same geometry as segment(), filled by elapsed time — it must line up column
     for column under the usage row, so the label text is repeated (dimmed), never
     shortened."""
+    if entry["percent"] is None:
+        return no_data_segment(entry, width)
     elapsed = elapsed_percent(entry)
     label = f"<span color='{COL_DIM}'>{entry['label']}</span>"
     if elapsed is None:
@@ -229,31 +247,38 @@ def reset_note(entry: dict) -> str:
     return f"resets in {hours:.0f}h ({when.astimezone().strftime('%a %H:%M')})"
 
 
-def cached_claude_usage(max_age: float = CACHE_FRESH) -> tuple[dict, float]:
-    """(payload, age_seconds). Two waybar rows poll this; within CACHE_FRESH they
-    share one fetch. A failed fetch may fall back to a cache younger than CACHE_MAX,
-    and the age is then reported — it is never passed off as live."""
-    cached = None
+def cached_payload(name: str, fetch, max_age: float = CACHE_FRESH) -> dict:
+    """Source `name`'s payload, fetched at most every `max_age` seconds: two waybar
+    rows poll this, and within CACHE_FRESH they share one fetch. A failed fetch
+    raises; an older payload is never shown in its place."""
+    state = STATE_DIR / f"{name}.json"
     try:
-        cached = json.loads(STATE.read_text())
-        age = time.time() - cached["fetched_at"]
-        if age <= max_age:
-            return cached["payload"], age
+        cached = json.loads(state.read_text())
+        if time.time() - cached["fetched_at"] <= max_age:
+            return cached["payload"]
     except (OSError, ValueError, KeyError):
-        cached = None
-    try:
-        payload = claude_usage()
-    except Exception:
-        if cached:
-            age = time.time() - cached["fetched_at"]
-            if age <= CACHE_MAX:
-                return cached["payload"], age
-        raise
-    STATE.parent.mkdir(parents=True, exist_ok=True)
-    tmp = STATE.with_suffix(f".tmp{os.getpid()}")
+        pass  # no usable cache: fetch
+    payload = fetch()
+    STATE_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = state.with_suffix(f".tmp{os.getpid()}")
     tmp.write_text(json.dumps({"fetched_at": time.time(), "payload": payload}))
-    tmp.replace(STATE)
-    return payload, 0.0
+    tmp.replace(state)
+    return payload
+
+
+def last_ok_age(name: str) -> float | None:
+    """Seconds since source `name` was last fetched successfully (None = never)."""
+    try:
+        return time.time() - json.loads((STATE_DIR / f"{name}.json").read_text())["fetched_at"]
+    except (OSError, ValueError, KeyError):
+        return None
+
+
+# (placeholder label, state file name, fetch, parse), in row order
+SOURCES = (
+    ("CC", "claude", claude_usage, claude_entries),
+    ("CDX", "codex", codex_usage, codex_entries),
+)
 
 
 def main() -> int:
@@ -267,25 +292,16 @@ def main() -> int:
     args = ap.parse_args()
 
     entries, problems = [], []
-    try:
-        payload, age = cached_claude_usage(args.max_age)
-        got = claude_entries(payload)
-        if not got:
-            problems.append(f"claude usage: no usable limits in payload ({sorted(payload)[:6]})")
+    for label, name, fetch, parse in SOURCES:
+        try:
+            payload = cached_payload(name, fetch, args.max_age)
+            got = parse(payload)
+            if not got:
+                raise RuntimeError(f"no usable limits in the payload ({sorted(payload)[:6]})")
+        except Exception as err:  # network, token, JSON shape: shown in the row, never dropped
+            problems.append(f"{name}: {type(err).__name__}: {err}")
+            got = [{"label": label, "percent": None, "last_ok_age": last_ok_age(name)}]
         entries.extend(got)
-        if age > CACHE_FRESH:
-            problems.append(f"claude usage: fetch failed, showing cache {age / 60:.0f} min old")
-    except Exception as err:  # network, token, JSON shape: all shown, never silently zeroed
-        problems.append(f"claude usage: {type(err).__name__}: {err}")
-    try:
-        path = newest_codex_session()
-        entry = codex_entry(path) if path else None
-        if entry:
-            entries.append(entry)
-        else:
-            problems.append("codex: no rate_limits in the newest rollout")
-    except Exception as err:
-        problems.append(f"codex: {type(err).__name__}: {err}")
 
     if not args.waybar:
         for e in entries:
@@ -295,26 +311,26 @@ def main() -> int:
 
     draw = time_segment if args.row == "time" else segment
     text = "  ".join(draw(e, args.width) for e in entries)
-    if not entries:
-        text = f"<span color='{COL_CRIT}'>usage ?</span>"
-    elif problems:
-        text += f"  <span color='{COL_DIM}'>!</span>"
     tip = []
     for e in entries:
+        if e["percent"] is None:
+            age = e["last_ok_age"]
+            last = "never fetched" if age is None else f"last good fetch {age / 60:.0f} min ago"
+            tip.append(f"{e['label']}: NO DATA ({last})")
+            continue
         elapsed = elapsed_percent(e)
         line = f"{e['label']}: {e['percent']}% used, {reset_note(e)}"
         if elapsed is not None:
             pace = f", {e['percent'] / elapsed * 100:.0f}% of quota projected at reset" if elapsed >= 5 else ""
             line += f"\n    {elapsed}% of the window elapsed{pace}"
-        if e["stale_seconds"] > STALE_SECONDS:
-            line += f"  [snapshot {e['stale_seconds'] // 3600}h old]"
         tip.append(line)
     tip.append("\nTop row = quota used, bottom row = window elapsed; bottom bar longer means")
     tip.append("you are under pace. Bottom-bar colour is the projection: green on track,")
     tip.append("yellow >100%, red >150% of quota by reset.")
     tip.append("Claude: live from /api/oauth/usage (same source as /usage).")
-    tip.append("Codex: last rate_limits logged in the newest rollout; only ever an over-estimate.")
-    print(json.dumps({"text": text, "tooltip": "\n".join(tip + problems)}))
+    tip.append("Codex: live from chatgpt.com/backend-api/wham/usage (the Codex client's own source).")
+    tip += [html.escape(p, quote=False) for p in problems]  # error bodies can hold markup
+    print(json.dumps({"text": text, "tooltip": "\n".join(tip)}))
     return 0
 
 
