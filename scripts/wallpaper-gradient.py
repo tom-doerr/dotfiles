@@ -9,10 +9,9 @@ import os
 import hashlib
 
 HOME = os.path.expanduser("~")
-# Brightened copies (gamma 0.45, half hue-preserving luma curve, half per-channel)
-# of anime-girl.png / wallpaper-night.png; the originals are kept unchanged.
-DAY_WALLPAPER = f"{HOME}/Pictures/anime-girl-bright.png"
-NIGHT_WALLPAPER = f"{HOME}/Pictures/wallpaper-night-bright.png"
+# Day/night sources come from `wallpaper-brightness --sources`: the originals at
+# level 1.0, otherwise copies it rendered once for the current level.
+BRIGHTNESS_CLI = os.path.join(os.path.dirname(os.path.realpath(__file__)), "wallpaper-brightness")
 OUTPUT_WALLPAPER = f"{HOME}/Pictures/wallpaper-current.png"
 SWWW = f"{HOME}/.local/bin/swww"
 
@@ -56,8 +55,11 @@ def main():
     factor = get_blend_factor()
     print(f"Blend factor: {factor:.2%}")
 
-    day_img = Image.open(DAY_WALLPAPER)
-    night_img = Image.open(NIGHT_WALLPAPER)
+    day_path, night_path = subprocess.run(
+        [BRIGHTNESS_CLI, "--sources"], stdout=subprocess.PIPE, text=True, check=True
+    ).stdout.splitlines()
+    day_img = Image.open(day_path)
+    night_img = Image.open(night_path)
 
     blended = blend_images(day_img, night_img, factor)
 

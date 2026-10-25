@@ -221,16 +221,25 @@ No audio (wf-recorder records audio only with `-a`). Needs `sudo apt install wf-
   MIN_FREE_GB,LOOP_MAX_SECONDS,LOOP_MIN_SECONDS}` (MIN_SECONDS repeats the cycle), and
   `SCREENREC_WF_RECORDER`.
 
-### Wallpaper: day/night blend, brightened (Oct 3 2026)
+### Wallpaper: day/night blend + `wallpaper-brightness` CLI (Oct 25 2026)
 `scripts/wallpaper-gradient.py` (run by `wallpaper-switcher.timer`, every minute in the fade hours)
 blends a day and a night image into `~/Pictures/wallpaper-current.png` and hands it to `swww`.
 Fade: day until 22:00, → night by 00:00, night until 06:00, → day by 07:00.
-**Sources are BRIGHTENED copies since Oct 3 2026 (user: "much brighter"):**
-`~/Pictures/anime-girl-bright.png` / `wallpaper-night-bright.png` (mean luma 51 → ~115 of 255).
-The originals `anime-girl.png` / `wallpaper-night.png` are untouched (revert = the two paths).
-Curve = gamma 0.45, averaged 50/50 between a hue-preserving luma-ratio curve and a per-channel
-curve: per-channel alone washed the neon out, luma-ratio alone pushed everything to saturated blue.
-Never brighten inside the script: it already costs 5-8 s CPU per tick; a static copy costs nothing.
+**Brightness = `wallpaper-brightness` (Oct 25 2026, user; `scripts/`, symlinked into `~/.local/bin`):**
+no arg prints the level, `1.5` sets it, `+0.2`/`-0.2` step, `reset` = 1.0 = the untouched originals
+`~/Pictures/anime-girl.png` / `wallpaper-night.png`. Range 0.25-4.0 (outside = error, not clamped).
+Level in `~/.local/state/wallpaper/brightness` (missing = 1.0). Each source is rendered ONCE per level
+into `~/.cache/wallpaper/<stem>@<level>.png` (~7 s, other levels pruned), then the CLI starts
+`wallpaper-switcher.service` so the change fades in at once. The switcher asks
+`wallpaper-brightness --sources` each tick (re-renders a missing cache copy, so a wiped `~/.cache` heals).
+**History:** from Oct 3 to Oct 25 2026 the switcher hardcoded the brightened copies
+`~/Pictures/anime-girl-bright.png` / `wallpaper-night-bright.png` (user: "much brighter"; mean luma
+51 → ~115). On Oct 25 the user asked for the originals back plus a CLI; level 2.22 (= gamma 0.45)
+reproduces those copies pixel-for-pixel (verified: max diff 0), so they are now redundant.
+Curve = gamma 1/level (<1 darkens), averaged 50/50 between a hue-preserving luma-ratio curve
+(Rec.709 luma) and a per-channel curve: per-channel alone washed the neon out, luma-ratio alone
+pushed everything to saturated blue.
+Never brighten inside the switcher: it already costs 5-8 s CPU per tick; a cached copy costs nothing.
 Swapping the image with `swww img` alone does not stick: the next tick overwrites it.
 
 ### Notifications: swaync (not mako)

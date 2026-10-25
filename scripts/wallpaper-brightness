@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+"""Show or set the wallpaper brightness (1.0 = the original images).
+
+  wallpaper-brightness            print the current level
+  wallpaper-brightness 1.5        set a level (>1 brighter, <1 darker)
+  wallpaper-brightness +0.2       step up (-0.2 steps down)
+  wallpaper-brightness reset      back to 1.0, the untouched originals
+  wallpaper-brightness --sources  print the day/night source paths for the
+                                  current level (used by wallpaper-gradient.py)
+
+The level is a gamma: each source is rendered once per level with gamma 1/level
+into ~/.cache/wallpaper/ (the switcher ticks every minute, so it must never apply
+the curve itself). Level 2.22 reproduces the Oct 3 2026 "-bright" copies.
+"""
+
+import argparse
+import glob
+import os
+import subprocess
+import sys
+
+HOME = os.path.expanduser("~")
+DAY_ORIGINAL = f"{HOME}/Pictures/anime-girl.png"
+NIGHT_ORIGINAL = f"{HOME}/Pictures/wallpaper-night.png"
+STATE_FILE = f"{HOME}/.local/state/wallpaper/brightness"
+CACHE_DIR = f"{HOME}/.cache/wallpaper"
+MIN_LEVEL, MAX_LEVEL = 0.25, 4.0
+
+
+def read_level():
+    # No file = never adjusted = the originals. A malformed file raises.
+    if not os.path.exists(STATE_FILE):
+        return 1.0
+    with open(STATE_FILE) as f:
+        return float(f.read().strip())
+
+
+def write_level(level):
+    os.makedirs(os.path.dirname(STATE_FILE), exist_ok=True)
+    tmp = STATE_FILE + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(f"{level:.2f}\n")
+    os.replace(tmp, STATE_FILE)
+
+
+def cached_path(original, level):
+    stem = os.path.splitext(os.path.basename(original))[0]
+    return f"{CACHE_DIR}/{stem}@{level:.2f}.png"
+
+
+def render(original, level, out):
+    """Gamma 1/level, averaged 50/50 between a per-channel curve and a
+    hue-preserving luma-ratio curve (per-channel alone washes the neon out,
+    luma-ratio alone pushes everything to saturated blue)."""
+    import numpy as np
+    from PIL import Image
+
+    gamma = 1.0 / level
+    rgb = np.asarray(Image.open(original).convert("RGB"), dtype=np.float32) / 255.0
+    per_channel = rgb ** gamma
+    luma = rgb @ np.array([0.2126, 0.7152, 0.0722], dtype=np.float32)
+    ratio = np.where(luma > 0, luma ** gamma / np.maximum(luma, 1e-6), 1.0)
+    luma_ratio = np.clip(rgb * ratio[..., None], 0.0, 1.0)
+    result = (per_channel + luma_ratio) * 0.5
+    img = Image.fromarray((result * 255.0 + 0.5).astype(np.uint8))
+    tmp = out + ".tmp.png"
+    img.save(tmp)
+    os.replace(tmp, out)
+
+
+def sources(level):
+    """Day and night source paths for this level, rendering missing copies."""
+    if round(level, 2) == 1.0:
+        return DAY_ORIGINAL, NIGHT_ORIGINAL
+    os.makedirs(CACHE_DIR, exist_ok=True)
+    paths = []
+    for original in (DAY_ORIGINAL, NIGHT_ORIGINAL):
+        out = cached_path(original, level)
+        if not os.path.exists(out):
+            render(original, level, out)
+        paths.append(out)
+    return tuple(paths)
+
+
+def prune_cache(keep):
+    for path in glob.glob(f"{CACHE_DIR}/*@*.png"):
+        if path not in keep:
+            os.remove(path)
+
+
+def parse_level(arg, current):
+    if arg == "reset":
+        return 1.0
+    if arg[0] in "+-":
+        return current + float(arg)
+    return float(arg)
+
+
+def main():
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
+    parser.add_argument("level", nargs="?", help="LEVEL, +STEP, -STEP or reset")
+    parser.add_argument("--sources", action="store_true",
+                        help="print the day/night source paths and exit")
+    args = parser.parse_args()
+
+    current = read_level()
+    if args.sources:
+        print("\n".join(sources(current)))
+        return
+    if args.level is None:
+        print(f"{current:.2f}")
+        return
+
+    level = round(parse_level(args.level, current), 2)
+    if not MIN_LEVEL <= level <= MAX_LEVEL:
+        sys.exit(f"level {level:.2f} is outside {MIN_LEVEL}..{MAX_LEVEL}")
+
+    print(f"wallpaper brightness {current:.2f} -> {level:.2f}")
+    keep = sources(level)
+    prune_cache(keep)
+    write_level(level)
+    subprocess.run(["systemctl", "--user", "start", "wallpaper-switcher.service"], check=True)
+
+
+if __name__ == "__main__":
+    main()
