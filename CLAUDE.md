@@ -188,6 +188,17 @@ Script `hypr/hypr-screenshot` (lossless PNG + clipboard + JSON/iTXt metadata).
 Modes: `region` (slurp), `full`, `window` (focused window via `hyprctl activewindow -j` + jq), `geometry`.
 Binds: `Super+M` region, `Super+Shift+M` full, `Super+Ctrl+M` window.
 No cursor in any mode (grim omits pointer unless `-c`). `window` guards on `*null*` (no focused window).
+**PNG level 1 since Oct 28 2026 (was 9; user: screenshots had a lot of latency).** Measured on the three
+4K Dells: `full` (= ALL monitors, 6480x3840) took 8.8 s at level 9 vs 0.8 s at level 1, one monitor 974 vs
+202 ms, a 900x600 region 485 vs 94 ms; the level-9 file was not smaller (9.76 vs 8.97 MB for `full`, -13 %
+for one monitor). Everything else in the script costs ~70 ms (metadata Python + 6 hyprctl calls 59 ms).
+`GRIM_PNG_COMPRESSION` still overrides it. Not measured: key press → slurp overlay (it grabs the pointer).
+**Capture flash (Oct 28 2026, user):** after grim succeeds, `hypr/hypr-screenshot-flash ['X,Y WxH']` (no
+argument = every monitor) runs in the background: four click-through white strips (5 logical px, alpha 0.9,
+quadratic fade over 0.45 s) per monitor the area touches, on the overlay layer, namespace
+`hypr-screenshot-flash` (shares the `no_anim` layerrule with `hypr-screenrec`). Monitor geometry comes from
+GDK, not hyprctl. Visible ~100 ms after launch. Since it starts after grim, it is never in the picture. To
+look at it with grim, use a copy with a longer `DURATION_S` (a 0.45 s fade is gone before grim's ~0.2 s).
 
 ### Screen recording: hypr-screenrec (Sep 29 2026)
 Script `hypr/hypr-screenrec` (one Python file; tests `tests/hypr_screenrec_test.py`). Same three

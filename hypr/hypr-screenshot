@@ -3,7 +3,9 @@ set -euo pipefail
 
 mode="${1:-region}"
 geometry=""
-compression="${GRIM_PNG_COMPRESSION:-9}"
+# Level 1, not 9 (Oct 28 2026): on the three 4K Dells level 9 took 8.8 s for `full`
+# (level 1: 0.8 s) and 1.0 s for one monitor (0.2 s), for a file no smaller.
+compression="${GRIM_PNG_COMPRESSION:-1}"
 screenshot_dir="${SCREENSHOT_DIR:-$HOME/Pictures/screenshots}"
 mkdir -p "$screenshot_dir"
 
@@ -70,6 +72,9 @@ if ! grim "${grim_args[@]}" "$tmp"; then
     notify "rgb(ff3344)" "Screenshot failed"
     exit 1
 fi
+# Flash a frame around the captured area: after grim, so it is never in the picture,
+# and in the background, so metadata + clipboard don't wait for its 0.45 s fade.
+"$(dirname "$0")/hypr-screenshot-flash" ${geometry:+"$geometry"} >/dev/null &
 
 python3 - "$tmp" "$meta_path" "$mode" "$geometry" "$path" "$compression" <<'PYPNG'
 import datetime as _dt

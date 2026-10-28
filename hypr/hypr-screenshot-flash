@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+"""Flash a frame around what a screenshot just captured, fading out.
+
+Usage: hypr-screenshot-flash ['X,Y WxH']   (grim's -g geometry; none = every monitor)
+
+Four click-through strips per monitor on the overlay layer (namespace
+hypr-screenshot-flash, `no_anim` layerrule), drawn INSIDE the area. It only
+runs after grim has finished, so the frame is never in the picture.
+"""
+import sys
+import time
+
+import cairo
+import gi
+
+gi.require_version("Gdk", "3.0")
+gi.require_version("Gtk", "3.0")
+gi.require_version("GtkLayerShell", "0.1")
+from gi.repository import Gdk, GLib, Gtk, GtkLayerShell as LS  # noqa: E402
+
+BAND = 5  # logical px
+COLOR = (1.0, 1.0, 1.0)
+DURATION_S = 0.45
+
+
+def areas(geometry):
+    """(gdk monitor, x, y, w, h monitor-local) for each monitor the area touches."""
+    display = Gdk.Display.get_default()
+    out = []
+    for i in range(display.get_n_monitors()):
+        mon = display.get_monitor(i)
+        g = mon.get_geometry()
+        if geometry is None:
+            out.append((mon, 0, 0, g.width, g.height))
+            continue
+        pos, size = geometry.split()
+        x, y = (int(v) for v in pos.split(","))
+        w, h = (int(v) for v in size.split("x"))
+        x0, y0 = max(x, g.x), max(y, g.y)
+        x1, y1 = min(x + w, g.x + g.width), min(y + h, g.y + g.height)
+        if x1 > x0 and y1 > y0:
+            out.append((mon, x0 - g.x, y0 - g.y, x1 - x0, y1 - y0))
+    return out
+
+
+def strip(mon, x, y, w, h, draw):
+    win = Gtk.Window()
+    win.set_app_paintable(True)
+    win.set_visual(win.get_screen().get_rgba_visual())
+    LS.init_for_window(win)
+    LS.set_namespace(win, "hypr-screenshot-flash")
+    LS.set_layer(win, LS.Layer.OVERLAY)
+    LS.set_monitor(win, mon)
+    LS.set_exclusive_zone(win, -1)  # position from the output edge, ignoring waybar
+    LS.set_keyboard_mode(win, LS.KeyboardMode.NONE)
+    LS.set_anchor(win, LS.Edge.TOP, True)
+    LS.set_anchor(win, LS.Edge.LEFT, True)
+    LS.set_margin(win, LS.Edge.TOP, y)
+    LS.set_margin(win, LS.Edge.LEFT, x)
+    win.set_size_request(max(w, 1), max(h, 1))
+    win.connect("realize", lambda wd: wd.input_shape_combine_region(cairo.Region()))
+    win.connect("draw", draw)
+    win.show_all()
+    return win
+
+
+def main(argv):
+    found = areas(argv[1] if len(argv) > 1 else None)
+    if not found:
+        print(f"hypr-screenshot-flash: {argv[1]!r} is on no monitor", file=sys.stderr)
+        return 1
+
+    def alpha():
+        return max(0.0, 1.0 - (time.monotonic() - t0) / DURATION_S) ** 2  # ease out
+
+    def draw(_win, cr):
+        cr.set_operator(cairo.OPERATOR_SOURCE)
+        cr.set_source_rgba(*COLOR, 0.9 * alpha())
+        cr.paint()
+        return True
+
+    wins = []
+    for mon, x, y, w, h in found:
+        b = min(BAND, w // 2, h // 2)
+        for sx, sy, sw, sh in [(x, y, w, b), (x, y + h - b, w, b), (x, y + b, b, h - 2 * b),
+                               (x + w - b, y + b, b, h - 2 * b)]:
+            wins.append(strip(mon, sx, sy, sw, sh, draw))
+    t0 = time.monotonic()  # read by alpha() at draw time, after the strips exist
+
+    def tick():
+        if time.monotonic() - t0 >= DURATION_S:
+            Gtk.main_quit()
+            return False
+        for win in wins:
+            win.queue_draw()
+        return True
+
+    GLib.timeout_add(16, tick)
+    Gtk.main()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
