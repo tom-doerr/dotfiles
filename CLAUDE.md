@@ -164,6 +164,10 @@ Add local semantic search alongside existing ripgrep/fzf flows using a persisten
 - ZSA Voyager (compact split, no arrow keys)
 - Colemak DH layout
 - Navigation: Super + neio (focus), Super + Shift + neio (move window)
+- **Super+P (`pseudo`) REMOVED Oct 28 2026 (user: kept triggering it by accident).** Pseudotiling shrinks a
+  tiled window to its desired size inside its tile. To undo it on a window: `hyprctl dispatch pseudo
+  address:<addr>` (toggle; find them with `hyprctl clients -j | jq '.[] | select(.pseudo)'`).
+  `dwindle { pseudotile = true }` stays, so the dispatcher still works by hand.
 
 ### HDR + Transparency (Fixed Jan 2026)
 Use `cm,hdr` in monitor line instead of `cm_enabled = true` in render block.
