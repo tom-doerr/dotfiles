@@ -190,8 +190,28 @@ Binds: `Super+M` region, `Super+Shift+M` full, `Super+Ctrl+M` window.
 No cursor in any mode (grim omits pointer unless `-c`). `window` guards on `*null*` (no focused window).
 **PNG level 1 since Oct 28 2026 (was 9; user: screenshots had a lot of latency).** Measured on the three
 4K Dells: `full` (= ALL monitors, 6480x3840) took 8.8 s at level 9 vs 0.8 s at level 1, one monitor 974 vs
-202 ms, a 900x600 region 485 vs 94 ms; the level-9 file was not smaller (9.76 vs 8.97 MB for `full`, -13 %
-for one monitor). Everything else in the script costs ~70 ms (metadata Python + 6 hyprctl calls 59 ms).
+202 ms, a 900x600 region 485 vs 94 ms (grim end to end). Everything else in the script costs ~70 ms
+(metadata Python + 6 hyprctl calls 59 ms).
+**Per-level table (Oct 28 2026), the SAME pixels encoded with grim 1.4.0's exact libpng calls** (8-bit RGB,
+`png_set_compression_level`, `PNG_ALL_FILTERS`; one `grim -t ppm` capture, a 40-line C copy of grim's
+`write_png.c`, median of 3, nice 0, load ~14). Encode time only (grim adds the capture on top):
+
+| level | all 3 monitors 6480x3840 | one monitor 2160x3840 |
+|---|---|---|
+| 1 | 424 ms, 8.28 MB | 128 ms, 2.29 MB |
+| 2 | 446 ms, 8.07 MB (-2.5 %) | 135 ms, 2.25 MB (-1.6 %) |
+| 3 | 524 ms, 7.88 MB (-4.9 %) | 158 ms, 2.21 MB (-3.6 %) |
+| 4 | 641 ms, 7.31 MB (-11.6 %) | 221 ms, 2.02 MB (-11.5 %) |
+| 5 | 759 ms, 7.18 MB (-13.3 %) | 244 ms, 2.00 MB (-12.4 %) |
+| 6 | 1060 ms, 7.08 MB (-14.5 %) | 312 ms, 1.98 MB (-13.4 %) |
+| 7 | 1334 ms, 6.99 MB (-15.5 %) | 350 ms, 1.97 MB (-13.8 %) |
+| 8 | 2994 ms, 6.90 MB (-16.6 %) | 589 ms, 1.95 MB (-14.5 %) |
+| 9 | 6781 ms, 6.88 MB (-16.8 %) | 1194 ms, 1.95 MB (-14.8 %) |
+
+The step at 3→4 is zlib switching from `deflate_fast` (levels 1-3, greedy) to `deflate_slow` (lazy matching);
+8 and 9 only lengthen the match search (chain 1024 / 4096). **Correction:** the first measurement said "the
+level-9 file was bigger (9.76 vs 8.97 MB)". Wrong: those were two separate captures 8.8 s apart and the
+screen content had changed. Compare compression levels on ONE capture, never on two grim runs.
 `GRIM_PNG_COMPRESSION` still overrides it. Not measured: key press → slurp overlay (it grabs the pointer).
 **Capture flash (Oct 28 2026, user):** after grim succeeds, `hypr/hypr-screenshot-flash ['X,Y WxH']` (no
 argument = every monitor) runs in the background: four click-through white strips (5 logical px, alpha 0.9,
