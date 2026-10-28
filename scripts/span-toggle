@@ -1,29 +1,129 @@
 #!/bin/sh
+set -eu
+
 # Toggle: span the focused window across the 3 portrait Dells <-> restore.
 # Span region: 0,2160 5184x3072 (left edge FCZKPF4 -> right edge 9FZKPF4).
-# Previous floating geometry is saved per window address, restored on untoggle.
 SX=0; SY=2160; SW=5184; SH=3072
 d="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/span-toggle"
-mkdir -p "$d"
-eval "$(hyprctl activewindow -j | python3 -c 'import json,sys;w=json.load(sys.stdin);print("addr=%s fl=%d wx=%d wy=%d ww=%d wh=%d"%(w["address"],w["floating"],w["at"][0],w["at"][1],w["size"][0],w["size"][1]))' 2>/dev/null)"
-[ -z "${addr:-}" ] && { echo "no active window" >&2; exit 1; }
-f="$d/$addr"
-if [ "$wx" = "$SX" ] && [ "$wy" = "$SY" ] && [ "$ww" = "$SW" ]; then
-    if [ -s "$f" ]; then
-        read -r px py pw ph < "$f"
-        rm -f "$f"
-        hyprctl --batch "dispatch movewindowpixel exact $px $py,address:$addr; dispatch resizewindowpixel exact $pw $ph,address:$addr" >/dev/null
-    else
-        hyprctl dispatch togglefloating "address:$addr" >/dev/null
+marker="$d/active"
+mkdir -p -- "$d"
+
+read_active() {
+    eval "$(hyprctl activewindow -j | python3 -c 'import json,sys;w=json.load(sys.stdin);print("addr=%s fl=%d fs=%d fsc=%d wx=%d wy=%d ww=%d wh=%d"%(w.get("address", ""),w.get("floating",False),w.get("fullscreen",0),w.get("fullscreenClient",0),w.get("at",[0,0])[0],w.get("at",[0,0])[1],w.get("size",[0,0])[0],w.get("size",[0,0])[1]))' 2>/dev/null)"
+}
+
+read_marked_window() {
+    marked_addr=$1
+    eval "$(hyprctl clients -j | python3 -c 'import json,sys;w=next((item for item in json.load(sys.stdin) if item.get("address")==sys.argv[1]),None);print("marked_exists=0" if w is None else "marked_exists=1 marked_fl=%d marked_x=%d marked_y=%d marked_w=%d marked_h=%d"%(w.get("floating",False),w.get("at",[0,0])[0],w.get("at",[0,0])[1],w.get("size",[0,0])[0],w.get("size",[0,0])[1]))' "$marked_addr" 2>/dev/null)"
+}
+
+clear_saved() {
+    clear_addr=$1
+    if [ -n "$clear_addr" ]; then
+        rm -f -- "$d/$clear_addr"
     fi
-else
-    if [ "$fl" = 1 ]; then
-        echo "$wx $wy $ww $wh" > "$f"
-    else
-        rm -f "$f"
-        hyprctl dispatch togglefloating "address:$addr" >/dev/null
+    rm -f -- "$marker"
+}
+
+restore_saved() {
+    restore_addr=$1
+    restore_focus=$2
+    restore_file="$d/$restore_addr"
+    [ -s "$restore_file" ] || { clear_saved "$restore_addr"; return 1; }
+
+    read -r saved_line < "$restore_file"
+    set -- $saved_line
+    case $# in
+        5)
+            # Backward compatibility with state written before fullscreen modes
+            # were preserved.
+            saved_fl=$1; saved_fs=0; saved_fsc=0
+            px=$2; py=$3; pw=$4; ph=$5
+            ;;
+        7)
+            saved_fl=$1; saved_fs=$2; saved_fsc=$3
+            px=$4; py=$5; pw=$6; ph=$7
+            ;;
+        *)
+            clear_saved "$restore_addr"
+            return 1
+            ;;
+    esac
+
+    hyprctl dispatch setfloating "address:$restore_addr" >/dev/null
+    hyprctl --batch "dispatch movewindowpixel exact $px $py,address:$restore_addr; dispatch resizewindowpixel exact $pw $ph,address:$restore_addr" >/dev/null
+
+    if [ "$saved_fl" -eq 0 ]; then
+        # Dwindle reinserts at the pointer/focused leaf, so use the old tile centre.
+        anchor_x=$((px + pw / 2))
+        anchor_y=$((py + ph / 2))
+        hyprctl dispatch movecursor "$anchor_x $anchor_y" >/dev/null
+        hyprctl dispatch settiled "address:$restore_addr" >/dev/null
     fi
-    # keep the spanned window under other floating windows (z follows focus;
-    # bottom-of-stack means popups/floats opened later stay visible on top)
-    hyprctl --batch "dispatch movewindowpixel exact $SX $SY,address:$addr; dispatch resizewindowpixel exact $SW $SH,address:$addr; dispatch alterzorder bottom,address:$addr" >/dev/null
+
+    if [ "$restore_focus" -eq 1 ] || [ "$saved_fs" -ne 0 ] || [ "$saved_fsc" -ne 0 ]; then
+        hyprctl dispatch focuswindow "address:$restore_addr" >/dev/null
+    fi
+    if [ "$saved_fs" -ne 0 ] || [ "$saved_fsc" -ne 0 ]; then
+        hyprctl dispatch fullscreenstate "$saved_fs $saved_fsc set" >/dev/null
+    fi
+    clear_saved "$restore_addr"
+}
+
+read_active
+[ -n "${addr:-}" ] || { echo "no active window" >&2; exit 1; }
+
+if [ -s "$marker" ]; then
+    read -r marked_addr < "$marker"
+    marked_exists=0
+    read_marked_window "$marked_addr"
+
+    # Runtime state is authoritative only while its target is still the floating
+    # window at the exact span geometry. A reload, manual tile, or interrupted
+    # helper otherwise leaves a stale marker that must not hijack another window.
+    marked_is_spanned=0
+    if [ "$marked_exists" -eq 1 ] && [ -s "$d/$marked_addr" ] && [ "$marked_fl" -eq 1 ] && [ "$marked_x" -eq "$SX" ] && [ "$marked_y" -eq "$SY" ] && [ "$marked_w" -eq "$SW" ] && [ "$marked_h" -eq "$SH" ]; then
+        marked_is_spanned=1
+    fi
+
+    if [ "$marked_is_spanned" -eq 1 ] && [ "$marked_addr" = "$addr" ]; then
+        restore_saved "$marked_addr" 1
+        exit 0
+    fi
+
+    if [ "$marked_is_spanned" -eq 1 ]; then
+        # The user deliberately focused another window. Restore the old span, then
+        # re-read the selected window after the tiling layout has settled.
+        selected_addr=$addr
+        restore_saved "$marked_addr" 0
+        hyprctl dispatch focuswindow "address:$selected_addr" >/dev/null
+        read_active
+        [ "$addr" = "$selected_addr" ] || { echo "selected window disappeared" >&2; exit 1; }
+    else
+        clear_saved "$marked_addr"
+    fi
 fi
+
+# Fullscreen state is focused-window-only in Hyprland 0.52. Leave it first, then
+# capture the underlying tile/float geometry so the second press restores it.
+saved_fs=$fs
+saved_fsc=$fsc
+if [ "$fs" -ne 0 ] || [ "$fsc" -ne 0 ]; then
+    selected_addr=$addr
+    hyprctl dispatch fullscreenstate "0 0 set" >/dev/null
+    read_active
+    [ "$addr" = "$selected_addr" ] || { echo "selected window disappeared" >&2; exit 1; }
+fi
+
+f="$d/$addr"
+printf '%s %s %s %s %s %s %s\n' "$fl" "$saved_fs" "$saved_fsc" "$wx" "$wy" "$ww" "$wh" > "$f"
+printf '%s\n' "$addr" > "$marker"
+
+if [ "$fl" -eq 0 ]; then
+    hyprctl dispatch setfloating "address:$addr" >/dev/null
+fi
+
+# Keep popups and later floating windows visible above the three-screen span.
+hyprctl --batch "dispatch movewindowpixel exact $SX $SY,address:$addr; dispatch resizewindowpixel exact $SW $SH,address:$addr; dispatch alterzorder bottom,address:$addr" >/dev/null
+# alterzorder must not hand keyboard focus to whichever window was exposed.
+hyprctl dispatch focuswindow "address:$addr" >/dev/null
