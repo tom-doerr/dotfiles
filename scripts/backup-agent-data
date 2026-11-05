@@ -12,6 +12,8 @@
 #    loudly (rc 1) instead of sitting there looking fine.
 # Not a replacement for kopia (hourly /home/tom snapshots) — an independent,
 # plain-file copy the user asked for.
+# NO --delete (2026-11-05): Claude Code deletes transcripts after cleanupPeriodDays,
+# and a mirroring --delete would wipe them from this copy too. Add-only now.
 set -euo pipefail
 NAS=${NAS:-nas}
 DEST=/pool/home/backups/spark-1/agents
@@ -19,10 +21,10 @@ TMP=$(mktemp -d "${TMPDIR:-/tmp}/agent-backup.XXXXXX"); trap 'rm -rf "$TMP"' EXI
 log(){ echo "$(date -u +%FT%TZ) $*"; }
 
 log "claude -> $NAS:$DEST/claude"
-rsync -a --delete --exclude=cache/ --exclude=paste-cache/ --exclude=downloads/ "$HOME/.claude/" "$NAS:$DEST/claude/"
+rsync -a --exclude=cache/ --exclude=paste-cache/ --exclude=downloads/ "$HOME/.claude/" "$NAS:$DEST/claude/"
 
 log "codex files -> $NAS:$DEST/codex/files"
-rsync -a --delete --exclude='*.sqlite' --exclude='*.sqlite-wal' --exclude='*.sqlite-shm' --exclude=cache/ "$HOME/.codex/" "$NAS:$DEST/codex/files/"
+rsync -a --exclude='*.sqlite' --exclude='*.sqlite-wal' --exclude='*.sqlite-shm' --exclude=cache/ "$HOME/.codex/" "$NAS:$DEST/codex/files/"
 
 log "codex small DBs -> consistent .backup snapshots"
 for db in "$HOME"/.codex/*.sqlite; do
