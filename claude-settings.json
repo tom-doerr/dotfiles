@@ -139,5 +139,6 @@
     "compiledModelPath": "$CLAUDE_PROJECT_DIR/.claude/models/approver.compiled.json",
     "optimizer": "mipro",
     "auto": "light"
-  }
+  },
+  "cleanupPeriodDays": 3650
 }
