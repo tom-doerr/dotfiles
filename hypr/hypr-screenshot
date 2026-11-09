@@ -20,6 +20,61 @@ notify() {
     fi
 }
 
+# Window shots hide the mouse cursor (Nov 9 2026). grim's default (no -c) does NOT keep
+# it out here: with cursor:no_hardware_cursors the cursor is drawn INTO the monitor's
+# frame, and Hyprland's screencopy copies that finished frame (overlay_cursor only adds a
+# second one on top). cursor:invisible removes it, but Hyprland reads that option only on
+# its 500 ms cursor ticker (Renderer.cpp cursorTicker), so wait for the log line it prints
+# in the same call that damages every monitor: each frame after it is cursor-free.
+cursor_state="in frame (software cursor; only window mode hides it)"
+cursor_restore=0
+
+restore_cursor() {
+    if (( cursor_restore )); then
+        cursor_restore=0
+        if [[ "$(hyprctl keyword cursor:invisible false)" != ok ]]; then
+            notify "rgb(ff3344)" "Cursor NOT restored: run hyprctl keyword cursor:invisible false"
+        fi
+        flock -u 9
+    fi
+}
+
+hide_cursor() {
+    local log="${XDG_RUNTIME_DIR:?}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:?}/hyprland.log"
+    local offset="" start
+    # Serialise: a second shot would read our temporary invisible=1 as the user's own
+    # setting, and the first shot's restore would bring the cursor back mid-capture.
+    exec 9>"$XDG_RUNTIME_DIR/hypr-screenshot-cursor.lock"
+    if ! flock -w 5 9; then
+        notify "rgb(ff3344)" "Screenshot failed: another one holds the cursor lock"
+        exit 1
+    fi
+    if [[ "$(hyprctl getoption cursor:invisible -j | jq -r .int)" != 0 ]]; then
+        cursor_state="hidden (cursor:invisible was already set)"
+        return
+    fi
+    if [[ -f "$log" ]]; then
+        offset="$(stat -c %s "$log")"
+    fi
+    start="${EPOCHREALTIME/./}"
+    if [[ "$(hyprctl keyword cursor:invisible true)" != ok ]]; then
+        notify "rgb(ff3344)" "Screenshot failed: could not hide the cursor"
+        exit 1
+    fi
+    cursor_restore=1
+    # 1 s = two ticker periods. Process substitution, not a pipe: under pipefail,
+    # `tail | grep -q` fails with SIGPIPE exactly when grep finds the line early.
+    while (( ${EPOCHREALTIME/./} - start < 1000000 )); do
+        if [[ -n "$offset" ]] && grep -qF 'Hiding the cursor (hl-mandated)' < <(tail -c "+$((offset + 1))" "$log"); then
+            cursor_state="hidden (confirmed after $(( (${EPOCHREALTIME/./} - start) / 1000 )) ms)"
+            return
+        fi
+        sleep 0.01
+    done
+    cursor_state="hide NOT confirmed within 1 s (log: ${offset:+no hide line}${offset:-missing}); may be in frame"
+    notify "rgb(ffcc33)" "Cursor hide not confirmed: it may be in the screenshot"
+}
+
 case "$mode" in
     full)
         ;;
@@ -61,23 +116,28 @@ while [[ -e "$path" || -e "$meta_path" ]]; do
 done
 
 tmp="$path.tmp"
-cleanup() { rm -f "$tmp"; }
+cleanup() { restore_cursor; rm -f "$tmp"; }
 trap cleanup EXIT
+trap 'exit 1' INT TERM HUP  # route signals through the EXIT trap: never leave the cursor hidden
 
 grim_args=(-t png -l "$compression")
 if [[ -n "$geometry" ]]; then
     grim_args+=(-g "$geometry")
 fi
 
+if [[ "$mode" == window ]]; then
+    hide_cursor
+fi
 if ! grim "${grim_args[@]}" "$tmp"; then
     notify "rgb(ff3344)" "Screenshot failed"
     exit 1
 fi
+restore_cursor
 # Flash a frame around the captured area: after grim, so it is never in the picture,
 # and in the background, so metadata + clipboard don't wait for its 0.45 s fade.
 "$(dirname "$0")/hypr-screenshot-flash" ${geometry:+"$geometry"} >/dev/null &
 
-python3 - "$tmp" "$meta_path" "$mode" "$geometry" "$path" "$compression" <<'PYPNG'
+python3 - "$tmp" "$meta_path" "$mode" "$geometry" "$path" "$compression" "$cursor_state" <<'PYPNG'
 import datetime as _dt
 import json
 import shutil
@@ -87,7 +147,7 @@ import subprocess
 import sys
 import zlib
 
-png_path, meta_path, mode, geometry, final_path, compression = sys.argv[1:7]
+png_path, meta_path, mode, geometry, final_path, compression, cursor_state = sys.argv[1:8]
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 COLOR_TYPES = {
@@ -213,6 +273,7 @@ meta = {
     "hostname": socket.gethostname(),
     "mode": mode,
     "geometry": geometry or None,
+    "cursor": cursor_state,
     "output_png": final_path,
     "metadata_json": meta_path,
     "tool": "hypr-screenshot",

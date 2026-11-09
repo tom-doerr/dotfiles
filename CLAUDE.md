@@ -187,7 +187,24 @@ render { cm_enabled = false }
 Script `hypr/hypr-screenshot` (lossless PNG + clipboard + JSON/iTXt metadata).
 Modes: `region` (slurp), `full`, `window` (focused window via `hyprctl activewindow -j` + jq), `geometry`.
 Binds: `Super+M` region, `Super+Shift+M` full, `Super+Ctrl+M` window.
-No cursor in any mode (grim omits pointer unless `-c`). `window` guards on `*null*` (no focused window).
+`window` guards on `*null*` (no focused window).
+**Cursor: `window` mode hides it, `region`/`full` still contain it (Nov 9 2026, user).** The old note here said
+"no cursor in any mode (grim omits pointer unless `-c`)". That was WRONG on this machine: with
+`cursor:no_hardware_cursors = true` (needed, see "Cursor invisible wall" below) the cursor is drawn INTO the
+monitor's frame, and Hyprland 0.52's screencopy (`Screencopy.cpp` `renderMon()`) copies that finished frame
+(`m_output->state->state().buffer`); grim's `overlay_cursor=0` only skips drawing a second cursor on top.
+Fix in `window` mode: `hyprctl keyword cursor:invisible true`, then WAIT for Hyprland's log line
+`Hiding the cursor (hl-mandated)` (it reads the option only on its 500 ms `cursorTicker`; the line is printed in
+the same call that damages every monitor, so every frame after it is clean), grim, `cursor:invisible false`.
+Measured hide latency 43-333 ms (ticker phase). A 1 s deadline without the line → yellow notification and the
+sidecar's `cursor` field says "NOT confirmed". flock `$XDG_RUNTIME_DIR/hypr-screenshot-cursor.lock` serialises
+two quick shots (else the 2nd reads our temporary `invisible=1` as the user's setting). The EXIT trap (+ INT/TERM/
+HUP routed to it) restores the cursor on every path; verified with a fake failing `grim` (rc 1, invisible back to 0).
+The cursor reappears on the next ticker (≤ 500 ms; moving the mouse does not speed it up). JSON sidecar field
+`cursor` records the state per shot. `hyprctl keyword cursor:*` has no side effects (hits none of
+`dispatchKeyword`'s input/border/monitor branches), unlike a plain `hyprctl reload`.
+Poll gotcha: `tail | grep -q` under `pipefail` FAILS exactly when grep matches early (tail gets SIGPIPE), so the
+script reads `grep -q … < <(tail -c +OFFSET log)`.
 **PNG level 1 since Oct 28 2026 (was 9; user: screenshots had a lot of latency).** Measured on the three
 4K Dells: `full` (= ALL monitors, 6480x3840) took 8.8 s at level 9 vs 0.8 s at level 1, one monitor 974 vs
 202 ms, a 900x600 region 485 vs 94 ms (grim end to end). Everything else in the script costs ~70 ms
