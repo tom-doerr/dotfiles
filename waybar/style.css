@@ -81,6 +81,22 @@ window#waybar {
     margin-right: 12px;
 }
 
+/* Robots line: the kitchen explorer's supervisor status (private kitchen-explorer.py), then ROSpider */
+#custom-kitchen {
+    padding: 0 8px;
+    margin-right: 16px;
+}
+#custom-kitchen.moving {
+    color: #89b4fa;
+}
+#custom-kitchen.warning {
+    color: #e5c07b;
+}
+#custom-kitchen.critical {
+    color: #e06c75;
+    font-weight: bold;
+}
+
 /* ROSpider hexapod battery (rospider.sh); hidden while the robot is off */
 #custom-rospider {
     padding: 0 8px;
